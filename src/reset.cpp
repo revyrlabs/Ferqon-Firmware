@@ -1,0 +1,25 @@
+#include "dispatcher.h"
+#include <Arduino.h>
+
+static bool reset_handler(uint8_t seq, uint8_t cmd_id,
+                          const uint8_t *params, uint8_t param_len,
+                          uint8_t *response, uint8_t *response_len,
+                          bool *already_responded) {
+    (void)params; (void)param_len; (void)response;
+    if (cmd_id != FERQON_CMD_RESET) return false;
+
+    /* Respond BEFORE resetting so the host sees a clean DONE. */
+    ferqon_send_done(seq, cmd_id, NULL, 0);
+    *already_responded = true;
+    *response_len = 0;
+
+    delay(100);
+    NVIC_SystemReset();
+    return true;
+}
+
+extern "C" const ferqon_driver_t reset_driver = {
+    .name = "reset",
+    .id = FERQON_CMD_RESET,
+    .handle = reset_handler,
+};

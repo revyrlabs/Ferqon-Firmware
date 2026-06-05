@@ -1,0 +1,56 @@
+name: Build Matrix
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        env:
+          - pico_arduino
+          - rp2040
+          - pico_native
+          - esp32
+          - esp32s3
+          - stm32f4
+          - stm32f7
+          - teensy40
+          - teensy41
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+
+    - name: Install PlatformIO
+      run: |
+        pip install platformio
+
+    - name: Install dependencies
+      run: |
+        pip install -r tools/requirements.txt
+
+    - name: Generate platform headers
+      run: |
+        python tools/gen_platform_caps.py --all
+
+    - name: Build ${{ matrix.env }}
+      run: |
+        pio run -e ${{ matrix.env }}
+
+    - name: Upload firmware
+      uses: actions/upload-artifact@v4
+      with:
+        name: firmware-${{ matrix.env }}
+        path: .pio/build/${{ matrix.env }}/firmware.*

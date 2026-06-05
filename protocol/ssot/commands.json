@@ -1,0 +1,490 @@
+{
+  "version": "1.1.0",
+  "frame": {
+    "start_byte": 171,
+    "crc_poly": 4129,
+    "crc_init": 65535
+  },
+  "limits": {
+    "max_payload_bytes": 255,
+    "max_frame_bytes": 261,
+    "heartbeat_interval_ms": 1000,
+    "inter_byte_timeout_ms": 50,
+    "frame_assembly_timeout_ms": 200
+  },
+  "packet_types": {
+    "REQUEST": 1,
+    "ACK": 2,
+    "DONE": 3,
+    "ERROR": 4,
+    "HEARTBEAT": 5,
+    "EVENT": 6,
+    "LOG": 7
+  },
+  "reserved_seq": {
+    "UNSOLICITED": 0
+  },
+  "gpio_modes": {
+    "INPUT": 0,
+    "OUTPUT": 1,
+    "INPUT_PULLUP": 2,
+    "INPUT_PULLDOWN": 3
+  },
+  "states": {
+    "APP_BOOT": 0,
+    "APP_READY": 1,
+    "APP_BUSY": 2,
+    "APP_FAULT": 3,
+    "APP_UPDATE": 4
+  },
+  "errors": {
+    "categories": {
+      "NONE": 0,
+      "PROTOCOL": 1,
+      "COMMAND": 2,
+      "DEVICE": 3,
+      "INTERNAL": 4,
+      "TIMEOUT": 5
+    },
+    "codes": {
+      "OK": {
+        "code": 0,
+        "category": "NONE",
+        "retryable": false,
+        "description": "Success"
+      },
+      "INVALID_COMMAND": {
+        "code": 1,
+        "category": "COMMAND",
+        "retryable": false,
+        "description": "Unknown command ID"
+      },
+      "INVALID_PARAMS": {
+        "code": 2,
+        "category": "PROTOCOL",
+        "retryable": false,
+        "description": "Invalid parameters"
+      },
+      "UNSUPPORTED_MODE": {
+        "code": 3,
+        "category": "DEVICE",
+        "retryable": false,
+        "description": "Unsupported mode"
+      },
+      "UNSUPPORTED_PIN": {
+        "code": 4,
+        "category": "DEVICE",
+        "retryable": false,
+        "description": "Unsupported pin"
+      },
+      "BUSY": {
+        "code": 5,
+        "category": "DEVICE",
+        "retryable": true,
+        "description": "Device busy"
+      },
+      "INTERNAL": {
+        "code": 6,
+        "category": "INTERNAL",
+        "retryable": false,
+        "description": "Internal error"
+      },
+      "CHECKSUM_FAIL": {
+        "code": 7,
+        "category": "PROTOCOL",
+        "retryable": false,
+        "description": "Checksum mismatch"
+      },
+      "PAYLOAD_TOO_LARGE": {
+        "code": 9,
+        "category": "PROTOCOL",
+        "retryable": false,
+        "description": "Payload exceeds max size"
+      },
+      "TIMEOUT": {
+        "code": 10,
+        "category": "TIMEOUT",
+        "retryable": true,
+        "description": "Operation timeout"
+      },
+      "INVALID_DRIVER": {
+        "code": 11,
+        "category": "COMMAND",
+        "retryable": false,
+        "description": "No driver registered with that name"
+      },
+      "INVALID_METHOD": {
+        "code": 12,
+        "category": "COMMAND",
+        "retryable": false,
+        "description": "Driver exists but method unknown"
+      },
+      "NOT_IMPLEMENTED": {
+        "code": 13,
+        "category": "COMMAND",
+        "retryable": false,
+        "description": "Driver/method known but hardware not ready"
+      }
+    }
+  },
+  "io_actions": {
+    "CONFIGURE": 0,
+    "READ": 1,
+    "WRITE": 2,
+    "RELEASE": 3,
+    "SET_TEST_MODE": 4
+  },
+  "start_cmd": 171,
+  "end_cmd": 239,
+  "commands": {
+    "pin_mode": {
+      "id": 1,
+      "description": "Configure pin mode",
+      "params": [
+        {
+          "name": "pin",
+          "type": "u8",
+          "description": "Pin number (0–max_gpio)"
+        },
+        {
+          "name": "mode",
+          "type": "u8",
+          "description": "Mode ID (see pin_modes.json)"
+        }
+      ],
+      "response": []
+    },
+    "driver_info": {
+      "id": 2,
+      "description": "List available drivers and commands",
+      "params": [],
+      "response": [
+        {
+          "name": "tlv_data",
+          "type": "bytes",
+          "description": "TLV-encoded driver list"
+        }
+      ]
+    },
+    "driver_call": {
+      "id": 3,
+      "description": "Generic driver dispatch",
+      "driver_methods": {
+        "hil": {
+          "io_set": {
+            "native_cmd": "gpio_write",
+            "arg_map": {
+              "pin": "u8",
+              "level": "bool_high_low"
+            }
+          },
+          "io_get": {
+            "native_cmd": "gpio_read",
+            "arg_map": {
+              "pin": "u8"
+            }
+          },
+          "io_configure": {
+            "native_cmd": "pin_mode",
+            "arg_map": {
+              "pin": "u8",
+              "mode": "gpio_mode"
+            }
+          },
+          "io_expect": {
+            "native_cmd": "driver_call",
+            "sub_handler": "io_expect",
+            "arg_map": {
+              "timeout_ms": "u16_le",
+              "pin": "u8",
+              "level": "bool_high_low"
+            }
+          },
+          "uart_send": {
+            "native_cmd": "uart_send",
+            "arg_map": {
+              "data": "utf8_tail"
+            }
+          },
+          "uart_expect": {
+            "native_cmd": "uart_expect",
+            "arg_map": {
+              "timeout_ms": "u16_le",
+              "pattern": "utf8_tail"
+            }
+          },
+          "adc_read": {
+            "native_cmd": "adc_read",
+            "arg_map": {
+              "channel": "u8"
+            }
+          },
+          "adc_expect": {
+            "native_cmd": "driver_call",
+            "sub_handler": "adc_expect",
+            "arg_map": {
+              "timeout_ms": "u16_le",
+              "channel": "u8",
+              "min_mv": "u16_le",
+              "max_mv": "u16_le"
+            }
+          },
+          "pulse_measure": {
+            "native_cmd": "driver_call",
+            "sub_handler": "pulse_measure",
+            "arg_map": {
+              "timeout_ms": "u16_le",
+              "pin": "u8",
+              "min_us": "u32_le",
+              "max_us": "u32_le"
+            }
+          }
+        }
+      },
+      "params": [
+        {
+          "name": "driver_name",
+          "type": "string",
+          "description": "Driver name (e.g., 'hil')"
+        },
+        {
+          "name": "method",
+          "type": "string",
+          "description": "Method name (e.g., 'io_set')"
+        },
+        {
+          "name": "args",
+          "type": "string",
+          "description": "Semicolon-delimited key=value arguments"
+        }
+      ],
+      "response": [
+        {
+          "name": "result",
+          "type": "bytes",
+          "description": "Method-specific response"
+        }
+      ]
+    },
+    "echo": {
+      "id": 8,
+      "description": "Echo diagnostic payload",
+      "params": [
+        {
+          "name": "payload",
+          "type": "bytes",
+          "description": "Arbitrary bytes to echo back"
+        }
+      ],
+      "response": [
+        {
+          "name": "payload",
+          "type": "bytes",
+          "description": "Echoed payload bytes"
+        }
+      ]
+    },
+    "ping": {
+      "id": 9,
+      "description": "Health check / keep-alive",
+      "params": [],
+      "response": []
+    },
+    "reset": {
+      "id": 10,
+      "description": "Soft-reset the MCU",
+      "params": [],
+      "response": []
+    },
+    "device_info": {
+      "id": 11,
+      "description": "Get device self-description (type, capabilities, IO channels, drivers, versions)",
+      "params": [],
+      "response": [
+        {
+          "name": "tlv_data",
+          "type": "bytes",
+          "description": "TLV-encoded device info"
+        }
+      ]
+    },
+    "capabilities": {
+      "id": 12,
+      "description": "Get board capabilities (parsed JSON as bytes)",
+      "params": [],
+      "response": [
+        {
+          "name": "json_bytes",
+          "type": "bytes",
+          "description": "Minified capabilities.json bytes"
+        }
+      ]
+    },
+    "gpio_read": {
+      "id": 16,
+      "description": "Read GPIO pin value",
+      "params": [
+        {
+          "name": "pin",
+          "type": "u8",
+          "description": "Pin number"
+        }
+      ],
+      "response": [
+        {
+          "name": "value",
+          "type": "u8",
+          "description": "Pin value (0 or 1)"
+        }
+      ]
+    },
+    "gpio_write": {
+      "id": 17,
+      "description": "Write GPIO pin value",
+      "params": [
+        {
+          "name": "pin",
+          "type": "u8",
+          "description": "Pin number"
+        },
+        {
+          "name": "value",
+          "type": "u8",
+          "description": "Pin value (0 or 1)"
+        }
+      ],
+      "response": []
+    },
+    "uart_send": {
+      "id": 18,
+      "description": "Send data over UART (stub)",
+      "params": [
+        {
+          "name": "data",
+          "type": "bytes",
+          "description": "Data to send"
+        }
+      ],
+      "response": []
+    },
+    "uart_expect": {
+      "id": 19,
+      "description": "Wait for UART pattern (stub)",
+      "params": [
+        {
+          "name": "timeout_ms",
+          "type": "u16",
+          "description": "Timeout in milliseconds"
+        },
+        {
+          "name": "pattern",
+          "type": "string",
+          "description": "Pattern to match"
+        }
+      ],
+      "response": [
+        {
+          "name": "matched",
+          "type": "bytes",
+          "description": "Matched data"
+        }
+      ]
+    },
+    "adc_read": {
+      "id": 20,
+      "description": "Read ADC channel (stub)",
+      "params": [
+        {
+          "name": "channel",
+          "type": "u8",
+          "description": "ADC channel number"
+        }
+      ],
+      "response": [
+        {
+          "name": "mv",
+          "type": "u16",
+          "description": "Voltage in millivolts"
+        }
+      ]
+    },
+    "adc_expect": {
+      "id": 21,
+      "description": "Wait for ADC voltage range (stub)",
+      "params": [
+        {
+          "name": "timeout_ms",
+          "type": "u16",
+          "description": "Timeout in milliseconds"
+        },
+        {
+          "name": "channel",
+          "type": "u8",
+          "description": "ADC channel number"
+        },
+        {
+          "name": "min_mv",
+          "type": "u16",
+          "description": "Minimum voltage in mV"
+        },
+        {
+          "name": "max_mv",
+          "type": "u16",
+          "description": "Maximum voltage in mV"
+        }
+      ],
+      "response": []
+    },
+    "pulse_measure": {
+      "id": 22,
+      "description": "Measure pulse width (stub)",
+      "params": [
+        {
+          "name": "timeout_ms",
+          "type": "u16",
+          "description": "Timeout in milliseconds"
+        },
+        {
+          "name": "pin",
+          "type": "u8",
+          "description": "Pin number"
+        },
+        {
+          "name": "min_us",
+          "type": "u32",
+          "description": "Minimum pulse width in microseconds"
+        },
+        {
+          "name": "max_us",
+          "type": "u32",
+          "description": "Maximum pulse width in microseconds"
+        }
+      ],
+      "response": [
+        {
+          "name": "us",
+          "type": "u32",
+          "description": "Measured pulse width in microseconds"
+        }
+      ]
+    },
+    "set_debug_level": {
+      "id": 23,
+      "description": "Set runtime debug level (0=off, 1=info, 2=verbose)",
+      "params": [
+        {
+          "name": "level",
+          "type": "u8",
+          "description": "Debug level (0=off, 1=info, 2=verbose)"
+        }
+      ],
+      "response": [
+        {
+          "name": "level",
+          "type": "u8",
+          "description": "Confirmed debug level"
+        }
+      ]
+    }
+  }
+}

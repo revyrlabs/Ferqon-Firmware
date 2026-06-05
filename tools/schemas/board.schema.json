@@ -1,0 +1,336 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Ferqon Board Capability Schema",
+  "description": "JSON schema describing pin capabilities and hardware features for Ferqon-compatible boards",
+  "type": "object",
+  "required": [
+    "board",
+    "mcu",
+    "max_gpio",
+    "led_pin",
+    "adc",
+    "pwm",
+    "spi",
+    "i2c",
+    "uart",
+    "reserved_pins",
+    "pio_blocks",
+    "pio_sm_per_block",
+    "dma_channels",
+    "device_type",
+    "protocol_version",
+    "capability_version",
+    "firmware_version",
+    "pio_env",
+    "backend",
+    "core_count",
+    "isr_serial_strategy",
+    "ram_size_bytes",
+    "network"
+  ],
+  "properties": {
+    "board": {
+      "type": "string",
+      "description": "Board identifier (e.g., 'pico', 'esp32', 'nano')"
+    },
+    "display_name": {
+      "type": "string",
+      "description": "Human-readable board name"
+    },
+    "pio_env": {
+      "type": "string",
+      "description": "PlatformIO environment name for this board (e.g., 'pico_arduino', 'esp32')"
+    },
+    "backend": {
+      "type": "string",
+      "enum": ["arduino", "pico-sdk", "idf", "zephyr"],
+      "description": "Platform backend implementation to use"
+    },
+    "mcu": {
+      "type": "string",
+      "description": "MCU family (e.g., 'rp2040', 'esp32', 'atmega328p')"
+    },
+    "max_gpio": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 255,
+      "description": "Maximum GPIO pin number (inclusive)"
+    },
+    "led_pin": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 255,
+      "description": "Pin number for onboard status LED (or -1 if none)"
+    },
+    "adc": {
+      "type": "object",
+      "required": ["pins", "resolution_bits", "vref_mv"],
+      "properties": {
+        "pins": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 255
+          },
+          "description": "Array of pins that support ADC"
+        },
+        "resolution_bits": {
+          "type": "integer",
+          "minimum": 8,
+          "maximum": 16,
+          "description": "ADC resolution in bits"
+        },
+        "vref_mv": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 5000,
+          "description": "ADC reference voltage in millivolts"
+        }
+      },
+      "description": "ADC configuration"
+    },
+    "pwm": {
+      "type": "object",
+      "required": ["pins"],
+      "properties": {
+        "pins": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 255
+          },
+          "description": "Array of pins that support PWM"
+        }
+      },
+      "description": "PWM configuration"
+    },
+    "spi": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["instance", "sck", "mosi", "miso", "cs"],
+        "properties": {
+          "instance": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "SPI instance number"
+          },
+          "sck": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 255
+            },
+            "description": "Valid pins for SCK clock"
+          },
+          "mosi": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 255
+            },
+            "description": "Valid pins for MOSI data out"
+          },
+          "miso": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 255
+            },
+            "description": "Valid pins for MISO data in"
+          },
+          "cs": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 255
+            },
+            "description": "Valid pins for chip select"
+          }
+        }
+      },
+      "description": "SPI peripheral pin mappings"
+    },
+    "i2c": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["instance", "sda", "scl"],
+        "properties": {
+          "instance": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "I2C instance number"
+          },
+          "sda": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 255
+            },
+            "description": "Valid pins for SDA data"
+          },
+          "scl": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 255
+            },
+            "description": "Valid pins for SCL clock"
+          }
+        }
+      },
+      "description": "I2C peripheral pin mappings"
+    },
+    "uart": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["instance", "tx", "rx"],
+        "properties": {
+          "instance": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "UART instance number"
+          },
+          "tx": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 255
+            },
+            "description": "Valid pins for TX transmit"
+          },
+          "rx": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 255
+            },
+            "description": "Valid pins for RX receive"
+          }
+        }
+      },
+      "description": "UART peripheral pin mappings"
+    },
+    "reserved_pins": {
+      "type": "array",
+      "items": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 255
+      },
+      "description": "Pins that are not available for general use (e.g., not broken out)"
+    },
+    "pio_blocks": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Number of PIO blocks (0 if not supported)"
+    },
+    "pio_sm_per_block": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Number of state machines per PIO block"
+    },
+    "dma_channels": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Number of DMA channels (0 if not supported)"
+    },
+    "multicore": {
+      "type": "boolean",
+      "description": "True if the MCU has multiple cores"
+    },
+    "flash_size_bytes": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Flash memory size in bytes"
+    },
+    "sys_clock_hz": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "System clock frequency in Hz"
+    },
+    "device_type": {
+      "type": "string",
+      "description": "Device type identifier for device descriptor"
+    },
+    "protocol_version": {
+      "type": "string",
+      "description": "Binary protocol version"
+    },
+    "capability_version": {
+      "type": "string",
+      "description": "Capability schema version"
+    },
+    "firmware_version": {
+      "type": "string",
+      "description": "Default firmware version"
+    },
+    "core_count": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 4,
+      "description": "Number of CPU cores available (1 = single-core, 2 = dual-core)"
+    },
+    "isr_serial_strategy": {
+      "type": "string",
+      "enum": ["multicore", "uart_rx_isr"],
+      "description": "Execution strategy for serial responsiveness: 'multicore' splits serial RX and command execution across cores; 'uart_rx_isr' uses UART RX interrupt with ring buffer on single-core MCUs"
+    },
+    "ram_size_bytes": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Total SRAM size in bytes, used for sizing inter-core queues and ring buffers"
+    },
+    "network": {
+      "type": "object",
+      "required": ["link", "transport", "ota", "provision"],
+      "properties": {
+        "link": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["wifi", "ethernet", "ble"]
+          },
+          "description": "Network link types available"
+        },
+        "transport": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["mqtt", "websocket", "serial"]
+          },
+          "description": "Protocol transports available"
+        },
+        "ota": {
+          "type": "boolean",
+          "description": "OTA update support"
+        },
+        "provision": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["softap", "ble"]
+          },
+          "description": "Provisioning methods available"
+        }
+      },
+      "description": "Network capabilities for protocol subsystem"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Human-readable notes about the board (not emitted to headers)"
+    }
+  }
+}

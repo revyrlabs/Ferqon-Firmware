@@ -1,0 +1,9 @@
+generated/
+build/
+__pycache__/
+*.pyc
+
+# Firmware binaries
+*.bin
+*.hex
+*.elf

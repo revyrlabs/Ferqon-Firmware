@@ -1,0 +1,33 @@
+name: Generator Drift Check
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  drift-check:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+
+    - name: Install dependencies
+      run: |
+        pip install -r tools/requirements.txt
+
+    - name: Check platform generator drift
+      run: |
+        python tools/gen_platform_caps.py --check
+
+    - name: Check protocol generator drift
+      run: |
+        python tools/gen_protocol.py --check

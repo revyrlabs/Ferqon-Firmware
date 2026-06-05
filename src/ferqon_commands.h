@@ -1,0 +1,97 @@
+/* Ferqon serial protocol constants.
+ *
+ * Auto-generated from firmware/protocol/ssot/commands.json.
+ * DO NOT EDIT — regenerate with: python3 tools/gen_ferqon_commands.py
+ */
+
+#ifndef FERQON_COMMANDS_H
+#define FERQON_COMMANDS_H
+
+#include <stdint.h>
+
+/* ------------------------------------------------------------------ Frame */
+
+#define FERQON_START_BYTE               0xAB
+#define FERQON_MAX_PAYLOAD_BYTES        255
+#define FERQON_FRAME_OVERHEAD           6   /* start + seq + cmd + len + crc_lo + crc_hi */
+#define FERQON_INTER_BYTE_TIMEOUT_MS    50
+#define FERQON_FRAME_ASSEMBLY_TIMEOUT_MS 200
+#define FERQON_HEARTBEAT_INTERVAL_MS    1000
+
+/* CRC-16/CCITT-FALSE */
+#define FERQON_CRC_POLY                 0x1021
+#define FERQON_CRC_INIT                 0xFFFF
+
+/* Seq=0 is reserved for unsolicited MCU pushes (heartbeat, event, log). */
+#define FERQON_SEQ_UNSOLICITED          0
+
+/* --------------------------------------------------------- Packet types */
+
+#define FERQON_PKT_REQUEST              1
+#define FERQON_PKT_ACK                  2
+#define FERQON_PKT_DONE                 3
+#define FERQON_PKT_ERROR                4
+#define FERQON_PKT_HEARTBEAT            5
+#define FERQON_PKT_EVENT                6
+#define FERQON_PKT_LOG                  7
+
+/* ----------------------------------------------------------- Commands */
+
+#define FERQON_CMD_PIN_MODE            1
+#define FERQON_CMD_DRIVER_INFO         2
+#define FERQON_CMD_DRIVER_CALL         3
+#define FERQON_CMD_ECHO                8
+#define FERQON_CMD_PING                9
+#define FERQON_CMD_RESET               10
+#define FERQON_CMD_DEVICE_INFO         11
+#define FERQON_CMD_CAPABILITIES        12
+#define FERQON_CMD_GPIO_READ           16
+#define FERQON_CMD_GPIO_WRITE          17
+#define FERQON_CMD_UART_SEND           18
+#define FERQON_CMD_UART_EXPECT         19
+#define FERQON_CMD_ADC_READ            20
+#define FERQON_CMD_ADC_EXPECT          21
+#define FERQON_CMD_PULSE_MEASURE       22
+#define FERQON_CMD_SET_DEBUG_LEVEL     23
+
+/* ---------------------------------------------------------- GPIO modes */
+
+#define FERQON_GPIO_INPUT               0
+#define FERQON_GPIO_OUTPUT              1
+#define FERQON_GPIO_INPUT_PULLUP        2
+#define FERQON_GPIO_INPUT_PULLDOWN      3
+
+/* -------------------------------------------------------- App states */
+
+#define FERQON_STATE_APP_BOOT           0
+#define FERQON_STATE_APP_READY          1
+#define FERQON_STATE_APP_BUSY           2
+#define FERQON_STATE_APP_FAULT          3
+#define FERQON_STATE_APP_UPDATE         4
+
+/* -------------------------------------------------- Error categories */
+
+#define FERQON_ECAT_NONE                0
+#define FERQON_ECAT_PROTOCOL            1
+#define FERQON_ECAT_COMMAND             2
+#define FERQON_ECAT_DEVICE              3
+#define FERQON_ECAT_INTERNAL            4
+#define FERQON_ECAT_TIMEOUT             5
+
+/* ---------------------------------------------------- Error codes */
+
+#define FERQON_ERR_OK                   0
+#define FERQON_ERR_INVALID_COMMAND      1
+#define FERQON_ERR_INVALID_PARAMS       2
+#define FERQON_ERR_UNSUPPORTED_MODE     3
+#define FERQON_ERR_UNSUPPORTED_PIN      4
+#define FERQON_ERR_BUSY                 5
+#define FERQON_ERR_INTERNAL             6
+#define FERQON_ERR_CHECKSUM_FAIL        7
+#define FERQON_ERR_PAYLOAD_TOO_LARGE    9
+#define FERQON_ERR_TIMEOUT              10
+#define FERQON_ERR_INVALID_DRIVER       11  /* No driver registered with that name */
+#define FERQON_ERR_INVALID_METHOD       12  /* Driver exists but method unknown */
+#define FERQON_ERR_NOT_IMPLEMENTED      13  /* Driver/method known but hardware not ready */
+
+#endif /* FERQON_COMMANDS_H */
