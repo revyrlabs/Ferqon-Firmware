@@ -5,7 +5,7 @@
 #include "app_state.h"
 #include "ferqon_log.h"
 
-// Driver extern declarations (drivers are defined in their .cpp files)
+/* Driver extern declarations (defined in their .cpp files). */
 extern "C" const ferqon_driver_t ping_driver;
 extern "C" const ferqon_driver_t echo_driver;
 extern "C" const ferqon_driver_t gpio_driver;
@@ -18,14 +18,13 @@ extern "C" const ferqon_driver_t device_info_driver;
 extern "C" const ferqon_driver_t driver_info_driver;
 extern "C" const ferqon_driver_t debug_driver;
 
-// Protocol write function
 static void serial_write(const uint8_t *data, size_t len) {
     Serial.write(data, len);
 }
 
 ferqon_parser_t parser;
 unsigned long last_heartbeat_ms = 0;
-const unsigned long HEARTBEAT_INTERVAL_MS = 5000;  // 5 seconds
+static const unsigned long HEARTBEAT_INTERVAL_MS = 5000;
 
 void setup() {
     Serial.begin(115200);
@@ -33,19 +32,15 @@ void setup() {
     
     FERQON_LOG_INFO("Ferqon v1 firmware starting");
     
-    // Initialize dispatcher
     ferqon_dispatcher_init();
-    
-    // Initialize protocol
+
     ferqon_set_write_func(serial_write);
     ferqon_parser_init(&parser);
     FERQON_LOG_INFO("Protocol initialized");
-    
-    // Initialize app state
+
     app_state_init();
     FERQON_LOG_INFO("App state initialized");
-    
-    // Register drivers
+
     ferqon_register_driver(&ping_driver);
     ferqon_register_driver(&echo_driver);
     ferqon_register_driver(&gpio_driver);

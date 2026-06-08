@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-ferqonfw_main.py
---------------
+main.py
+-------
 Main entry point for the ferqonfw (Ferqon Firmware) CLI tool.
 
 Commands:
