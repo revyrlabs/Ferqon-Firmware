@@ -54,6 +54,27 @@
 #define FERQON_CMD_PULSE_MEASURE       22
 #define FERQON_CMD_SET_DEBUG_LEVEL     23
 
+/* ----------------------------------------------------------- TLV types */
+
+#define TLV_DEVICE_NAME                1
+#define TLV_DRIVER                     1
+#define TLV_MCU_TYPE                   2
+#define TLV_COMMAND                    2
+#define TLV_FIRMWARE_VERSION           3
+#define TLV_METHOD                     3
+#define TLV_PROTOCOL_VERSION           4
+#define TLV_VERSION                    4
+#define TLV_BUILD_TIMESTAMP            5
+#define TLV_FREE_RAM                   8
+#define TLV_UPTIME_MS                  9
+#define TLV_FERQON_SIGNATURE           16
+
+/* -------------------------------------------------- Ferqon signature */
+
+#define FERQON_SIGNATURE_MAGIC         "FERQON"
+#define FERQON_SIGNATURE_VENDOR        "revyrlabs"
+#define FERQON_SIGNATURE_CAP_VERSION    1
+
 /* ---------------------------------------------------------- GPIO modes */
 
 #define FERQON_GPIO_INPUT               0

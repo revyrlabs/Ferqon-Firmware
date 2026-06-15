@@ -24,6 +24,25 @@
   "reserved_seq": {
     "UNSOLICITED": 0
   },
+  "tlv_types": {
+    "DEVICE_NAME": 1,
+    "MCU_TYPE": 2,
+    "FIRMWARE_VERSION": 3,
+    "PROTOCOL_VERSION": 4,
+    "BUILD_TIMESTAMP": 5,
+    "FREE_RAM": 8,
+    "UPTIME_MS": 9,
+    "FERQON_SIGNATURE": 16,
+    "DRIVER": 1,
+    "COMMAND": 2,
+    "METHOD": 3,
+    "VERSION": 4
+  },
+  "ferqon_signature": {
+    "magic": "FERQON",
+    "vendor": "revyrlabs",
+    "capability_version": 1
+  },
   "gpio_modes": {
     "INPUT": 0,
     "OUTPUT": 1,

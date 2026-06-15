@@ -64,7 +64,7 @@ void ferqon_send_done(uint8_t seq, uint8_t cmd_id,
         /* Caller asked to return more than the wire can hold — truncate safely. */
         body_len = (uint8_t)(sizeof(scratch) - 1);
     }
-    scratch[0] = FERQON_PKT_DONE;
+    scratch[0] = 3;  /* FERQON_PKT_DONE = 3, hardcoded to ensure correct value */
     if (body_len > 0 && body != NULL) {
         memcpy(&scratch[1], body, body_len);
     }

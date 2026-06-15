@@ -5,21 +5,6 @@
 #include <Arduino.h>
 #include <string.h>
 
-/* TLV types for DEVICE_INFO (cmd_id=11) - device self-description */
-#define TLV_DEVICE_NAME        0x01
-#define TLV_MCU_TYPE           0x02
-#define TLV_FIRMWARE_VERSION   0x03
-#define TLV_PROTOCOL_VERSION   0x04
-#define TLV_BUILD_TIMESTAMP    0x05
-#define TLV_FREE_RAM           0x08
-#define TLV_UPTIME_MS          0x09
-
-/* TLV types for DRIVER_INFO (cmd_id=2) - driver enumeration */
-#define TLV_DRIVER             0x01
-#define TLV_COMMAND            0x02
-#define TLV_METHOD             0x03
-#define TLV_VERSION            0x04
-
 /* Forward declaration of global driver array */
 extern ferqon_driver_t g_drivers[];
 extern uint8_t g_driver_count;
@@ -46,7 +31,10 @@ static bool device_info_handler(uint8_t seq, uint8_t cmd_id,
                                 const uint8_t *params, uint8_t param_len,
                                 uint8_t *response, uint8_t *response_len,
                                 bool *already_responded) {
-    (void)seq; (void)cmd_id; (void)params; (void)param_len; (void)already_responded;
+    (void)seq; (void)cmd_id; (void)params; (void)param_len;
+
+    /* Set already_responded to true to prevent dispatcher from calling ferqon_send_done */
+    *already_responded = true;
 
     uint8_t i = 0;
     i += append_str_tlv(&response[i], TLV_DEVICE_NAME,      "pico");
@@ -57,7 +45,20 @@ static bool device_info_handler(uint8_t seq, uint8_t cmd_id,
     i += append_u32_tlv(&response[i], TLV_FREE_RAM,         (uint32_t)(270336 - 58076));
     i += append_u32_tlv(&response[i], TLV_UPTIME_MS,        (uint32_t)millis());
 
+    /* Ferqon signature TLV: magic + vendor + capability_version */
+    /* Format: magic (6) + vendor (9) + cap_version (1) = 16 bytes total */
+    response[i] = TLV_FERQON_SIGNATURE;
+    response[i + 1] = 16;  /* length */
+    memcpy(&response[i + 2], FERQON_SIGNATURE_MAGIC, 6);
+    memcpy(&response[i + 8], FERQON_SIGNATURE_VENDOR, 9);
+    response[i + 17] = FERQON_SIGNATURE_CAP_VERSION;
+    i += 18;
+
     *response_len = i;
+    
+    /* Call ferqon_send_done directly with the response */
+    ferqon_send_done(seq, cmd_id, response, i);
+    
     return true;
 }
 

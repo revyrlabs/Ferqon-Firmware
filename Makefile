@@ -1,4 +1,4 @@
-.PHONY: pico esp32 esp32s3 teensy40 teensy41 clean all help
+.PHONY: pico esp32 esp32s3 teensy40 teensy41 clean all help selftest selftest-emu identify flash-and-test emu-start emu-stop emu-test
 
 # Default target
 .DEFAULT_GOAL := help
@@ -69,6 +69,91 @@ config:
 	@echo "Showing PlatformIO configuration..."
 	pio project config
 
+# Self-test targets
+selftest:
+	@echo "Running self-test on device..."
+	@echo "Usage: make selftest PORT=/dev/ttyACM0"
+	@if [ -z "$(PORT)" ]; then \
+		echo "Error: PORT variable required (e.g., PORT=/dev/ttyACM0)"; \
+		exit 1; \
+	fi
+	python3 tools/ferqon_selftest.py --port $(PORT)
+
+selftest-emu:
+	@echo "Running self-test on emulator..."
+	python3 tools/ferqon_selftest.py --emulator
+
+# Identify target
+identify:
+	@echo "Identifying device..."
+	@echo "Usage: make identify PORT=/dev/ttyACM0"
+	@if [ -z "$(PORT)" ]; then \
+		echo "Error: PORT variable required (e.g., PORT=/dev/ttyACM0)"; \
+		exit 1; \
+	fi
+	python3 tools/ferqonfw/ferqonfw identify --port $(PORT)
+
+# Flash-and-test convenience target
+flash-and-test:
+	@echo "Flash and test workflow..."
+	@if [ -z "$(BOARD)" ]; then \
+		echo "Error: BOARD variable required (e.g., BOARD=pico)"; \
+		exit 1; \
+	fi
+	@if [ -z "$(PORT)" ]; then \
+		echo "Error: PORT variable required (e.g., PORT=/dev/ttyACM0)"; \
+		exit 1; \
+	fi
+	@echo "Building for $(BOARD)..."
+	pio run -e $(BOARD)
+	@echo "Flashing to $(PORT)..."
+	pio run -e $(BOARD) -t upload
+	@echo "Waiting for device to enumerate..."
+	sleep 3
+	@echo "Running self-test..."
+	python3 tools/ferqon_selftest.py --port $(PORT)
+	@echo "Identifying device..."
+	python3 tools/ferqonfw/ferqonfw identify --port $(PORT)
+
+# Emulator targets
+EMU_PID_FILE := .emu.pid
+EMU_PORT_FILE := .emu.port
+
+emu-start:
+	@echo "Starting emulator in PTY mode..."
+	@cd tools && python3 -c "import sys; sys.path.insert(0, '.'); from ferqon_emulator import FerqonEmulator; e=FerqonEmulator(pty=True); print(e.start())" > ../$(EMU_PORT_FILE)
+	@cd tools && python3 ferqon_emulator.py --pty &
+	@echo $$! > $(EMU_PID_FILE)
+	@sleep 1
+	@echo "Emulator started on port: $$(cat $(EMU_PORT_FILE))"
+	@echo "Use 'make emu-test' to run self-test, or 'make emu-stop' to stop"
+
+emu-stop:
+	@if [ -f $(EMU_PID_FILE) ]; then \
+		kill $$(cat $(EMU_PID_FILE)) 2>/dev/null || true; \
+		rm -f $(EMU_PID_FILE); \
+		echo "Emulator stopped"; \
+	else \
+		echo "No emulator running"; \
+	fi
+	@rm -f $(EMU_PORT_FILE)
+
+emu-test:
+	@if [ ! -f $(EMU_PORT_FILE) ]; then \
+		echo "Emulator not running. Start with 'make emu-start'"; \
+		exit 1; \
+	fi
+	@echo "Running self-test on emulator at $$(cat $(EMU_PORT_FILE))..."
+	@python3 tools/ferqon_selftest.py --port $$(cat $(EMU_PORT_FILE))
+
+emu-identify:
+	@if [ ! -f $(EMU_PORT_FILE) ]; then \
+		echo "Emulator not running. Start with 'make emu-start'"; \
+		exit 1; \
+	fi
+	@echo "Identifying emulator at $$(cat $(EMU_PORT_FILE))..."
+	@python3 tools/ferqonfw/ferqonfw identify --port $$(cat $(EMU_PORT_FILE))
+
 # Help target
 help:
 	@echo "Ferqon Firmware Build System"
@@ -94,6 +179,18 @@ help:
 	@echo "  make monitor    - Start serial monitor"
 	@echo "  make config     - Show PlatformIO configuration"
 	@echo "  make help       - Show this help message"
+	@echo ""
+	@echo "Self-test and detection:"
+	@echo "  make selftest PORT=/dev/ttyACM0   - Run self-test on device"
+	@echo "  make selftest-emu                 - Run self-test on emulator (in-process)"
+	@echo "  make identify PORT=/dev/ttyACM0   - Detect Ferqon firmware on device"
+	@echo "  make flash-and-test BOARD=pico PORT=/dev/ttyACM0 - Build, flash, test, identify"
+	@echo ""
+	@echo "Emulator (PTY mode - acts like real serial port):"
+	@echo "  make emu-start   - Start emulator in PTY mode (creates virtual serial port)"
+	@echo "  make emu-test    - Run self-test on running emulator"
+	@echo "  make emu-identify - Identify running emulator"
+	@echo "  make emu-stop    - Stop emulator"
 	@echo ""
 	@echo "Direct pio commands also work:"
 	@echo "  pio run -e <board>   - Build for specific board"

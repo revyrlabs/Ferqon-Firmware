@@ -83,6 +83,31 @@ def generate_c_header(data: dict) -> str:
 
     lines.extend([
         "",
+        "/* ----------------------------------------------------------- TLV types */",
+        "",
+    ])
+
+    tlv_types = data.get("tlv_types", {})
+    for name, value in sorted(tlv_types.items(), key=lambda x: x[1]):
+        macro_name = f"TLV_{name.upper()}"
+        lines.append(f"#define {macro_name:<30} {value}")
+
+    signature = data.get("ferqon_signature", {})
+    if signature:
+        magic = signature.get("magic", "FERQON")
+        vendor = signature.get("vendor", "revyrlabs")
+        cap_version = signature.get("capability_version", 1)
+        lines.extend([
+            "",
+            "/* -------------------------------------------------- Ferqon signature */",
+            "",
+            f"#define FERQON_SIGNATURE_MAGIC         \"{magic}\"",
+            f"#define FERQON_SIGNATURE_VENDOR        \"{vendor}\"",
+            f"#define FERQON_SIGNATURE_CAP_VERSION    {cap_version}",
+        ])
+
+    lines.extend([
+        "",
         "/* ---------------------------------------------------------- GPIO modes */",
         "",
         "#define FERQON_GPIO_INPUT               0",

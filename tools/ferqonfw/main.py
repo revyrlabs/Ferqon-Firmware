@@ -40,6 +40,8 @@ from ferqonfw.cmd_validate import cmd_validate
 from ferqonfw.cmd_packet import cmd_packet_encode, cmd_packet_decode
 from ferqonfw.cmd_drivers import cmd_drivers_list
 from ferqonfw.cmd_info import cmd_info
+from ferqonfw.cmd_identify import cmd_identify
+from ferqonfw.cmd_selftest import cmd_selftest
 
 
 def main():
@@ -118,6 +120,21 @@ def main():
     info_parser = subparsers.add_parser('info', help='Show platform capabilities')
     info_parser.add_argument('platform', help='Platform name (e.g., pico, esp32)')
     info_parser.set_defaults(func=cmd_info)
+
+    # identify command
+    identify_parser = subparsers.add_parser('identify', help='Detect whether device is running Ferqon firmware')
+    identify_group = identify_parser.add_mutually_exclusive_group(required=True)
+    identify_group.add_argument('--port', help='Serial port (e.g., /dev/ttyACM0)')
+    identify_group.add_argument('--emulator', action='store_true', help='Use in-process emulator')
+    identify_parser.set_defaults(func=cmd_identify)
+
+    # selftest command
+    selftest_parser = subparsers.add_parser('selftest', help='Run self-test matrix against device or emulator')
+    selftest_group = selftest_parser.add_mutually_exclusive_group(required=True)
+    selftest_group.add_argument('--port', help='Serial port (e.g., /dev/ttyACM0)')
+    selftest_group.add_argument('--emulator', action='store_true', help='Use in-process emulator')
+    selftest_parser.add_argument('--json', action='store_true', help='Output JSON summary')
+    selftest_parser.set_defaults(func=cmd_selftest)
 
     args = parser.parse_args()
 
