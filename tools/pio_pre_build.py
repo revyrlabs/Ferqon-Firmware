@@ -193,45 +193,16 @@ def main():
         print("Warning: Platform capability generation failed")
         # Don't fail the build - let PlatformIO continue and report errors
 
-    # Check for commands.json and generate commands.hpp if needed
-    commands_json_paths = [
-        firmware_dir / ".." / "commands.json",  # repo root
-        firmware_dir / ".." / "open_sdk" / "sdk" / "serial" / "commands.json",
-        firmware_dir / ".." / "commands" / "commands.json",
-    ]
-
-    # Pinmap paths for commands generation
-    pinmap_json_paths = [
-        firmware_dir / ".." / "protocol_sdk" / "sdk" / "serial" / "driver" / "pico_pinmap.json",
-        firmware_dir / ".." / "commands" / "pico_pinmap.json",
-    ]
-
-    gen_commands_script = firmware_dir / "tools" / "gen_commands.py"
-    if gen_commands_script.exists():
-        for commands_json in commands_json_paths:
-            if commands_json.exists():
-                generated_dir = firmware_dir / "generated"
-                cmd = [
-                    sys.executable,
-                    str(gen_commands_script),
-                    str(commands_json),
-                    str(generated_dir / "commands.hpp")
-                ]
-
-                # Add pinmap if available
-                for pinmap_json in pinmap_json_paths:
-                    if pinmap_json.exists():
-                        cmd.append(str(pinmap_json))
-                        print(f"Using pinmap: {pinmap_json}")
-                        break
-
-                print(f"Running: {' '.join(cmd)}")
-                result = subprocess.run(cmd, capture_output=True, text=True)
-                if result.returncode == 0:
-                    print("Generated commands.hpp")
-                else:
-                    print(f"Warning: commands.hpp generation failed: {result.stderr}")
-                break
+    # Regenerate all protocol artifacts (C header + Python generated files) from SSOT
+    gen_protocol_script = firmware_dir / "tools" / "gen_protocol.py"
+    if gen_protocol_script.exists():
+        cmd = [sys.executable, str(gen_protocol_script)]
+        print(f"Running: {' '.join(cmd)}")
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        if result.returncode == 0:
+            print(result.stdout.strip())
+        else:
+            print(f"Warning: gen_protocol.py failed: {result.stderr}")
 
     print("=" * 60)
     print("Pre-build hook complete")

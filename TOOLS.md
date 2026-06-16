@@ -35,8 +35,7 @@ Low-level: sends a prebuilt driver binary to the Pico via chunked base64 over se
 | `flash_pico.py` | Build firmware; flash via BOOTSEL or serial | Firmware-only updates after code changes |
 | `flash_driver.py` | Compile driver C source; try standalone upload then fallback to full rebuild | Iterating on a single driver implementation |
 | `driver_uploader.py` | Send pre-compiled driver binary to Pico over serial | Advanced: uploading pre-signed or pre-tested binaries |
-| `gen_commands.py` | Generate command.hpp from commands.json | Internal build step (auto-run by CMake) |
-| `setup_generated.py` | Generate protocol stubs | Internal build step (auto-run by CMake) |
+| `gen_protocol.py` | Generate all protocol artifacts (ferqon_commands.h + Python modules) from SSOT | `python3 firmware/tools/gen_protocol.py` or `make sync-protocol` |
 
 ## Consolidation Notes
 

@@ -1,7 +1,7 @@
 /* Ferqon serial protocol constants.
  *
- * Auto-generated from firmware/protocol/ssot/commands.json.
- * DO NOT EDIT — regenerate with: python3 tools/gen_ferqon_commands.py
+ * Auto-generated from firmware/protocol/ssot/commands.json (v1.1.0).
+ * DO NOT EDIT — regenerate with: python3 firmware/tools/gen_protocol.py
  */
 
 #ifndef FERQON_COMMANDS_H
@@ -24,6 +24,9 @@
 
 /* Seq=0 is reserved for unsolicited MCU pushes (heartbeat, event, log). */
 #define FERQON_SEQ_UNSOLICITED          0
+
+/* Protocol version (from SSOT) */
+#define FERQON_PROTOCOL_VERSION         "1.1.0"
 
 /* --------------------------------------------------------- Packet types */
 
@@ -77,42 +80,42 @@
 
 /* ---------------------------------------------------------- GPIO modes */
 
-#define FERQON_GPIO_INPUT               0
-#define FERQON_GPIO_OUTPUT              1
-#define FERQON_GPIO_INPUT_PULLUP        2
-#define FERQON_GPIO_INPUT_PULLDOWN      3
+#define FERQON_GPIO_INPUT                  0
+#define FERQON_GPIO_OUTPUT                 1
+#define FERQON_GPIO_INPUT_PULLUP           2
+#define FERQON_GPIO_INPUT_PULLDOWN         3
 
 /* -------------------------------------------------------- App states */
 
-#define FERQON_STATE_APP_BOOT           0
-#define FERQON_STATE_APP_READY          1
-#define FERQON_STATE_APP_BUSY           2
-#define FERQON_STATE_APP_FAULT          3
-#define FERQON_STATE_APP_UPDATE         4
+#define FERQON_STATE_APP_BOOT             0
+#define FERQON_STATE_APP_READY            1
+#define FERQON_STATE_APP_BUSY             2
+#define FERQON_STATE_APP_FAULT            3
+#define FERQON_STATE_APP_UPDATE           4
 
 /* -------------------------------------------------- Error categories */
 
-#define FERQON_ECAT_NONE                0
-#define FERQON_ECAT_PROTOCOL            1
-#define FERQON_ECAT_COMMAND             2
-#define FERQON_ECAT_DEVICE              3
-#define FERQON_ECAT_INTERNAL            4
-#define FERQON_ECAT_TIMEOUT             5
+#define FERQON_ECAT_NONE                  0
+#define FERQON_ECAT_PROTOCOL              1
+#define FERQON_ECAT_COMMAND               2
+#define FERQON_ECAT_DEVICE                3
+#define FERQON_ECAT_INTERNAL              4
+#define FERQON_ECAT_TIMEOUT               5
 
 /* ---------------------------------------------------- Error codes */
 
-#define FERQON_ERR_OK                   0
-#define FERQON_ERR_INVALID_COMMAND      1
-#define FERQON_ERR_INVALID_PARAMS       2
-#define FERQON_ERR_UNSUPPORTED_MODE     3
-#define FERQON_ERR_UNSUPPORTED_PIN      4
-#define FERQON_ERR_BUSY                 5
-#define FERQON_ERR_INTERNAL             6
-#define FERQON_ERR_CHECKSUM_FAIL        7
-#define FERQON_ERR_PAYLOAD_TOO_LARGE    9
-#define FERQON_ERR_TIMEOUT              10
-#define FERQON_ERR_INVALID_DRIVER       11  /* No driver registered with that name */
-#define FERQON_ERR_INVALID_METHOD       12  /* Driver exists but method unknown */
-#define FERQON_ERR_NOT_IMPLEMENTED      13  /* Driver/method known but hardware not ready */
+#define FERQON_ERR_OK                      0  /* Success */
+#define FERQON_ERR_INVALID_COMMAND         1  /* Unknown command ID */
+#define FERQON_ERR_INVALID_PARAMS          2  /* Invalid parameters */
+#define FERQON_ERR_UNSUPPORTED_MODE        3  /* Unsupported mode */
+#define FERQON_ERR_UNSUPPORTED_PIN         4  /* Unsupported pin */
+#define FERQON_ERR_BUSY                    5  /* Device busy */
+#define FERQON_ERR_INTERNAL                6  /* Internal error */
+#define FERQON_ERR_CHECKSUM_FAIL           7  /* Checksum mismatch */
+#define FERQON_ERR_PAYLOAD_TOO_LARGE       9  /* Payload exceeds max size */
+#define FERQON_ERR_TIMEOUT                 10  /* Operation timeout */
+#define FERQON_ERR_INVALID_DRIVER          11  /* No driver registered with that name */
+#define FERQON_ERR_INVALID_METHOD          12  /* Driver exists but method unknown */
+#define FERQON_ERR_NOT_IMPLEMENTED         13  /* Driver/method known but hardware not ready */
 
 #endif /* FERQON_COMMANDS_H */

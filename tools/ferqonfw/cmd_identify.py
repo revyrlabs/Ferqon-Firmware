@@ -31,28 +31,25 @@ def _load_commands_json() -> dict[str, Any]:
         if p.exists():
             with open(p) as f:
                 return json.load(f)
-    # Fallback to minimal defaults
-    return {
-        "tlv_types": {
-            "DEVICE_NAME": 1, "MCU_TYPE": 2, "FIRMWARE_VERSION": 3,
-            "PROTOCOL_VERSION": 4, "FERQON_SIGNATURE": 16,
-        },
-        "ferqon_signature": {"magic": "FERQON"},
-    }
+    raise FileNotFoundError("commands.json SSOT not found in any candidate location")
 
 _SPEC = _load_commands_json()
 
 # TLV types from SSOT
-_tlv_types = _SPEC.get("tlv_types", {})
-TLV_DEVICE_NAME = _tlv_types.get("DEVICE_NAME", 0x01)
-TLV_MCU_TYPE = _tlv_types.get("MCU_TYPE", 0x02)
-TLV_FIRMWARE_VERSION = _tlv_types.get("FIRMWARE_VERSION", 0x03)
-TLV_PROTOCOL_VERSION = _tlv_types.get("PROTOCOL_VERSION", 0x04)
-TLV_FERQON_SIGNATURE = _tlv_types.get("FERQON_SIGNATURE", 0x10)
+_tlv_types = _SPEC["tlv_types"]
+TLV_DEVICE_NAME = _tlv_types["DEVICE_NAME"]
+TLV_MCU_TYPE = _tlv_types["MCU_TYPE"]
+TLV_FIRMWARE_VERSION = _tlv_types["FIRMWARE_VERSION"]
+TLV_PROTOCOL_VERSION = _tlv_types["PROTOCOL_VERSION"]
+TLV_FERQON_SIGNATURE = _tlv_types["FERQON_SIGNATURE"]
+
+# Command IDs from SSOT
+_commands = _SPEC["commands"]
+CMD_DEVICE_INFO = _commands["device_info"]["id"]
 
 # Signature configuration from SSOT
-_signature_config = _SPEC.get("ferqon_signature", {})
-FERQON_SIGNATURE_MAGIC = _signature_config.get("magic", "FERQON").encode("utf-8")
+_signature_config = _SPEC["ferqon_signature"]
+FERQON_SIGNATURE_MAGIC = _signature_config["magic"].encode("utf-8")
 
 
 def cmd_identify(args: argparse.Namespace) -> int:
@@ -73,7 +70,6 @@ def cmd_identify(args: argparse.Namespace) -> int:
             transport.connect()
 
         # Send device_info command
-        CMD_DEVICE_INFO = 11
         frame = _encode_frame(seq=1, cmd_id=CMD_DEVICE_INFO, payload=b"")
         resp = transport.send_frame(frame, timeout_s=2.0)
 

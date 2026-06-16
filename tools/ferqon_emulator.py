@@ -72,35 +72,35 @@ START_BYTE = _frame.get("start_byte", 0xAB)
 CRC_POLY = _frame.get("crc_poly", 0x1021)
 CRC_INIT = _frame.get("crc_init", 0xFFFF)
 
-_packet_types = _SPEC.get("packet_types", {})
-PKT_REQUEST = _packet_types.get("REQUEST", 1)
-PKT_ACK = _packet_types.get("ACK", 2)
-PKT_DONE = _packet_types.get("DONE", 3)
-PKT_ERROR = _packet_types.get("ERROR", 4)
+_packet_types = _SPEC["packet_types"]
+PKT_REQUEST = _packet_types["REQUEST"]
+PKT_ACK = _packet_types["ACK"]
+PKT_DONE = _packet_types["DONE"]
+PKT_ERROR = _packet_types["ERROR"]
 
 # Command IDs from SSOT
-_commands = _SPEC.get("commands", {})
-CMD_PING = _commands.get("ping", {}).get("id", 9)
-CMD_ECHO = _commands.get("echo", {}).get("id", 8)
-CMD_DRIVER_INFO = _commands.get("driver_info", {}).get("id", 2)
-CMD_DEVICE_INFO = _commands.get("device_info", {}).get("id", 11)
-CMD_CAPABILITIES = _commands.get("capabilities", {}).get("id", 12)
-CMD_GPIO_READ = _commands.get("gpio_read", {}).get("id", 16)
-CMD_GPIO_WRITE = _commands.get("gpio_write", {}).get("id", 17)
+_commands = _SPEC["commands"]
+CMD_PING = _commands["ping"]["id"]
+CMD_ECHO = _commands["echo"]["id"]
+CMD_DRIVER_INFO = _commands["driver_info"]["id"]
+CMD_DEVICE_INFO = _commands["device_info"]["id"]
+CMD_CAPABILITIES = _commands["capabilities"]["id"]
+CMD_GPIO_READ = _commands["gpio_read"]["id"]
+CMD_GPIO_WRITE = _commands["gpio_write"]["id"]
 
 # TLV types from SSOT
-_tlv_types = _SPEC.get("tlv_types", {})
-TLV_DEVICE_NAME = _tlv_types.get("DEVICE_NAME", 0x01)
-TLV_MCU_TYPE = _tlv_types.get("MCU_TYPE", 0x02)
-TLV_FIRMWARE_VERSION = _tlv_types.get("FIRMWARE_VERSION", 0x03)
-TLV_PROTOCOL_VERSION = _tlv_types.get("PROTOCOL_VERSION", 0x04)
-TLV_BUILD_TIMESTAMP = _tlv_types.get("BUILD_TIMESTAMP", 0x05)
-TLV_FREE_RAM = _tlv_types.get("FREE_RAM", 0x08)
-TLV_UPTIME_MS = _tlv_types.get("UPTIME_MS", 0x09)
-TLV_FERQON_SIGNATURE = _tlv_types.get("FERQON_SIGNATURE", 0x10)
-TLV_DRIVER = _tlv_types.get("DRIVER", 0x01)
-TLV_COMMAND = _tlv_types.get("COMMAND", 0x02)
-TLV_VERSION = _tlv_types.get("VERSION", 0x04)
+_tlv_types = _SPEC["tlv_types"]
+TLV_DEVICE_NAME = _tlv_types["DEVICE_NAME"]
+TLV_MCU_TYPE = _tlv_types["MCU_TYPE"]
+TLV_FIRMWARE_VERSION = _tlv_types["FIRMWARE_VERSION"]
+TLV_PROTOCOL_VERSION = _tlv_types["PROTOCOL_VERSION"]
+TLV_BUILD_TIMESTAMP = _tlv_types["BUILD_TIMESTAMP"]
+TLV_FREE_RAM = _tlv_types["FREE_RAM"]
+TLV_UPTIME_MS = _tlv_types["UPTIME_MS"]
+TLV_FERQON_SIGNATURE = _tlv_types["FERQON_SIGNATURE"]
+TLV_DRIVER = _tlv_types["DRIVER"]
+TLV_COMMAND = _tlv_types["COMMAND"]
+TLV_VERSION = _tlv_types["VERSION"]
 
 # Signature configuration from SSOT
 _signature_config = _SPEC.get("ferqon_signature", {})

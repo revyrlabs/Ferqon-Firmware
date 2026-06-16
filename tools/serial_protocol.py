@@ -102,37 +102,20 @@ class FrameDecoder:
 
 
 def load_command_ids() -> dict[str, int]:
-    """Load command IDs from commands.json."""
-    defaults = {
-        "pin_mode": 1,
-        "driver_info": 2,
-        "driver_call": 3,
-        "echo": 8,
-        "ping": 9,
-        "reset": 10,
-        "device_info": 11,
-        "capabilities": 12,
-        "gpio_read": 16,
-        "gpio_write": 17,
-        "uart_send": 18,
-        "uart_expect": 19,
-        "adc_read": 20,
-        "adc_expect": 21,
-        "pulse_measure": 22,
-        "set_debug_level": 23,
-    }
+    """Load command IDs from the SSOT commands.json.
+
+    Raises FileNotFoundError if the SSOT is missing, or KeyError if a required
+    command entry is absent — no hardcoded fallbacks.
+    """
     root = Path(__file__).resolve().parent.parent
     commands_path = root / "protocol" / "ssot" / "commands.json"
-    try:
-        data = json.loads(commands_path.read_text(encoding="utf-8"))
-        commands = data.get("commands", {})
-        for key in list(defaults):
-            item = commands.get(key)
-            if isinstance(item, dict) and isinstance(item.get("id"), int):
-                defaults[key] = int(item["id"])
-    except Exception:
-        pass
-    return defaults
+    data = json.loads(commands_path.read_text(encoding="utf-8"))
+    raw = data["commands"]
+    return {
+        name: int(entry["id"])
+        for name, entry in raw.items()
+        if isinstance(entry, dict) and isinstance(entry.get("id"), int)
+    }
 
 
 def encode_frame(seq: int, cmd_id: int, payload: bytes) -> bytes:

@@ -5,6 +5,8 @@ Gen command for ferqonfw CLI - generate protocol artifacts.
 """
 
 import json
+import subprocess
+import sys
 from pathlib import Path
 
 from ferqonfw.board_loader import (
@@ -13,8 +15,9 @@ from ferqonfw.board_loader import (
     get_ssot_dir,
     get_schemas_dir,
 )
-from ferqonfw.codegen.emit_commands import emit_commands_h
 from ferqonfw.codegen.emit_errors import emit_errors_h
+
+_TOOLS_DIR = Path(__file__).resolve().parents[1]
 
 
 def cmd_gen(args) -> int:
@@ -33,37 +36,23 @@ def cmd_gen(args) -> int:
     if args.gen_target == "core":
         print("Generating board-agnostic protocol headers...")
 
-        # Load SSOT files
-        commands_path = ssot_dir / "commands.json"
+        # All command artifacts are emitted by gen_protocol.py
+        gen_script = _TOOLS_DIR / "gen_protocol.py"
+        result = subprocess.run([sys.executable, str(gen_script)], capture_output=False)
+        if result.returncode != 0:
+            return result.returncode
+
+        # Emit errors.h from the separate errors SSOT if present
         errors_path = ssot_dir / "errors.json"
-
-        try:
-            with open(commands_path) as f:
-                commands_data = json.load(f)
-        except FileNotFoundError:
-            print(f"Error: {commands_path} not found")
-            return 1
-
         try:
             with open(errors_path) as f:
                 errors_data = json.load(f)
+            errors_h_path = generated_dir / "errors.h"
+            emit_errors_h(errors_data, errors_h_path)
+            print(f"  Generated: {errors_h_path}")
         except FileNotFoundError:
-            print(f"Error: {errors_path} not found")
-            return 1
+            pass
 
-        # Emit commands.h
-        commands_h_path = generated_dir / "commands.h"
-        emit_commands_h(commands_data, commands_h_path)
-        print(f"  Generated: {commands_h_path}")
-
-        # Emit errors.h
-        errors_h_path = generated_dir / "errors.h"
-        emit_errors_h(errors_data, errors_h_path)
-        print(f"  Generated: {errors_h_path}")
-
-        # TODO: Emit pin_modes.h, drivers_table.h (stubs)
-        print("  TODO: pin_modes.h, drivers_table.h (stubs)")
-        print("  TODO: Backend Python modules (stubs)")
         print("Code generation complete")
         return 0
     elif args.gen_target == "board":
