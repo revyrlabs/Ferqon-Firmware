@@ -3,8 +3,18 @@
 
 import json
 import time
+import sys
+from pathlib import Path
 
 import serial
+
+# Add tools to path for device_config/discovery
+tools_dir = Path(__file__).parent
+if str(tools_dir) not in sys.path:
+    sys.path.insert(0, str(tools_dir))
+
+from device_config import get_default_device_port, get_default_baudrate
+from device_discovery import find_board
 
 from serial_protocol import (
     TYPE_RESPONSE,
@@ -57,10 +67,12 @@ def send_and_print(ser: serial.Serial, cmd_name: str) -> dict | None:
 
 
 def main() -> int:
-    ser = serial.Serial("/dev/ttyACM0", 115200, timeout=0.1)
+    port = find_board("pico") or get_default_device_port()
+    baudrate = get_default_baudrate()
+    ser = serial.Serial(port, baudrate, timeout=0.1)
     time.sleep(0.5)
 
-    print("Pico connection test:")
+    print(f"Pico connection test ({port} @ {baudrate}):")
     print(f"Open: {ser.is_open}")
 
     send_and_print(ser, "ping")

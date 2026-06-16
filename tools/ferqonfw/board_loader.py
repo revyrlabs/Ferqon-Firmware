@@ -5,6 +5,7 @@ Shared utilities for ferqonfw CLI: path resolution, subprocess, board loading.
 """
 
 import json
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -57,6 +58,19 @@ def get_board_generated_dir(board_name: str) -> Path:
     return get_platforms_dir() / board_name / "generated"
 
 
+def get_pio_path() -> str:
+    """Get the PlatformIO CLI path."""
+    # Allow override via env, otherwise use shutil.which to find it
+    custom_path = sys.getenv("FERQON_PIO_BIN")
+    if custom_path:
+        return custom_path
+    pio_path = shutil.which("pio")
+    if pio_path:
+        return pio_path
+    # Fallback to common location
+    return "/home/alx/.local/bin/pio"
+
+
 # ---------------------------------------------------------------------------
 # Subprocess wrapper — single place where we shell out.
 # ---------------------------------------------------------------------------
@@ -80,7 +94,7 @@ def run_cmd(
     """
     # Use full path for pio if needed
     if argv[0] == "pio":
-        argv = ["/home/alx/.local/bin/pio"] + list(argv[1:])
+        argv = [get_pio_path()] + list(argv[1:])
 
     return subprocess.run(
         list(argv),
@@ -94,7 +108,7 @@ def run_cmd(
 def require_pio() -> None:
     """Raise RuntimeError with an install hint if `pio` is not on PATH."""
     try:
-        run_cmd(["/home/alx/.local/bin/pio", "--version"], capture=True, check=True)
+        run_cmd([get_pio_path(), "--version"], capture=True, check=True)
     except (subprocess.CalledProcessError, FileNotFoundError):
         raise RuntimeError(
             "PlatformIO CLI not found. Install with: pip install platformio"

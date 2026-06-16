@@ -7,9 +7,23 @@ Tests basic communication with the flashed firmware.
 import serial
 import time
 import sys
+from pathlib import Path
 
-def test_pico_serial(port="/dev/ttyACM0", baudrate=115200):
+# Add tools to path for device_config/discovery
+tools_dir = Path(__file__).parent
+if str(tools_dir) not in sys.path:
+    sys.path.insert(0, str(tools_dir))
+
+from device_config import get_default_device_port, get_default_baudrate
+from device_discovery import find_board
+
+def test_pico_serial(port=None, baudrate=None):
     """Test serial communication with Pico."""
+    if port is None:
+        port = find_board("pico") or get_default_device_port()
+    if baudrate is None:
+        baudrate = get_default_baudrate()
+
     try:
         print(f"Connecting to {port} at {baudrate} baud...")
         ser = serial.Serial(port, baudrate, timeout=2.0)
@@ -58,6 +72,6 @@ def test_pico_serial(port="/dev/ttyACM0", baudrate=115200):
         return False
 
 if __name__ == "__main__":
-    port = sys.argv[1] if len(sys.argv) > 1 else "/dev/ttyACM0"
+    port = sys.argv[1] if len(sys.argv) > 1 else None
     success = test_pico_serial(port)
     sys.exit(0 if success else 1)

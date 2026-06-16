@@ -50,6 +50,7 @@ bool ferqon_dispatch_request(const ferqon_request_t *req) {
     }
 
     uint8_t response[FERQON_MAX_PAYLOAD_BYTES];
+    memset(response, 0, sizeof(response));  // Initialize to prevent garbage data
     uint8_t response_len = 0;
     bool already_responded = false;
 

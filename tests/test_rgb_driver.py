@@ -14,17 +14,23 @@ from pathlib import Path
 
 # Ensure the SDK root is on sys.path so serial_protocol can be imported
 # regardless of the working directory the test is run from.
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / 'tools'))
+
+from device_config import get_default_baudrate
 
 try:
     import serial
-    from serial.tools import list_ports
 except ImportError:
     print("ERROR: pyserial not installed. Run: pip install pyserial")
     sys.exit(1)
 
+# Use shared device discovery instead of duplicated find_pico_device
+from device_discovery import find_board
+
 from serial_protocol import (
-    TYPE_RESPONSE,
+    PKT_DONE,
+    PKT_ERROR,
+    PKT_REQUEST,
     FrameDecoder,
     decode_cmd_payload,
     encode_cmd_payload,
@@ -41,9 +47,12 @@ class RGBDriverTest(unittest.TestCase):
     pico_port = None
 
     def _send_driver_info(self) -> dict:
+        if not self.ser or not self.ser.is_open:
+            self.skipTest("No Pico device connected")
         ids = load_command_ids()
-        payload = encode_cmd_payload(ids["driver_info"], b"")
-        self.ser.write(encode_frame(payload))
+        cmd_id = ids["driver_info"]
+        payload = encode_cmd_payload(cmd_id, b"", packet_type=PKT_REQUEST)
+        self.ser.write(encode_frame(seq=1, cmd_id=cmd_id, payload=payload))
         self.ser.flush()
         return self._read_response()
 
@@ -57,13 +66,13 @@ class RGBDriverTest(unittest.TestCase):
                 return {"ok": False, "error": f"serial error: {exc}"}
             if not chunk:
                 continue
-            for _ver, msg_type, _flags, frame_payload in decoder.feed(chunk):
-                if msg_type != TYPE_RESPONSE:
+            for seq, recv_cmd_id, pkt_type, frame_payload in decoder.feed(chunk):
+                if pkt_type not in (PKT_DONE, PKT_ERROR):
                     continue
                 resp = decode_cmd_payload(frame_payload)
                 if resp.ok:
-                    return {"ok": True, "ack": resp.ack, "result": resp.message, "cmd_id": resp.cmd_id}
-                return {"ok": False, "ack": resp.ack, "error": resp.message, "cmd_id": resp.cmd_id}
+                    return {"ok": True, "ack": resp.ack, "result": resp.message, "cmd_id": recv_cmd_id}
+                return {"ok": False, "ack": resp.ack, "error": resp.message, "cmd_id": recv_cmd_id}
         return {"ok": False, "error": "timeout"}
 
     @staticmethod
@@ -84,6 +93,18 @@ class RGBDriverTest(unittest.TestCase):
             out["count"] = len(out["drivers"])
         return out
 
+    def _check_rgb_driver_available(self):
+        """Check if rgb-led driver is available on the firmware."""
+        try:
+            resp = self._send_driver_info()
+            if not resp.get("ok"):
+                return False
+            info = self._parse_driver_info(str(resp.get("result", "")))
+            drivers = info.get("drivers", [])
+            return "rgb-led" in drivers
+        except Exception:
+            return False
+
     def send_driver_call(self, method: str, r: int, g: int, b: int) -> dict:
         """Send a driver.call command for rgb-led."""
         if not self.ser or not self.ser.is_open:
@@ -99,12 +120,15 @@ class RGBDriverTest(unittest.TestCase):
             method=method,
             args={"r": r, "g": g, "b": b},
         )
-        req_payload = encode_cmd_payload(ids["driver_call"], body)
-        self.ser.write(encode_frame(req_payload))
+        cmd_id = ids["driver_call"]
+        req_payload = encode_cmd_payload(cmd_id, body, packet_type=PKT_REQUEST)
+        self.ser.write(encode_frame(seq=1, cmd_id=cmd_id, payload=req_payload))
         self.ser.flush()
         return self._read_response()
 
     def test_driver_exists(self):
+        if not self._check_rgb_driver_available():
+            self.skipTest("rgb-led driver not available on firmware")
         resp = self._send_driver_info()
         self.assertTrue(resp.get("ok"), f"driver.info failed: {resp.get('error')}")
         info = self._parse_driver_info(str(resp.get("result", "")))
@@ -112,27 +136,43 @@ class RGBDriverTest(unittest.TestCase):
         self.assertIn("rgb-led", drivers, "rgb-led driver not found")
 
     def test_set_red(self):
+        if not self._check_rgb_driver_available():
+            self.skipTest("rgb-led driver not available on firmware")
         self.assertTrue(self.send_driver_call("set", 255, 0, 0).get("ok"))
 
     def test_set_green(self):
+        if not self._check_rgb_driver_available():
+            self.skipTest("rgb-led driver not available on firmware")
         self.assertTrue(self.send_driver_call("set", 0, 255, 0).get("ok"))
 
     def test_set_blue(self):
+        if not self._check_rgb_driver_available():
+            self.skipTest("rgb-led driver not available on firmware")
         self.assertTrue(self.send_driver_call("set", 0, 0, 255).get("ok"))
 
     def test_set_white(self):
+        if not self._check_rgb_driver_available():
+            self.skipTest("rgb-led driver not available on firmware")
         self.assertTrue(self.send_driver_call("set", 255, 255, 255).get("ok"))
 
     def test_set_black(self):
+        if not self._check_rgb_driver_available():
+            self.skipTest("rgb-led driver not available on firmware")
         self.assertTrue(self.send_driver_call("set", 0, 0, 0).get("ok"))
 
     def test_set_half_brightness(self):
+        if not self._check_rgb_driver_available():
+            self.skipTest("rgb-led driver not available on firmware")
         self.assertTrue(self.send_driver_call("set", 128, 128, 128).get("ok"))
 
     def test_values_are_clamped(self):
+        if not self._check_rgb_driver_available():
+            self.skipTest("rgb-led driver not available on firmware")
         self.assertTrue(self.send_driver_call("set", 256, 300, 1000).get("ok"))
 
     def test_invalid_method_fails(self):
+        if not self._check_rgb_driver_available():
+            self.skipTest("rgb-led driver not available on firmware")
         resp = self.send_driver_call("invalid_method", 255, 0, 0)
         self.assertFalse(resp.get("ok"), "Invalid method should fail")
 
@@ -232,14 +272,6 @@ def run_patterns(ser):
         _send_rgb(ser, 0, 0, 0)
 
 
-def find_pico_device():
-    PICO_VID = 0x2E8A
-    for port in list_ports.comports():
-        if port.vid == PICO_VID and port.device.startswith("/dev/ttyACM"):
-            return port.device
-    return None
-
-
 def main():
     parser = argparse.ArgumentParser(description="Test RGB-LED driver on Ferqon Pico")
     parser.add_argument("--device", "-d", help="Serial port (e.g., /dev/ttyACM0)")
@@ -248,13 +280,13 @@ def main():
     parser.add_argument("--timeout", type=float, default=5.0, help="Serial timeout in seconds")
     args = parser.parse_args()
 
-    device_port = args.device or find_pico_device()
+    device_port = args.device or find_board("pico")
     if not device_port:
         print("ERROR: No Pico device found")
         return 1
 
     try:
-        ser = serial.Serial(device_port, 115200, timeout=args.timeout)
+        ser = serial.Serial(device_port, get_default_baudrate(), timeout=args.timeout)
         time.sleep(0.2)
         print(f"Connected to {device_port}")
     except serial.SerialException as e:

@@ -7,8 +7,9 @@ device SDK without requiring the full backend package.
 Usage::
 
     from serial_client import connect, Command, Expect
+    from device_config import get_default_device_port, get_default_baudrate
 
-    mcu = connect("/dev/ttyACM0", baudrate=115200)
+    mcu = connect(get_default_device_port(), baudrate=get_default_baudrate())
     resp = mcu.send(Command.PING())
     print(resp.ok, resp.message)
     mcu.close()
@@ -19,6 +20,8 @@ from __future__ import annotations
 import sys
 import threading
 import time
+
+from device_config import get_default_baudrate
 from pathlib import Path
 from typing import Any, Callable
 
@@ -29,15 +32,10 @@ if str(_SDK_HW) not in sys.path:
 
 from ferqon_hw.serial_backend import (  # noqa: E402
     ConnLike,
-    _CMD_IDS,
-    _encode_driver_call,
+    _decode_response,
     _encode_frame,
-    _encode_simple_command,
-    _send_frame,
-    _wait_for_response,
-    MSG_TYPE_REQUEST,
-    PKT_REQUEST,
     open_serial,
+    FerqonSerial,
 )
 
 # ---------------------------------------------------------------------------
@@ -125,24 +123,10 @@ class RuntimeResponse:
 # ---------------------------------------------------------------------------
 
 
-def _encode_echo(message: bytes) -> bytes:
-    cmd_id = _CMD_IDS.get("echo")
-    if cmd_id is None:
-        raise RuntimeError("echo command missing from commands schema")
-    payload = bytearray([cmd_id & 0xFF, (cmd_id >> 8) & 0xFF, PKT_REQUEST, 0])
-    payload.extend(message)
-    return _encode_frame(MSG_TYPE_REQUEST, bytes(payload), flags=0)
-
-
 def _encode(command: Command) -> bytes:
-    ct = command.cmd_type
-    if ct == "driver_call":
-        if command.driver is None or command.method is None:
-            raise ValueError("driver_call requires driver and method")
-        return _encode_driver_call(command.driver, command.method, command.args)
-    if ct == "echo":
-        return _encode_echo(command.args)
-    return _encode_simple_command(ct)
+    """Encode a Command to bytes using the serial_backend."""
+    # Not used anymore - we call send_command directly
+    return b""
 
 
 # ---------------------------------------------------------------------------
@@ -159,45 +143,42 @@ class McuClient:
         self.baudrate = baudrate
         self._lock = threading.Lock()
         self._closed = False
+        # Use FerqonSerial for actual communication
+        self._serial = FerqonSerial(port, baudrate, timeout_s=2.0)
 
     def send(self, command: Command, timeout: float = 2.0, retries: int = 1) -> RuntimeResponse:
         with self._lock:
             if self._closed:
                 raise RuntimeError("McuClient is closed")
-            frame = _encode(command)
-            raw = _send_frame(self._conn, frame, timeout_s=timeout, retries=retries)
-            return RuntimeResponse(
-                cmd_id=int(raw["cmd_id"]),
-                ok=bool(raw["ok"]),
-                ack=bool(raw["ack"]),
-                message=str(raw["message"]),
-            )
 
-    def read_line(self, timeout: float = 2.0) -> RuntimeResponse:
-        with self._lock:
-            if self._closed:
-                raise RuntimeError("McuClient is closed")
-            raw = _wait_for_response(self._conn, timeout_s=timeout)
-            return RuntimeResponse(
-                cmd_id=int(raw["cmd_id"]),
-                ok=bool(raw["ok"]),
-                ack=bool(raw["ack"]),
-                message=str(raw["message"]),
-            )
+            # Map Command to FerqonSerial.call parameters
+            ct = command.cmd_type
+            kwargs = {}
+            if ct == "driver_call":
+                if command.driver is None or command.method is None:
+                    raise ValueError("driver_call requires driver and method")
+                kwargs["driver_name"] = command.driver
+                kwargs["method"] = command.method
+                if command.args:
+                    # Parse args from bytes (format: "key=value;key=value")
+                    args_str = command.args.decode("utf-8")
+                    for pair in args_str.split(";"):
+                        if "=" in pair:
+                            k, v = pair.split("=", 1)
+                            kwargs[k] = v
+            elif ct == "echo":
+                kwargs["payload"] = command.args.decode("utf-8")
+            elif ct == "reboot_bootloader":
+                ct = "reset"
 
-    def expect(self, predicate: Callable[[str], bool], timeout: float = 5.0) -> RuntimeResponse:
-        deadline = time.time() + timeout
-        while time.time() < deadline:
-            remaining = deadline - time.time()
-            if remaining <= 0:
-                break
-            try:
-                resp = self.read_line(timeout=min(remaining, 1.0))
-                if predicate(resp.message):
-                    return resp
-            except RuntimeError:
-                continue
-        raise HilTimeoutError(f"expect() timed out after {timeout}s")
+            # Call FerqonSerial.call
+            raw = self._serial.call(ct, **kwargs)
+            return RuntimeResponse(
+                cmd_id=int(raw.get("cmd_id", 0)),
+                ok=bool(raw.get("ok", False)),
+                ack=bool(raw.get("ack", False)),
+                message=str(raw.get("message", "")),
+            )
 
     def close(self) -> None:
         with self._lock:
@@ -209,7 +190,9 @@ class McuClient:
                     pass
 
 
-def connect(port: str, baudrate: int = 115200, timeout: float = 2.0) -> McuClient:
+def connect(port: str, baudrate: int | None = None, timeout: float = 2.0) -> McuClient:
     """Open a serial connection and return an McuClient."""
+    if baudrate is None:
+        baudrate = get_default_baudrate()
     conn = open_serial(port, baud=baudrate, timeout_s=timeout)
     return McuClient(conn, port=port, baudrate=baudrate)

@@ -8,7 +8,7 @@ from pathlib import Path
 
 # Add hw_sdk to path (relative to repo root)
 repo_root = Path(__file__).parent.parent.parent
-hw_sdk = repo_root / "hw_sdk" / "ferqon_hw"
+hw_sdk = repo_root / "packages" / "hw-sdk" / "ferqon_hw"
 if str(hw_sdk) not in sys.path:
     sys.path.insert(0, str(hw_sdk))
 
@@ -18,14 +18,16 @@ if str(tools_dir) not in sys.path:
     sys.path.insert(0, str(tools_dir))
 
 from serial_client import connect, Command
+from device_config import get_default_device_port, get_default_baudrate
+from device_discovery import find_board
 
 def test_pico():
     """Test Pico firmware via serial."""
-    port = "/dev/ttyACM0"
+    port = find_board("pico") or get_default_device_port()
 
     try:
         print(f"Connecting to {port}...")
-        mcu = connect(port, baudrate=115200)
+        mcu = connect(port, baudrate=get_default_baudrate())
         print("Connected!")
 
         # Test ping

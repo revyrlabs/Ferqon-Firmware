@@ -10,6 +10,8 @@ import serial
 import time
 import struct
 
+from device_config import get_default_device_port, get_default_baudrate
+
 # Protocol constants from ferqon_commands.h
 FERQON_START_BYTE = 0xAB
 FERQON_CMD_PING = 9
@@ -54,8 +56,12 @@ def build_frame(seq, cmd_id, payload=b''):
     frame = bytes([FERQON_START_BYTE]) + crc_data + bytes([crc & 0xFF, (crc >> 8) & 0xFF])
     return frame
 
-def test_firmware(port="/dev/ttyACM0", baudrate=115200):
+def test_firmware(port=None, baudrate=None):
     """Test basic firmware commands over serial."""
+    if port is None:
+        port = get_default_device_port()
+    if baudrate is None:
+        baudrate = get_default_baudrate()
     print(f"Testing firmware on {port} at {baudrate} baud")
     
     try:

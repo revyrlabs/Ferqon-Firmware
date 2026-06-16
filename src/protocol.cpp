@@ -60,11 +60,12 @@ static void ferqon_send_frame(uint8_t seq, uint8_t cmd_id,
 void ferqon_send_done(uint8_t seq, uint8_t cmd_id,
                     const uint8_t *body, uint8_t body_len) {
     uint8_t scratch[FERQON_MAX_PAYLOAD_BYTES];
+    memset(scratch, 0, sizeof(scratch));  // Initialize to prevent garbage data
     if ((size_t)body_len + 1 > sizeof(scratch)) {
         /* Caller asked to return more than the wire can hold — truncate safely. */
         body_len = (uint8_t)(sizeof(scratch) - 1);
     }
-    scratch[0] = 3;  /* FERQON_PKT_DONE = 3, hardcoded to ensure correct value */
+    scratch[0] = FERQON_PKT_DONE;
     if (body_len > 0 && body != NULL) {
         memcpy(&scratch[1], body, body_len);
     }

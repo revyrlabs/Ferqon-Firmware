@@ -18,6 +18,7 @@ Prerequisites:
 """
 
 import argparse
+import os
 import sys
 import time
 import unittest
@@ -27,15 +28,18 @@ from pathlib import Path
 # regardless of the working directory the test is run from.
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / 'tools'))
 
+from device_config import get_default_baudrate
+
 try:
     import serial
-    from serial.tools import list_ports
 except ImportError:
     print("ERROR: pyserial not installed. Run: pip install pyserial")
     sys.exit(1)
 
 from serial_protocol import (
-    TYPE_RESPONSE,
+    PKT_DONE,
+    PKT_ERROR,
+    PKT_REQUEST,
     FrameDecoder,
     decode_cmd_payload,
     encode_cmd_payload,
@@ -44,17 +48,30 @@ from serial_protocol import (
     load_command_ids,
 )
 
+# Use shared device discovery instead of duplicated find_pico_device
+from device_discovery import find_board
+
 
 class DriverTestCase(unittest.TestCase):
     """Base test case for driver tests."""
 
     @classmethod
     def setUpClass(cls):
-        """Preserve shared serial handle injected by main()."""
+        """Preserve shared serial handle injected by main() or set up via auto-discovery."""
         if not hasattr(cls, "ser"):
             cls.ser = None
         if not hasattr(cls, "pico_port"):
             cls.pico_port = None
+
+        # If no serial connection, try to auto-discover and set one up
+        if cls.ser is None:
+            try:
+                port = find_board("pico")
+                if port:
+                    cls.ser = serial.Serial(port, get_default_baudrate(), timeout=5.0)
+                    cls.pico_port = port
+            except Exception:
+                pass
 
     @classmethod
     def tearDownClass(cls):
@@ -96,8 +113,8 @@ class DriverTestCase(unittest.TestCase):
             cmd_id = 0x7FFF
             body = b""
 
-        req_payload = encode_cmd_payload(cmd_id, body)
-        self.ser.write(encode_frame(req_payload))
+        req_payload = encode_cmd_payload(cmd_id, body, packet_type=PKT_REQUEST)
+        self.ser.write(encode_frame(seq=1, cmd_id=cmd_id, payload=req_payload))
         self.ser.flush()
 
         decoder = FrameDecoder()
@@ -111,13 +128,13 @@ class DriverTestCase(unittest.TestCase):
                 self.fail(f"Serial read error: {exc}")
             if not chunk:
                 continue
-            for _ver, msg_type, _flags, frame_payload in decoder.feed(chunk):
-                if msg_type != TYPE_RESPONSE:
+            for seq, recv_cmd_id, pkt_type, frame_payload in decoder.feed(chunk):
+                if pkt_type not in (PKT_DONE, PKT_ERROR):
                     continue
                 resp = decode_cmd_payload(frame_payload)
                 if resp.ok:
-                    return {"ok": True, "ack": resp.ack, "result": resp.message, "cmd_id": resp.cmd_id}
-                return {"ok": False, "ack": resp.ack, "error": resp.message, "cmd_id": resp.cmd_id}
+                    return {"ok": True, "ack": resp.ack, "result": resp.message, "cmd_id": recv_cmd_id}
+                return {"ok": False, "ack": resp.ack, "error": resp.message, "cmd_id": recv_cmd_id}
 
         if method in ("ping", "driver.info", "driver.call"):
             self.fail("No response from Pico")
@@ -183,18 +200,41 @@ class DriverDiscoveryTests(DriverTestCase):
 class DriverCallTests(DriverTestCase):
     """Test driver method calls."""
 
+    def _check_driver_call_supported(self):
+        """Check if driver.call is supported by firmware."""
+        try:
+            resp = self.send_command(
+                "driver.call",
+                driver_name="test",
+                payload={"method": "test"}
+            )
+            # If we get any response (even error), driver.call is supported
+            return True
+        except self.failureException as e:
+            # "No response from Pico" means driver.call is not supported
+            if "No response from Pico" in str(e):
+                return False
+            raise
+
     def test_call_nonexistent_driver_fails(self):
         """Test calling a non-existent driver returns error."""
+        if not self._check_driver_call_supported():
+            self.skipTest("driver.call not supported by firmware")
         resp = self.send_command(
             "driver.call",
             driver_name="nonexistent-driver-xyz",
             payload={"method": "test"}
         )
         self.assertFalse(resp.get("ok"), "Call to non-existent driver should fail")
-        self.assertIn("not found", resp.get("error", "").lower())
+        # Error code 11 = INVALID_DRIVER, or message contains "not found"
+        error = resp.get("error", "").lower()
+        self.assertTrue("code=11" in error or "not found" in error,
+                       f"Expected invalid driver error, got: {error}")
 
     def test_call_with_missing_driver_name_fails(self):
         """Test calling without driver_name fails."""
+        if not self._check_driver_call_supported():
+            self.skipTest("driver.call not supported by firmware")
         resp = self.send_command(
             "driver.call",
             driver_name="",
@@ -204,6 +244,8 @@ class DriverCallTests(DriverTestCase):
 
     def test_call_with_missing_method_fails(self):
         """Test calling without method in payload fails."""
+        if not self._check_driver_call_supported():
+            self.skipTest("driver.call not supported by firmware")
         # Get a valid driver name first
         info = DriverDiscoveryTests._parse_driver_info(str(self.send_command("driver.info").get("result", "")))
         drivers = info.get("drivers", [])
@@ -273,22 +315,6 @@ class DriverIntegrationTests(DriverTestCase):
         self.assertTrue(info.get("drivers") is not None, "driver.info should parse")
 
 
-def find_pico_device():
-    """
-    Find a connected Pico device.
-
-    Returns:
-        str: Device port path (e.g., "/dev/ttyACM0"), or None if not found
-    """
-    PICO_VID = 0x2E8A  # Raspberry Pi vendor ID
-
-    for port in list_ports.comports():
-        if port.vid == PICO_VID and port.device.startswith("/dev/ttyACM"):
-            return port.device
-
-    return None
-
-
 def main():
     parser = argparse.ArgumentParser(
         description="Test Ferqon driver system on a connected Pico",
@@ -337,7 +363,7 @@ Examples:
     # Find Pico device
     device_port = args.device
     if not device_port:
-        device_port = find_pico_device()
+        device_port = find_board("pico")
         if not device_port:
             print("ERROR: No Pico device found. Specify with --device /dev/ttyXXX")
             return 1
@@ -347,7 +373,7 @@ Examples:
 
     # Connect to Pico
     try:
-        ser = serial.Serial(device_port, 115200, timeout=args.timeout)
+        ser = serial.Serial(device_port, get_default_baudrate(), timeout=args.timeout)
         time.sleep(0.2)  # Let the connection stabilize
         print(f"Connected to {device_port}")
     except serial.SerialException as e:

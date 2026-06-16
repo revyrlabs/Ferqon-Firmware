@@ -31,10 +31,7 @@ static bool device_info_handler(uint8_t seq, uint8_t cmd_id,
                                 const uint8_t *params, uint8_t param_len,
                                 uint8_t *response, uint8_t *response_len,
                                 bool *already_responded) {
-    (void)seq; (void)cmd_id; (void)params; (void)param_len;
-
-    /* Set already_responded to true to prevent dispatcher from calling ferqon_send_done */
-    *already_responded = true;
+    (void)seq; (void)cmd_id; (void)params; (void)param_len; (void)already_responded;
 
     uint8_t i = 0;
     i += append_str_tlv(&response[i], TLV_DEVICE_NAME,      "pico");
@@ -55,10 +52,6 @@ static bool device_info_handler(uint8_t seq, uint8_t cmd_id,
     i += 18;
 
     *response_len = i;
-    
-    /* Call ferqon_send_done directly with the response */
-    ferqon_send_done(seq, cmd_id, response, i);
-    
     return true;
 }
 

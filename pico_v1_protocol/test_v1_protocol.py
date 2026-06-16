@@ -7,6 +7,14 @@ Tests basic communication with the flashed v1 firmware using binary protocol.
 import serial
 import time
 import sys
+from pathlib import Path
+
+# Add tools to path for device_config
+tools_dir = Path(__file__).resolve().parent.parent / "tools"
+if str(tools_dir) not in sys.path:
+    sys.path.insert(0, str(tools_dir))
+
+from device_config import get_default_device_port, get_default_baudrate
 
 # Ferqon v1 protocol constants
 FERQON_START_BYTE = 0xAB
@@ -71,8 +79,12 @@ def parse_response(data):
         'checksum': checksum
     }
 
-def test_v1_protocol(port="/dev/ttyACM0", baudrate=115200):
+def test_v1_protocol(port=None, baudrate=None):
     """Test v1 protocol communication with Pico."""
+    if port is None:
+        port = get_default_device_port()
+    if baudrate is None:
+        baudrate = get_default_baudrate()
     try:
         print(f"Connecting to {port} at {baudrate} baud...")
         ser = serial.Serial(port, baudrate, timeout=2.0)

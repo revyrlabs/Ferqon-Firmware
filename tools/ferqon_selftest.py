@@ -18,6 +18,8 @@ import sys
 import time
 from dataclasses import dataclass, field
 from enum import Enum
+
+from device_config import get_default_baudrate
 from pathlib import Path
 from typing import Any
 
@@ -175,9 +177,9 @@ class Transport:
 class SerialTransport(Transport):
     """Real serial port transport."""
 
-    def __init__(self, port: str, baudrate: int = 115200):
+    def __init__(self, port: str, baudrate: int | None = None):
         self.port = port
-        self.baudrate = baudrate
+        self.baudrate = baudrate if baudrate is not None else get_default_baudrate()
         self._conn = None
 
     def connect(self) -> None:
