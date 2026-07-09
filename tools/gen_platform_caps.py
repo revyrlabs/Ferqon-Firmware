@@ -738,7 +738,9 @@ def generate_for_board(
         existing_descriptor_path = output_dir / "device_descriptor.h"
         if existing_descriptor_path.exists():
             if existing_descriptor_path.read_text() != generated_descriptor_h:
-                print(f"CHECK FAIL: {board_name}/device_descriptor.h needs regeneration")
+                print(
+                    f"CHECK FAIL: {board_name}/device_descriptor.h needs regeneration"
+                )
                 changes = True
         else:
             print(f"CHECK FAIL: {board_name}/device_descriptor.h does not exist")
