@@ -8,7 +8,8 @@ Ferqon firmware is designed as a portable command processor that can run on many
 src/                       Portable core code
   protocol.cpp             Frame parsing, CRC, response emission
   dispatcher.cpp           Command dispatch to registered drivers
-  drivers/                 Command handlers (ping, echo, gpio, ...)
+  ping.cpp / echo.cpp      Command handlers (one per driver)
+  gpio.cpp / adc.cpp       Hardware-agnostic driver implementations
   app_state.cpp            Runtime state and last-error tracking
   ferqon_log.cpp           Debug logging
 

@@ -79,11 +79,11 @@ selftest:
 		echo "Error: PORT variable required (e.g., PORT=/dev/ttyACM0)"; \
 		exit 1; \
 	fi
-	python3 tools/ferqon_selftest.py --port $(PORT)
+	python3 tests/hil/ferqon_selftest.py --port $(PORT)
 
 selftest-emu:
 	@echo "Running self-test on emulator..."
-	python3 tools/ferqon_selftest.py --emulator
+	python3 tests/hil/ferqon_selftest.py --emulator
 
 # Identify target
 identify:
@@ -113,7 +113,7 @@ flash-and-test:
 	@echo "Waiting for device to enumerate..."
 	sleep 3
 	@echo "Running self-test..."
-	python3 tools/ferqon_selftest.py --port $(PORT)
+	python3 tests/hil/ferqon_selftest.py --port $(PORT)
 	@echo "Identifying device..."
 	python3 tools/ferqonfw/ferqonfw identify --port $(PORT)
 
@@ -146,7 +146,7 @@ emu-test:
 		exit 1; \
 	fi
 	@echo "Running self-test on emulator at $$(cat $(EMU_PORT_FILE))..."
-	@python3 tools/ferqon_selftest.py --port $$(cat $(EMU_PORT_FILE))
+	@python3 tests/hil/ferqon_selftest.py --port $$(cat $(EMU_PORT_FILE))
 
 emu-identify:
 	@if [ ! -f $(EMU_PORT_FILE) ]; then \

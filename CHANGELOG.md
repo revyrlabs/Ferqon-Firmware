@@ -9,18 +9,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - OSS restructure as Apache-2.0 licensed submodule
-- YAML-based board definition system
-- Capability gating with runtime validation
-- Protocol subsystem with state machines
-- CI pipeline with generator drift detection
+- YAML-based board definition system (single source of truth)
+- Capability gating via generated `ferqon_cap_*()` helpers
+- Protocol subsystem with frame-based serial parser
+- CI pipeline with generator drift detection and build matrix
+- Native unit tests with Unity
 
 ### Changed
-- Moved `drivers/` under `src/drivers/`
-- Renamed `hil_configs/` to `examples/`
-- Archived legacy CommandParser/IOController to `legacy/`
+- `src/` now contains all portable command handlers and drivers
+- `examples/` now contains HIL example scripts
+- `tests/hil/` now contains hardware-in-the-loop test helpers
 
 ### Deprecated
 - JSON board definitions (use YAML `board.yml` instead)
+- `board_defs/` directory removed in favor of `platforms/<board>/board.yml`
+
+### Removed
+- Legacy `device_channels.c` generated artifact
+- `board_defs/` deprecated JSON board definitions
 
 ## [1.0.0] - 2024-08-01
 

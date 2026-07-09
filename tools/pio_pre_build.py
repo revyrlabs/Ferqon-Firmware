@@ -19,6 +19,7 @@ Environment variables from PlatformIO:
 """
 
 import os
+import shutil
 import sys
 import yaml
 import subprocess
@@ -155,7 +156,6 @@ def run_gen_platform_caps(firmware_dir: Path, board_data: dict) -> bool:
         src = board_generated_dir / header
         dst = root_generated_dir / header
         if src.exists():
-            import shutil
             shutil.copy2(src, dst)
             print(f"Copied {src} -> {dst}")
 
@@ -226,5 +226,6 @@ def main():
     return 0
 
 
-if __name__ == "__main__":
-    sys.exit(main())
+# Execute at module load when used as a PlatformIO extra script, and also when
+# run standalone as a normal Python script.
+main()
