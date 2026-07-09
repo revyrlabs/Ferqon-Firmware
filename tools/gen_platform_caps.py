@@ -314,9 +314,9 @@ def generate_device_channels_c(board: Dict[str, Any]) -> str:
     adc_resolution = adc_config.get("resolution_bits", 12)
     if adc_pins:
         lines.append("    // ADC channels")
-        for pin in adc_pins:
+        for idx, pin in enumerate(adc_pins):
             lines.append("    {")
-            lines.append(f'        .name = "ADC{pin - min(adc_pins)}",')
+            lines.append(f'        .name = "ADC{idx}",')
             lines.append("        .type = FERQON_CHAN_ADC,")
             lines.append("        .direction = FERQON_DIR_INPUT,")
             lines.append(f"        .pin_start = {pin},")

@@ -40,6 +40,7 @@ def cmd_gen(args) -> int:
         gen_script = _TOOLS_DIR / "gen_protocol.py"
         result = subprocess.run([sys.executable, str(gen_script)], capture_output=False)
         if result.returncode != 0:
+            print(f"Error: gen_protocol.py exited with code {result.returncode}")
             return result.returncode
 
         # Emit errors.h from the separate errors SSOT if present
@@ -70,7 +71,10 @@ def cmd_gen(args) -> int:
             capture_output=False,
         )
         if result.returncode != 0:
-            print(f"Error: failed to generate capability tables for {platform}")
+            print(
+                f"Error: gen_platform_caps.py exited with code {result.returncode} "
+                f"for platform '{platform}'"
+            )
             return result.returncode
 
         print(f"Generated capability tables for {platform}")
@@ -85,13 +89,15 @@ def cmd_gen(args) -> int:
             capture_output=False,
         )
         if result.returncode != 0:
-            print("Error: failed to generate all board capability tables")
+            print(
+                f"Error: gen_platform_caps.py --all exited with code {result.returncode}"
+            )
             return result.returncode
 
         gen_script = _TOOLS_DIR / "gen_protocol.py"
         result = subprocess.run([sys.executable, str(gen_script)], capture_output=False)
         if result.returncode != 0:
-            print("Error: failed to generate protocol headers")
+            print(f"Error: gen_protocol.py exited with code {result.returncode}")
             return result.returncode
 
         # Emit errors.h from the separate errors SSOT if present

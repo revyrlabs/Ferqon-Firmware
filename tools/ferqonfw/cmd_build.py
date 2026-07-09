@@ -71,7 +71,7 @@ def cmd_build(args) -> int:
     gen_args = GenBoardArgs(board_name)
     gen_rc = cmd_gen(gen_args)
     if gen_rc != 0:
-        print(f"Error: generation failed for {board_name}")
+        print(f"Error: generation failed for {board_name} (exit code {gen_rc})")
         return gen_rc
     print()
 
