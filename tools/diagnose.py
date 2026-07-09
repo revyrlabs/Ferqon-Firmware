@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: Apache-2.0
-# SPDX-FileCopyrightText: Copyright (c) 2024-2026 Revyr Labs
+# SPDX-FileCopyrightText: Copyright (c) 2026 Revyr Labs
 """Quick diagnostic test for Pico communication (raw-byte protocol)."""
 
 import json

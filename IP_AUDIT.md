@@ -59,8 +59,8 @@ The project has a consistent licensing foundation (Apache-2.0 declared in `LICEN
 
 **Status:** Remediated.
 
-- Root files (`LICENSE`, `NOTICE`) contain `Copyright 2024-2026 Revyr Labs`.
-- Every first-party source file contains `SPDX-FileCopyrightText: Copyright (c) 2024-2026 Revyr Labs`.
+- Root files (`LICENSE`, `NOTICE`) contain `Copyright 2026 Revyr Labs`.
+- Every first-party source file contains `SPDX-FileCopyrightText: Copyright (c) 2026 Revyr Labs`.
 - No placeholder/TODO author names or foreign copyrights found in first-party code.
 
 ---

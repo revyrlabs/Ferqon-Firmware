@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-# SPDX-FileCopyrightText: Copyright (c) 2024-2026 Revyr Labs
+# SPDX-FileCopyrightText: Copyright (c) 2026 Revyr Labs
 # Ferqon board definition — STM32F4 Discovery
 board: stm32f4
 display_name: "STM32F4 Discovery"

@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: Apache-2.0 */
-/* SPDX-FileCopyrightText: Copyright (c) 2024-2026 Revyr Labs */
+/* SPDX-FileCopyrightText: Copyright (c) 2026 Revyr Labs */
 /* Application state machine and last-error tracking. */
 #include "app_state.h"
 #include "ferqon_log.h"

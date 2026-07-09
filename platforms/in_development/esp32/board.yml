@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-# SPDX-FileCopyrightText: Copyright (c) 2024-2026 Revyr Labs
+# SPDX-FileCopyrightText: Copyright (c) 2026 Revyr Labs
 # Ferqon board definition — ESP32
 board: esp32
 display_name: "ESP32 DevKit"

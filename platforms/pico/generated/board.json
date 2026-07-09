@@ -213,5 +213,5 @@
   "firmware_version": "1.0.0",
   "notes": "Pins 23 and 24 are not broken out on the standard Pico board.\nPin 25 drives the onboard LED.\n",
   "_license": "Apache-2.0",
-  "_copyright": "SPDX-FileCopyrightText: Copyright (c) 2024-2026 Revyr Labs"
+  "_copyright": "SPDX-FileCopyrightText: Copyright (c) 2026 Revyr Labs"
 }

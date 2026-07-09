@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-# SPDX-FileCopyrightText: Copyright (c) 2024-2026 Revyr Labs
+# SPDX-FileCopyrightText: Copyright (c) 2026 Revyr Labs
 """Simple HIL test: basic echo communication verification.
 
 This is the simplest test to verify MCU communication works.

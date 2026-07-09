@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: Apache-2.0 */
-/* SPDX-FileCopyrightText: Copyright (c) 2024-2026 Revyr Labs */
+/* SPDX-FileCopyrightText: Copyright (c) 2026 Revyr Labs */
 #include "dispatcher.h"
 
 static bool ping_handler(uint8_t seq, uint8_t cmd_id,

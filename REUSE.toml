@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-# SPDX-FileCopyrightText: Copyright (c) 2024-2026 Revyr Labs
+# SPDX-FileCopyrightText: Copyright (c) 2026 Revyr Labs
 
 version = 1
 
@@ -9,24 +9,24 @@ version = 1
 [[annotations]]
 path = "**/*.md"
 SPDX-License-Identifier = "Apache-2.0"
-SPDX-FileCopyrightText = "Copyright (c) 2024-2026 Revyr Labs"
+SPDX-FileCopyrightText = "Copyright (c) 2026 Revyr Labs"
 
 [[annotations]]
 path = "NOTICE"
 SPDX-License-Identifier = "Apache-2.0"
-SPDX-FileCopyrightText = "Copyright (c) 2024-2026 Revyr Labs"
+SPDX-FileCopyrightText = "Copyright (c) 2026 Revyr Labs"
 
 [[annotations]]
 path = "protocol/ssot/commands.json"
 SPDX-License-Identifier = "Apache-2.0"
-SPDX-FileCopyrightText = "Copyright (c) 2024-2026 Revyr Labs"
+SPDX-FileCopyrightText = "Copyright (c) 2026 Revyr Labs"
 
 [[annotations]]
 path = "tools/schemas/*.schema.json"
 SPDX-License-Identifier = "Apache-2.0"
-SPDX-FileCopyrightText = "Copyright (c) 2024-2026 Revyr Labs"
+SPDX-FileCopyrightText = "Copyright (c) 2026 Revyr Labs"
 
 [[annotations]]
 path = "platforms/*/generated/*.json"
 SPDX-License-Identifier = "Apache-2.0"
-SPDX-FileCopyrightText = "Copyright (c) 2024-2026 Revyr Labs"
+SPDX-FileCopyrightText = "Copyright (c) 2026 Revyr Labs"

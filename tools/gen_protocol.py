@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: Apache-2.0
-# SPDX-FileCopyrightText: Copyright (c) 2024-2026 Revyr Labs
+# SPDX-FileCopyrightText: Copyright (c) 2026 Revyr Labs
 """
 gen_protocol.py
 ---------------
@@ -54,7 +54,7 @@ OUTPUTS: dict[str, Path] = {
 
 _REGEN_NOTICE = "python3 firmware/tools/gen_protocol.py"
 
-COPYRIGHT = "SPDX-FileCopyrightText: Copyright (c) 2024-2026 Revyr Labs"
+COPYRIGHT = "SPDX-FileCopyrightText: Copyright (c) 2026 Revyr Labs"
 SPDX_LICENSE = "SPDX-License-Identifier: Apache-2.0"
 
 

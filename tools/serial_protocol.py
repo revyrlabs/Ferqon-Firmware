@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: Apache-2.0
-# SPDX-FileCopyrightText: Copyright (c) 2024-2026 Revyr Labs
+# SPDX-FileCopyrightText: Copyright (c) 2026 Revyr Labs
 """Raw-byte framed serial client for Ferqon Pico runtime.
 
 This helper centralizes command encoding/decoding for the Ferqon protocol.
