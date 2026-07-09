@@ -226,6 +226,17 @@ def main():
     return 0
 
 
-# Execute at module load when used as a PlatformIO extra script, and also when
-# run standalone as a normal Python script.
-main()
+# Run as a PlatformIO pre-build hook (imported by SCons) or as a standalone
+# script. When imported by SCons, __name__ is not __main__ and env is available
+# via Import("env"); execute the pre-build logic once. When run standalone,
+# guard with if __name__ == "__main__" so the script can be imported without
+# side effects.
+if __name__ == "__main__":
+    sys.exit(main())
+else:
+    try:
+        Import("env")
+    except NameError:
+        pass
+    else:
+        main()
