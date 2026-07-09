@@ -43,7 +43,7 @@ clean:
 # Upload to board (requires board-specific target)
 upload-pico:
 	@echo "Uploading to Raspberry Pi Pico..."
-	pio run -e pico -t upload
+	pio run -e pico_arduino -t upload
 
 upload-esp32:
 	@echo "Uploading to ESP32..."
@@ -99,7 +99,7 @@ identify:
 flash-and-test:
 	@echo "Flash and test workflow..."
 	@if [ -z "$(BOARD)" ]; then \
-		echo "Error: BOARD variable required (e.g., BOARD=pico)"; \
+		echo "Error: BOARD variable required (e.g., BOARD=pico_arduino)"; \
 		exit 1; \
 	fi
 	@if [ -z "$(PORT)" ]; then \
@@ -186,7 +186,7 @@ help:
 	@echo "  make selftest PORT=/dev/ttyACM0   - Run self-test on device"
 	@echo "  make selftest-emu                 - Run self-test on emulator (in-process)"
 	@echo "  make identify PORT=/dev/ttyACM0   - Detect Ferqon firmware on device"
-	@echo "  make flash-and-test BOARD=pico PORT=/dev/ttyACM0 - Build, flash, test, identify"
+	@echo "  make flash-and-test BOARD=pico_arduino PORT=/dev/ttyACM0 - Build, flash, test, identify"
 	@echo ""
 	@echo "Emulator (PTY mode - acts like real serial port):"
 	@echo "  make emu-start   - Start emulator in PTY mode (creates virtual serial port)"
@@ -196,4 +196,4 @@ help:
 	@echo ""
 	@echo "Direct pio commands also work:"
 	@echo "  pio run -e <board>   - Build for specific board"
-	@echo "  pio run               - Build for default board (pico)"
+	@echo "  pio run               - Build for default board (pico_arduino)"
