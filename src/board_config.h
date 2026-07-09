@@ -1,3 +1,5 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+/* SPDX-FileCopyrightText: Copyright (c) 2024-2026 Revyr Labs */
 /**
  * board_config.h
  * --------------
@@ -30,6 +32,7 @@
 #if defined(FERQON_BOARD_PICO) || defined(FERQON_BOARD_RP2040)
     /* Raspberry Pi Pico / RP2040 */
     #define FERQON_PIN_MAX 29
+    #define FERQON_LED_PIN 25
     #define FERQON_ADC_CHANNEL_MAX 3
     #define FERQON_ADC_BASE_PIN 26
     #define FERQON_ADC_VREF_MV 3300
@@ -39,6 +42,7 @@
 #elif defined(FERQON_BOARD_ESP32)
     /* ESP32 */
     #define FERQON_PIN_MAX 39
+    #define FERQON_LED_PIN 2
     #define FERQON_ADC_CHANNEL_MAX 6
     #define FERQON_ADC_BASE_PIN 32
     #define FERQON_ADC_VREF_MV 3300
@@ -48,6 +52,7 @@
 #elif defined(FERQON_BOARD_ESP32S3)
     /* ESP32-S3 */
     #define FERQON_PIN_MAX 48
+    #define FERQON_LED_PIN 2
     #define FERQON_ADC_CHANNEL_MAX 10
     #define FERQON_ADC_BASE_PIN 32
     #define FERQON_ADC_VREF_MV 3300
@@ -57,6 +62,7 @@
 #elif defined(FERQON_BOARD_STM32F4)
     /* STM32F4 - use conservative default, can be overridden */
     #define FERQON_PIN_MAX 50
+    #define FERQON_LED_PIN 13
     #define FERQON_ADC_CHANNEL_MAX 16
     #define FERQON_ADC_BASE_PIN 0
     #define FERQON_ADC_VREF_MV 3300
@@ -66,6 +72,7 @@
 #elif defined(FERQON_BOARD_STM32F7)
     /* STM32F7 - use conservative default, can be overridden */
     #define FERQON_PIN_MAX 50
+    #define FERQON_LED_PIN 13
     #define FERQON_ADC_CHANNEL_MAX 16
     #define FERQON_ADC_BASE_PIN 0
     #define FERQON_ADC_VREF_MV 3300
@@ -75,6 +82,7 @@
 #elif defined(FERQON_BOARD_TEENSY40)
     /* Teensy 4.0 */
     #define FERQON_PIN_MAX 40
+    #define FERQON_LED_PIN 13
     #define FERQON_ADC_CHANNEL_MAX 14
     #define FERQON_ADC_BASE_PIN 14
     #define FERQON_ADC_VREF_MV 3300
@@ -84,6 +92,7 @@
 #elif defined(FERQON_BOARD_TEENSY41)
     /* Teensy 4.1 */
     #define FERQON_PIN_MAX 55
+    #define FERQON_LED_PIN 13
     #define FERQON_ADC_CHANNEL_MAX 14
     #define FERQON_ADC_BASE_PIN 14
     #define FERQON_ADC_VREF_MV 3300

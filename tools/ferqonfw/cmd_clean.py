@@ -1,10 +1,11 @@
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: Copyright (c) 2024-2026 Revyr Labs
 """
 cmd_clean.py
 ------------
 Clean command for ferqonfw CLI - wraps PlatformIO clean.
 """
 
-from typing import Any, Dict
 
 from ferqonfw.board_loader import (
     get_board_pio_env,

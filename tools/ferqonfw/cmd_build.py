@@ -1,11 +1,11 @@
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: Copyright (c) 2024-2026 Revyr Labs
 """
 cmd_build.py
 ------------
 Build command for ferqonfw CLI - wraps PlatformIO.
 """
 
-import sys
-from typing import Any, Dict
 
 from ferqonfw.board_loader import (
     get_board_pio_env,
@@ -16,12 +16,22 @@ from ferqonfw.board_loader import (
     load_board,
 )
 from ferqonfw.cmd_validate import cmd_validate
+from ferqonfw.cmd_gen import cmd_gen
 
 
 class ValidateArgs:
     """Mock args for validate command."""
+
     def __init__(self):
         self.json = False
+
+
+class GenBoardArgs:
+    """Mock args for gen board command."""
+
+    def __init__(self, platform: str):
+        self.gen_target = "board"
+        self.platform = platform
 
 
 def cmd_build(args) -> int:
@@ -56,9 +66,13 @@ def cmd_build(args) -> int:
     print("SSOT validation passed")
     print()
 
-    # TODO: Call ferqonfw gen board to generate per-board tables
-    # For now, skip this step as it's not yet implemented
-    print("TODO: ferqonfw gen board <platform> (not yet implemented)")
+    # Generate per-board capability tables before building
+    print(f"Generating per-board tables for {board_name}...")
+    gen_args = GenBoardArgs(board_name)
+    gen_rc = cmd_gen(gen_args)
+    if gen_rc != 0:
+        print(f"Error: generation failed for {board_name}")
+        return gen_rc
     print()
 
     print(f"Running: pio run -e {pio_env}")

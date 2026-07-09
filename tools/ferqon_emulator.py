@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: Copyright (c) 2024-2026 Revyr Labs
 """Software Ferqon firmware emulator for CI and no-hardware testing.
 
 Pure class with no import-time side effects. Implements the framed
@@ -25,7 +27,6 @@ import logging
 import os
 import pty
 import select
-import struct
 import threading
 import time
 from dataclasses import dataclass
@@ -36,33 +37,57 @@ from typing import Any
 _DEFAULT_EMPTY_STRING = b""
 _DEFAULT_ZERO = 0
 
+
 # Load SSOT
 def _load_commands_json() -> dict[str, Any]:
     """Load commands.json SSOT from multiple possible locations."""
     candidates = [
         Path(__file__).parent.parent / "protocol" / "ssot" / "commands.json",
-        Path(__file__).parent.parent.parent / "sandbox" / "protocol_sdk" / "sdk" / "serial" / "commands.json",
+        Path(__file__).parent.parent.parent
+        / "sandbox"
+        / "protocol_sdk"
+        / "sdk"
+        / "serial"
+        / "commands.json",
         Path("/app/protocol_sdk/sdk/serial/commands.json"),
     ]
     for p in candidates:
         if p.exists():
-            with open(p) as f:
+            with open(p, encoding="utf-8") as f:
                 return json.load(f)
     # Fallback to minimal defaults
     return {
         "frame": {"start_byte": 171, "crc_poly": 4129, "crc_init": 65535},
         "tlv_types": {
-            "DEVICE_NAME": 1, "MCU_TYPE": 2, "FIRMWARE_VERSION": 3,
-            "PROTOCOL_VERSION": 4, "BUILD_TIMESTAMP": 5, "FREE_RAM": 8,
-            "UPTIME_MS": 9, "FERQON_SIGNATURE": 16, "DRIVER": 1,
-            "COMMAND": 2, "VERSION": 4
+            "DEVICE_NAME": 1,
+            "MCU_TYPE": 2,
+            "FIRMWARE_VERSION": 3,
+            "PROTOCOL_VERSION": 4,
+            "BUILD_TIMESTAMP": 5,
+            "FREE_RAM": 8,
+            "UPTIME_MS": 9,
+            "FERQON_SIGNATURE": 16,
+            "DRIVER": 1,
+            "COMMAND": 2,
+            "VERSION": 4,
         },
-        "ferqon_signature": {"magic": "FERQON", "vendor": "revyrlabs", "capability_version": 1},
-        "commands": {"ping": {"id": 9}, "echo": {"id": 8}, "driver_info": {"id": 2},
-                     "device_info": {"id": 11}, "capabilities": {"id": 12},
-                     "gpio_read": {"id": 16}, "gpio_write": {"id": 17}},
+        "ferqon_signature": {
+            "magic": "FERQON",
+            "vendor": "revyrlabs",
+            "capability_version": 1,
+        },
+        "commands": {
+            "ping": {"id": 9},
+            "echo": {"id": 8},
+            "driver_info": {"id": 2},
+            "device_info": {"id": 11},
+            "capabilities": {"id": 12},
+            "gpio_read": {"id": 16},
+            "gpio_write": {"id": 17},
+        },
         "packet_types": {"REQUEST": 1, "ACK": 2, "DONE": 3, "ERROR": 4},
     }
+
 
 _SPEC = _load_commands_json()
 
@@ -115,12 +140,12 @@ def crc16_ccitt_false(data: bytes) -> int:
     """Calculate CRC-16/CCITT-FALSE."""
     crc = CRC_INIT
     for byte in data:
-        crc ^= (byte << 8)
+        crc ^= byte << 8
         for _ in range(8):
             if crc & 0x8000:
                 crc = (crc << 1) ^ CRC_POLY
             else:
-                crc = (crc << 1)
+                crc = crc << 1
             crc = crc & 0xFFFF
     return crc
 
@@ -241,7 +266,11 @@ class FerqonEmulator:
         response.extend(self._build_u32_tlv(TLV_UPTIME_MS, self._state.uptime_ms))
 
         # Ferqon signature TLV (for detection)
-        signature = FERQON_SIGNATURE_MAGIC + FERQON_SIGNATURE_VENDOR + bytes([FERQON_SIGNATURE_CAP_VERSION])
+        signature = (
+            FERQON_SIGNATURE_MAGIC
+            + FERQON_SIGNATURE_VENDOR
+            + bytes([FERQON_SIGNATURE_CAP_VERSION])
+        )
         response.extend(self._build_tlv(TLV_FERQON_SIGNATURE, signature))
 
         return build_frame(seq, CMD_DEVICE_INFO, bytes(response))

@@ -60,7 +60,7 @@
   "flash_size_bytes": 2097152,
   "sys_clock_hz": 125000000,
   "device_type": "rp2040-generic",
-  "protocol_version": "2.0",
+  "protocol_version": "1.1.0",
   "capability_version": "1.0",
   "firmware_version": "1.0.0"
 }

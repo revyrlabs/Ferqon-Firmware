@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: Copyright (c) 2024-2026 Revyr Labs
 """
 cmd_validate.py
 ---------------
@@ -17,7 +19,7 @@ from ferqonfw.board_loader import (
 def validate_json_schema(data: dict, schema_path: Path) -> tuple[bool, str]:
     """Validate JSON data against a schema."""
     try:
-        with open(schema_path) as f:
+        with open(schema_path, encoding="utf-8") as f:
             schema = json.load(f)
         jsonschema.validate(instance=data, schema=schema)
         return True, ""
@@ -57,7 +59,7 @@ def cmd_validate(args) -> int:
         print(f"Validating {ssot_name}...")
 
         try:
-            with open(ssot_path) as f:
+            with open(ssot_path, encoding="utf-8") as f:
                 data = json.load(f)
         except json.JSONDecodeError as e:
             print(f"  ERROR: JSON decode error: {e}")
@@ -67,7 +69,7 @@ def cmd_validate(args) -> int:
 
         ok, msg = validate_json_schema(data, schema_path)
         if ok:
-            print(f"  OK")
+            print("  OK")
         else:
             print(f"  ERROR: {msg}")
             all_ok = False
@@ -79,13 +81,15 @@ def cmd_validate(args) -> int:
     # Check for duplicate command IDs
     commands_path = ssot_dir / "commands.json"
     if commands_path.exists():
-        with open(commands_path) as f:
+        with open(commands_path, encoding="utf-8") as f:
             commands_data = json.load(f)
         cmd_ids = {}
         for name, cmd in commands_data["commands"].items():
             cmd_id = cmd["id"]
             if cmd_id in cmd_ids:
-                print(f"  ERROR: Duplicate command ID {cmd_id} used by {cmd_ids[cmd_id]} and {name}")
+                print(
+                    f"  ERROR: Duplicate command ID {cmd_id} used by {cmd_ids[cmd_id]} and {name}"
+                )
                 all_ok = False
                 errors.append(("commands.json", f"Duplicate command ID {cmd_id}"))
             else:
@@ -94,7 +98,7 @@ def cmd_validate(args) -> int:
     # Check for duplicate driver IDs
     drivers_path = ssot_dir / "drivers.json"
     if drivers_path.exists():
-        with open(drivers_path) as f:
+        with open(drivers_path, encoding="utf-8") as f:
             drivers_data = json.load(f)
         driver_ids = {}
         for category in ["builtin", "optional", "custom"]:
@@ -102,7 +106,9 @@ def cmd_validate(args) -> int:
                 driver_id = driver["id"]
                 driver_name = driver["name"]
                 if driver_id in driver_ids:
-                    print(f"  ERROR: Duplicate driver ID {driver_id} used by {driver_ids[driver_id]} and {driver_name}")
+                    print(
+                        f"  ERROR: Duplicate driver ID {driver_id} used by {driver_ids[driver_id]} and {driver_name}"
+                    )
                     all_ok = False
                     errors.append(("drivers.json", f"Duplicate driver ID {driver_id}"))
                 else:
@@ -111,14 +117,16 @@ def cmd_validate(args) -> int:
     # Check for duplicate error codes
     errors_path = ssot_dir / "errors.json"
     if errors_path.exists():
-        with open(errors_path) as f:
+        with open(errors_path, encoding="utf-8") as f:
             errors_data = json.load(f)
         error_codes = {}
         for err in errors_data["errors"]:
             err_code = err["code"]
             err_name = err["name"]
             if err_code in error_codes:
-                print(f"  ERROR: Duplicate error code {err_code} used by {error_codes[err_code]} and {err_name}")
+                print(
+                    f"  ERROR: Duplicate error code {err_code} used by {error_codes[err_code]} and {err_name}"
+                )
                 all_ok = False
                 errors.append(("errors.json", f"Duplicate error code {err_code}"))
             else:

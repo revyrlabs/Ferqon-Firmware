@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: Copyright (c) 2024-2026 Revyr Labs
 """Example HIL test: GPIO read/write verification.
 
 Configures a pin as output, writes HIGH, reads it back, then

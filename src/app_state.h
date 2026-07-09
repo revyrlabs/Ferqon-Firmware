@@ -1,13 +1,12 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+/* SPDX-FileCopyrightText: Copyright (c) 2024-2026 Revyr Labs */
 #ifndef FERQON_APP_STATE_H
 #define FERQON_APP_STATE_H
 
 #include "ferqon_commands.h"
 #include <stdint.h>
 
-/* Minimal app-level state machine exposed via GET_STATE and HEARTBEAT.
- *
- * A proper implementation would keep a ring buffer of transitions; for now we
- * hold the current state and the last observed error. */
+/* Minimal app-level state machine exposed via GET_STATE and HEARTBEAT. */
 
 void app_state_init(void);
 void app_state_set(uint8_t state);

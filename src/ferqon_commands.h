@@ -1,3 +1,5 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+/* SPDX-FileCopyrightText: Copyright (c) 2024-2026 Revyr Labs */
 /* Ferqon serial protocol constants.
  *
  * Auto-generated from firmware/protocol/ssot/commands.json (v1.1.0).

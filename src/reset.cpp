@@ -1,3 +1,5 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+/* SPDX-FileCopyrightText: Copyright (c) 2024-2026 Revyr Labs */
 #include "dispatcher.h"
 #include <Arduino.h>
 
@@ -14,7 +16,19 @@ static bool reset_handler(uint8_t seq, uint8_t cmd_id,
     *response_len = 0;
 
     delay(100);
+#if defined(FERQON_BOARD_NATIVE)
+    /* Native/host builds have no hardware to reset. */
+    return true;
+#elif defined(FERQON_BOARD_ESP32) || defined(FERQON_BOARD_ESP32S3)
+    ESP.restart();
+#elif defined(__arm__)
+    /* Cortex-M system reset via AIRCR (VECTKEY + SYSRESETREQ). */
+    volatile uint32_t *aircr = (volatile uint32_t *)0xE000ED0C;
+    *aircr = 0x05FA0004;
+    while (true) {}
+#else
     NVIC_SystemReset();
+#endif
     return true;
 }
 

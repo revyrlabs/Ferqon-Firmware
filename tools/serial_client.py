@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: Copyright (c) 2024-2026 Revyr Labs
 """Standalone MCU serial client for HIL testing.
 
 Thin wrapper that provides the same :class:`McuClient` interface
@@ -17,23 +19,34 @@ Usage::
 
 from __future__ import annotations
 
+import re
 import sys
 import threading
-import time
+from dataclasses import dataclass, field
+from os import getenv as _getenv
+from pathlib import Path
+from typing import Callable
 
 from device_config import get_default_baudrate
-from pathlib import Path
-from typing import Any, Callable
 
-# Ensure the ferqon_hw SDK is importable
-_SDK_HW = Path(__file__).resolve().parent.parent / "hw_sdk" / "ferqon_hw"
+# Ensure the ferqon_hw SDK is importable. The caller may set FERQON_HW_SDK_PATH
+# to the directory containing the ferqon_hw package; otherwise we look for the
+# sibling packages/hw-sdk layout in the workspace root.
+_SDK_HW_ENV = _getenv("FERQON_HW_SDK_PATH")
+if _SDK_HW_ENV:
+    _SDK_HW = Path(_SDK_HW_ENV)
+else:
+    _SDK_HW = (
+        Path(__file__).resolve().parent.parent.parent
+        / "packages"
+        / "hw-sdk"
+        / "ferqon_hw"
+    )
 if str(_SDK_HW) not in sys.path:
     sys.path.insert(0, str(_SDK_HW))
 
 from ferqon_hw.serial_backend import (  # noqa: E402
     ConnLike,
-    _decode_response,
-    _encode_frame,
     open_serial,
     FerqonSerial,
 )
@@ -41,9 +54,6 @@ from ferqon_hw.serial_backend import (  # noqa: E402
 # ---------------------------------------------------------------------------
 # Re-export core types inline so users don't need the backend package
 # ---------------------------------------------------------------------------
-
-import re
-from dataclasses import dataclass, field
 
 
 class HilTimeoutError(Exception):
@@ -67,8 +77,12 @@ class Command:
 
     @staticmethod
     def DRIVER_CALL(driver: str, method: str, args: str = "") -> "Command":
-        return Command(cmd_type="driver_call", driver=driver, method=method,
-                       args=args.encode("utf-8") if args else b"")
+        return Command(
+            cmd_type="driver_call",
+            driver=driver,
+            method=method,
+            args=args.encode("utf-8") if args else b"",
+        )
 
     @staticmethod
     def RESET() -> "Command":
@@ -146,7 +160,9 @@ class McuClient:
         # Use FerqonSerial for actual communication
         self._serial = FerqonSerial(port, baudrate, timeout_s=2.0)
 
-    def send(self, command: Command, timeout: float = 2.0, retries: int = 1) -> RuntimeResponse:
+    def send(
+        self, command: Command, timeout: float = 2.0, retries: int = 1
+    ) -> RuntimeResponse:
         with self._lock:
             if self._closed:
                 raise RuntimeError("McuClient is closed")

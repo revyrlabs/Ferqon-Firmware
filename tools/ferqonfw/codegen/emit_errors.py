@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: Copyright (c) 2024-2026 Revyr Labs
 """
 emit_errors.py
 --------------
@@ -5,7 +7,6 @@ Emit errors.h and errors.py from errors.json.
 """
 
 from pathlib import Path
-import json
 
 
 def emit_errors_h(errors_data: dict, output_path: Path) -> None:
@@ -26,7 +27,7 @@ def emit_errors_h(errors_data: dict, output_path: Path) -> None:
     lines.append("#endif")
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    with open(output_path, "w") as f:
+    with open(output_path, "w", encoding="utf-8") as f:
         f.write("\n".join(lines))
 
 
@@ -44,5 +45,5 @@ def emit_errors_py(errors_data: dict, output_path: Path) -> None:
         lines.append(f"    {err_name:20s} = {err_code}")
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    with open(output_path, "w") as f:
+    with open(output_path, "w", encoding="utf-8") as f:
         f.write("\n".join(lines))

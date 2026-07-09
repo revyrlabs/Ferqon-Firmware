@@ -4,7 +4,8 @@
 
 | Version | Supported Until |
 |---------|----------------|
-| 1.x.x   | TBD            |
+| 2.x.x   | Latest release |
+| 1.x.x   | End of life (no security patches) |
 
 ## Reporting a Vulnerability
 
@@ -24,9 +25,9 @@ We will acknowledge receipt within 48 hours and provide a timeline for remediati
 
 ### Firmware Signing
 
-Ferqon Firmware v2 supports Ed25519 signature verification for OTA updates. Ensure:
+Ferqon Firmware supports Ed25519 signature verification for OTA updates. Ensure:
 - Private keys are stored securely (hardware security module when possible)
-- Public keys are embedded in firmware at build time
+- Public keys are embedded in firmware at build time from files outside version control
 - Signature verification is enabled in production builds
 
 ### Capability System

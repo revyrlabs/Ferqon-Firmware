@@ -32,5 +32,16 @@ When building for specific platforms, the following licenses may apply:
 - STM32F4/F7: STM32 HAL (Apache-2.0)
 - Teensy 4.0/4.1: Teensyduino (LGPL-2.1-or-later)
 
+Binary Distribution Notice
+--------------------------
+
+Firmware binaries built with the Arduino or Teensyduino backends may statically
+link the Arduino core and/or other LGPL-2.1-or-later components. If you
+distribute a compiled firmware binary (.uf2, .hex, .elf, etc.) that includes
+such components, the LGPL requires you to provide, or offer to provide, the
+corresponding source code and library source code to recipients. This does not
+affect distribution of the Ferqon Firmware source code, which is licensed under
+Apache-2.0.
+
 Please ensure compliance with all applicable licenses when distributing
 firmware built for specific platforms.

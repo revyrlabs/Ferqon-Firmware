@@ -1,3 +1,5 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+/* SPDX-FileCopyrightText: Copyright (c) 2024-2026 Revyr Labs */
 #include "platform/ferqon_plt_gpio.h"
 #include "../generated/pin_macros.h"
 #include "hardware/gpio.h"

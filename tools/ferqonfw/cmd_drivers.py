@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: Copyright (c) 2024-2026 Revyr Labs
 """
 cmd_drivers.py
 --------------
@@ -14,7 +16,7 @@ def cmd_drivers_list(args) -> int:
     drivers_path = ssot_dir / "drivers.json"
 
     try:
-        with open(drivers_path) as f:
+        with open(drivers_path, encoding="utf-8") as f:
             drivers_data = json.load(f)
     except FileNotFoundError:
         print("Error: drivers.json not found")
@@ -27,11 +29,15 @@ def cmd_drivers_list(args) -> int:
     print("\nOptional drivers:")
     for driver in drivers_data.get("optional", []):
         status = "enabled" if driver.get("enabled", False) else "disabled"
-        print(f"  {driver['name']:15s} ID: 0x{driver['id']:02X}  [{status:7s}]  {driver['source']}")
+        print(
+            f"  {driver['name']:15s} ID: 0x{driver['id']:02X}  [{status:7s}]  {driver['source']}"
+        )
 
     print("\nCustom drivers:")
     for driver in drivers_data.get("custom", []):
         status = "enabled" if driver.get("enabled", False) else "disabled"
-        print(f"  {driver['name']:15s} ID: 0x{driver['id']:02X}  [{status:7s}]  {driver['source']}")
+        print(
+            f"  {driver['name']:15s} ID: 0x{driver['id']:02X}  [{status:7s}]  {driver['source']}"
+        )
 
     return 0

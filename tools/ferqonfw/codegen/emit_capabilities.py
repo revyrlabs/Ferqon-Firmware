@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: Copyright (c) 2024-2026 Revyr Labs
 """
 emit_capabilities.py
 ---------------------
@@ -5,7 +7,6 @@ Emit capabilities.h, pin_caps_table.c, and capabilities_<board>.py from capabili
 """
 
 from pathlib import Path
-import json
 
 
 def emit_capabilities_h(caps_data: dict, output_path: Path) -> None:

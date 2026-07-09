@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: Copyright (c) 2024-2026 Revyr Labs
 """Raw-byte framed serial client for Ferqon Pico runtime.
 
 This helper centralizes command encoding/decoding for the Ferqon protocol.
@@ -42,12 +44,12 @@ def crc16_ccitt_false(data: bytes) -> int:
     """Calculate CRC-16/CCITT-FALSE."""
     crc = CRC_INIT
     for byte in data:
-        crc ^= (byte << 8)
+        crc ^= byte << 8
         for _ in range(8):
             if crc & 0x8000:
                 crc = (crc << 1) ^ CRC_POLY
             else:
-                crc = (crc << 1)
+                crc = crc << 1
             crc &= 0xFFFF
     return crc
 
@@ -75,7 +77,9 @@ class FrameDecoder:
             seq = self._buf[1]
             cmd_id = self._buf[2]
             payload_len = self._buf[3]
-            total = 6 + payload_len  # START + SEQ + CMD + LEN + payload + CRC_LO + CRC_HI
+            total = (
+                6 + payload_len
+            )  # START + SEQ + CMD + LEN + payload + CRC_LO + CRC_HI
 
             if len(self._buf) < total:
                 break
@@ -131,15 +135,21 @@ def encode_frame(seq: int, cmd_id: int, payload: bytes) -> bytes:
     crc = crc16_ccitt_false(crc_data)
 
     # Build frame: START + header + payload + CRC_LO + CRC_HI
-    return bytes([START_BYTE]) + header + payload + bytes([crc & 0xFF, (crc >> 8) & 0xFF])
+    return (
+        bytes([START_BYTE]) + header + payload + bytes([crc & 0xFF, (crc >> 8) & 0xFF])
+    )
 
 
-def encode_cmd_payload(cmd_id: int, body: bytes = b"", packet_type: int = PKT_REQUEST, meta: int = 0) -> bytes:
+def encode_cmd_payload(
+    cmd_id: int, body: bytes = b"", packet_type: int = PKT_REQUEST, meta: int = 0
+) -> bytes:
     """Encode command payload with packet type header."""
     return bytes([packet_type, meta]) + body
 
 
-def encode_driver_call(driver_name: str, method: str, args: dict[str, object] | None = None) -> bytes:
+def encode_driver_call(
+    driver_name: str, method: str, args: dict[str, object] | None = None
+) -> bytes:
     """Encode driver call payload."""
     args = args or {}
     driver = driver_name.encode("utf-8")

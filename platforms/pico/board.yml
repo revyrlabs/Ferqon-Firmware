@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: Copyright (c) 2024-2026 Revyr Labs
 # Ferqon board definition — RP2040 Raspberry Pi Pico
 board: pico
 display_name: "Raspberry Pi Pico"
@@ -7,11 +9,11 @@ pio_env: pico_arduino
 
 # Core & memory topology
 core_count: 2
-isr_serial_strategy: uart_rx_isr     # multicore | uart_rx_isr
+isr_serial_strategy: multicore       # multicore | uart_rx_isr
 ram_size_bytes: 264000
 flash_size_bytes: 2097152
 sys_clock_hz: 125000000
-multicore: false
+multicore: true
 
 # GPIO
 max_gpio: 29
@@ -32,15 +34,15 @@ pwm:
 # Peripherals
 spi:
   - instance: 0
-    sck:  [2, 6, 10, 14, 18]
+    sck: [2, 6, 10, 14, 18]
     mosi: [3, 7, 11, 15, 19]
     miso: [0, 4, 8, 12, 16]
-    cs:   [1, 5, 9, 13, 17]
+    cs: [1, 5, 9, 13, 17]
   - instance: 1
-    sck:  [10, 14, 18, 22, 26]
+    sck: [10, 14, 18, 22, 26]
     mosi: [11, 15, 19, 23, 27]
     miso: [12, 16, 20, 24, 28]
-    cs:   [13, 17, 21, 25, 29]
+    cs: [13, 17, 21, 25, 29]
 
 i2c:
   - {instance: 0, sda: [0, 4, 8, 12, 16, 20], scl: [1, 5, 9, 13, 17, 21]}
@@ -58,13 +60,13 @@ dma_channels: 12
 # Network capabilities (for protocol subsystem)
 network:
   link: []                 # wifi, ethernet, ble, or []
-  transport: [serial]      # mqtt, websocket, serial
+  transport: [serial]      # mqtt, websocket, serial, or []
   ota: false
   provision: []            # softap, ble, or []
 
 # Versioning
 device_type: "pico-rp2040"
-protocol_version: "2.0"
+protocol_version: "1.1.0"
 capability_version: "1.0"
 firmware_version: "1.0.0"
 

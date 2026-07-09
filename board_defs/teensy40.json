@@ -79,11 +79,6 @@
       "instance": 6,
       "tx": [37],
       "rx": [38]
-    },
-    {
-      "instance": 7,
-      "tx": [48],
-      "rx": [49]
     }
   ],
   "reserved_pins": [39],
@@ -97,7 +92,7 @@
   "flash_size_bytes": 1048576,
   "sys_clock_hz": 600000000,
   "device_type": "teensy40",
-  "protocol_version": "2.0",
+  "protocol_version": "1.1.0",
   "capability_version": "1.0",
   "firmware_version": "1.0.0"
 }

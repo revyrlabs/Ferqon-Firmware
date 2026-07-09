@@ -56,7 +56,7 @@ pio run -e my_board_arduino
 2. Create a feature branch (`git checkout -b feature/amazing-feature`)
 3. Make your changes
 4. Run `tools/gen_platform_caps.py --all` and commit any generated changes
-5. Run tests: `pio test` (native tests) and `pio run` (build matrix)
+5. Run tests: `pio test -e native` (native tests) and `pio run` (build matrix)
 6. Commit with clear messages
 7. Push to your fork (`git push origin feature/amazing-feature`)
 8. Open a Pull Request
@@ -66,14 +66,14 @@ pio run -e my_board_arduino
 1. **Clone with submodules:**
    ```bash
    git clone --recurse-submodules https://github.com/repvi/Ferqon.git
-   cd Ferqon/ferqon_firmware
+   cd Ferqon/firmware
    ```
 
 2. **Install dependencies:**
    ```bash
    pip install -r tools/requirements.txt
-   pio install
    ```
+   This installs PlatformIO Core and the Python tools used by the build.
 
 3. **Regenerate headers after YAML changes:**
    ```bash
@@ -92,7 +92,7 @@ pio run -e my_board_arduino
 
 6. **Test:**
    ```bash
-   pio test -e native_multicore
+   pio test -e native
    ```
 
 ## Coding Standards
@@ -100,9 +100,9 @@ pio run -e my_board_arduino
 ### C/C++ Code
 
 - Use 4-space indentation (no tabs)
-- Follow existing style in `core/` and `platforms/`
+- Follow existing style in `src/` and `platforms/`
 - Platform-specific code must use `ferqon_cap_*()` guards before hardware access
-- Never include vendor SDK headers in `core/`
+- Never include vendor SDK headers in `src/`
 - Keep functions under 50 lines when possible
 - Add comments for non-obvious logic
 
@@ -140,9 +140,25 @@ The CI linter `tools/lint_platform_guards.py` enforces this.
 
 ## Testing
 
-- **Native tests:** Run `pio test` to verify `core/` portability
+- **Native tests:** Run `pio test -e native` to verify `src/` portability
 - **Hardware tests:** Use `tools/diagnose.py` for smoke testing on real devices
 - **PlatformIO matrix:** CI builds all environments to catch platform-specific breakage
+
+## Developer Certificate of Origin (DCO)
+
+This project uses the [Developer Certificate of Origin](https://developercertificate.org/) (DCO) to certify that every contribution is submitted by someone who has the right to do so. By contributing, you agree to the terms of the DCO.
+
+To indicate agreement, every commit message must include a `Signed-off-by:` line that matches the commit author's name and email:
+
+```text
+This is my commit message
+
+Signed-off-by: Your Name <your.email@example.com>
+```
+
+You can add this automatically with `git commit -s`.
+
+Pull requests without a `Signed-off-by` line on every commit will be blocked by CI.
 
 ## License
 

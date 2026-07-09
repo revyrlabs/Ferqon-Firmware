@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: Copyright (c) 2024-2026 Revyr Labs
 """
 board_loader.py
 ---------------
@@ -9,12 +11,13 @@ import shutil
 import subprocess
 import sys
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Sequence
+from typing import Any, Dict, Optional, Sequence
 
 
 # ---------------------------------------------------------------------------
 # Path resolver — single source of truth for every filesystem location.
 # ---------------------------------------------------------------------------
+
 
 def get_firmware_dir() -> Path:
     # Script lives at firmware/tools/ferqonfw/; firmware dir is three levels up.
@@ -67,13 +70,14 @@ def get_pio_path() -> str:
     pio_path = shutil.which("pio")
     if pio_path:
         return pio_path
-    # Fallback to common location
-    return "/home/alx/.local/bin/pio"
+    # Fallback to bare executable name; the caller should verify existence
+    return "pio"
 
 
 # ---------------------------------------------------------------------------
 # Subprocess wrapper — single place where we shell out.
 # ---------------------------------------------------------------------------
+
 
 def run_cmd(
     argv: Sequence[str],
@@ -119,12 +123,13 @@ def require_pio() -> None:
 # Board YAML loading.
 # ---------------------------------------------------------------------------
 
+
 def load_board_schema() -> Optional[Dict[str, Any]]:
     schema_path = get_firmware_dir() / "tools" / "schemas" / "board.schema.json"
     if not schema_path.exists():
         return None
     try:
-        with open(schema_path) as f:
+        with open(schema_path, encoding="utf-8") as f:
             return json.load(f)
     except (json.JSONDecodeError, IOError):
         return None
@@ -171,7 +176,8 @@ def load_all_boards() -> Dict[str, Dict[str, Any]]:
         board_slug = board_yml.parent.name
         try:
             import yaml
-            with open(board_yml) as f:
+
+            with open(board_yml, encoding="utf-8") as f:
                 board_data = yaml.safe_load(f)
             if validate_board_yaml(board_data, schema):
                 board_name = board_data.get("board", board_slug)
@@ -189,7 +195,8 @@ def load_board(board_name: str) -> Optional[Dict[str, Any]]:
         return None
     try:
         import yaml
-        with open(yml_path) as f:
+
+        with open(yml_path, encoding="utf-8") as f:
             board_data = yaml.safe_load(f)
     except Exception:
         return None

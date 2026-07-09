@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: Copyright (c) 2024-2026 Revyr Labs
 """
 gen_protocol.py
 ---------------
@@ -23,7 +25,6 @@ from __future__ import annotations
 import argparse
 import json
 import sys
-import tempfile
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -31,12 +32,30 @@ SSOT_PATH = REPO_ROOT / "firmware" / "protocol" / "ssot" / "commands.json"
 
 OUTPUTS: dict[str, Path] = {
     "c_header": REPO_ROOT / "firmware" / "src" / "ferqon_commands.h",
-    "backend_py": REPO_ROOT / "services" / "backend" / "ferqon_backend" / "ferqon_hil" / "commands_generated.py",
-    "hwsdk_py": REPO_ROOT / "packages" / "hw-sdk" / "ferqon_hw" / "ferqon_hw" / "commands_generated.py",
-    "driver_map": REPO_ROOT / "packages" / "hw-sdk" / "ferqon_hw" / "ferqon_hw" / "_driver_method_map.py",
+    "backend_py": REPO_ROOT
+    / "services"
+    / "backend"
+    / "ferqon_backend"
+    / "ferqon_hil"
+    / "commands_generated.py",
+    "hwsdk_py": REPO_ROOT
+    / "packages"
+    / "hw-sdk"
+    / "ferqon_hw"
+    / "ferqon_hw"
+    / "commands_generated.py",
+    "driver_map": REPO_ROOT
+    / "packages"
+    / "hw-sdk"
+    / "ferqon_hw"
+    / "ferqon_hw"
+    / "_driver_method_map.py",
 }
 
 _REGEN_NOTICE = "python3 firmware/tools/gen_protocol.py"
+
+COPYRIGHT = "SPDX-FileCopyrightText: Copyright (c) 2024-2026 Revyr Labs"
+SPDX_LICENSE = "SPDX-License-Identifier: Apache-2.0"
 
 
 def load_ssot() -> dict:
@@ -55,9 +74,12 @@ def _sorted_commands(data: dict) -> list[tuple[str, int]]:
 # 1. C header
 # ---------------------------------------------------------------------------
 
+
 def generate_c_header(data: dict) -> str:
     protocol_version = data.get("version", "0.0.0")
     lines = [
+        f"/* {SPDX_LICENSE} */",
+        f"/* {COPYRIGHT} */",
         "/* Ferqon serial protocol constants.",
         " *",
         f" * Auto-generated from firmware/protocol/ssot/commands.json (v{protocol_version}).",
@@ -163,7 +185,9 @@ def generate_c_header(data: dict) -> str:
         "",
     ]
 
-    for name, entry in sorted(data["errors"]["codes"].items(), key=lambda x: x[1]["code"]):
+    for name, entry in sorted(
+        data["errors"]["codes"].items(), key=lambda x: x[1]["code"]
+    ):
         desc = entry.get("description", "")
         code = entry["code"]
         lines.append(f"#define FERQON_ERR_{name:<23} {code}  /* {desc} */")
@@ -176,9 +200,12 @@ def generate_c_header(data: dict) -> str:
 # 2 + 3. Python IntEnum (shared template for backend and hw-sdk)
 # ---------------------------------------------------------------------------
 
+
 def generate_commands_py(data: dict) -> str:
     protocol_version = data.get("version", "0.0.0")
     lines = [
+        f"# {SPDX_LICENSE}",
+        f"# {COPYRIGHT}",
         f"# Auto-generated from firmware/protocol/ssot/commands.json (v{protocol_version}).",
         f"# DO NOT EDIT — regenerate with: {_REGEN_NOTICE}",
         "",
@@ -200,9 +227,12 @@ def generate_commands_py(data: dict) -> str:
 # 4. Driver method map
 # ---------------------------------------------------------------------------
 
+
 def generate_driver_map(data: dict) -> str:
     protocol_version = data.get("version", "0.0.0")
     lines = [
+        f"# {SPDX_LICENSE}",
+        f"# {COPYRIGHT}",
         f"# Auto-generated from firmware/protocol/ssot/commands.json (v{protocol_version}).",
         f"# DO NOT EDIT — regenerate with: {_REGEN_NOTICE}",
         "",
@@ -229,9 +259,9 @@ def generate_driver_map(data: dict) -> str:
             arg_map = method_info.get("arg_map", {})
             sub_handler = method_info.get("sub_handler")
 
-            arg_map_str = "{" + ", ".join(
-                f'"{k}": "{v}"' for k, v in arg_map.items()
-            ) + "}"
+            arg_map_str = (
+                "{" + ", ".join(f'"{k}": "{v}"' for k, v in arg_map.items()) + "}"
+            )
 
             lines.append(f'    ("{driver_name}", "{method_name}"): {{')
             lines.append(f'        "native_cmd": "{native_cmd}",')
@@ -247,6 +277,7 @@ def generate_driver_map(data: dict) -> str:
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
+
 
 def _write(path: Path, content: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)

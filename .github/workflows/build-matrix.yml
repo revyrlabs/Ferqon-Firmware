@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: Copyright (c) 2024-2026 Revyr Labs
 name: Build Matrix
 
 on:
@@ -14,22 +16,18 @@ jobs:
       matrix:
         env:
           - pico_arduino
-          - rp2040
-          - pico_native
           - esp32
           - esp32s3
-          - stm32f4
-          - stm32f7
           - teensy40
           - teensy41
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
       with:
         submodules: recursive
 
     - name: Set up Python
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f392efede  # v5.0.0
       with:
         python-version: '3.10'
 
@@ -41,16 +39,12 @@ jobs:
       run: |
         pip install -r tools/requirements.txt
 
-    - name: Generate platform headers
-      run: |
-        python tools/gen_platform_caps.py --all
-
     - name: Build ${{ matrix.env }}
       run: |
         pio run -e ${{ matrix.env }}
 
     - name: Upload firmware
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@65c4c7a0d31560bc3e2054bb0174c4ac91bc7f71  # v4.6.0
       with:
         name: firmware-${{ matrix.env }}
         path: .pio/build/${{ matrix.env }}/firmware.*

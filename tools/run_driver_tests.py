@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: Copyright (c) 2024-2026 Revyr Labs
 """
 run_driver_tests.py
 -------------------
@@ -29,13 +31,13 @@ tools_dir = Path(__file__).parent
 if str(tools_dir) not in sys.path:
     sys.path.insert(0, str(tools_dir))
 
-from device_config import (
+from device_config import (  # noqa: E402
     get_default_device_port,
     get_default_baudrate,
     get_board_name,
     get_emulator_enabled,
 )
-from device_discovery import find_board
+from device_discovery import find_board  # noqa: E402
 
 
 def parse_args():
@@ -104,30 +106,30 @@ def run_direct_tests(args):
     use_emulator = args.emulator or (get_emulator_enabled() and not args.no_emulator)
 
     if use_emulator:
-        print(f"\n📱 Emulator mode enabled")
+        print("\n📱 Emulator mode enabled")
         print(f"   Port: {port} (emulator PTY)")
     else:
         # Auto-discover if port is "auto"
         if port == "auto":
-            print(f"\n🔍 Auto-discovering device...")
+            print("\n🔍 Auto-discovering device...")
             try:
                 discovered = find_board(board_name=board)
                 if discovered:
                     port = discovered
                     print(f"   Found device at: {port}")
                 else:
-                    print(f"   ⚠️  No device found, falling back to emulator")
+                    print("   ⚠️  No device found, falling back to emulator")
                     use_emulator = True
             except Exception as e:
                 print(f"   ⚠️  Discovery failed: {e}")
                 if not args.no_emulator:
-                    print(f"   Falling back to emulator")
+                    print("   Falling back to emulator")
                     use_emulator = True
                 else:
-                    print(f"   ❌ No emulator fallback allowed")
+                    print("   ❌ No emulator fallback allowed")
                     return 1
 
-    print(f"\n⚙️  Configuration:")
+    print("\n⚙️  Configuration:")
     print(f"   Port: {port}")
     print(f"   Baudrate: {baudrate}")
     print(f"   Board: {board}")
@@ -163,7 +165,7 @@ def run_direct_tests(args):
             )
             results.append((script.name, result.returncode == 0))
             if result.returncode == 0:
-                print(f"   ✅ Passed")
+                print("   ✅ Passed")
             else:
                 print(f"   ❌ Failed (exit code {result.returncode})")
                 if not args.verbose and result.stderr:
@@ -201,29 +203,29 @@ def run_pytest_tests(args):
     use_emulator = args.emulator or (get_emulator_enabled() and not args.no_emulator)
 
     if use_emulator:
-        print(f"\n📱 Emulator mode enabled")
+        print("\n📱 Emulator mode enabled")
     else:
         # Auto-discover if port is "auto"
         if port == "auto":
-            print(f"\n🔍 Auto-discovering device...")
+            print("\n🔍 Auto-discovering device...")
             try:
                 discovered = find_board(board_name=board)
                 if discovered:
                     port = discovered
                     print(f"   Found device at: {port}")
                 else:
-                    print(f"   ⚠️  No device found, falling back to emulator")
+                    print("   ⚠️  No device found, falling back to emulator")
                     use_emulator = True
             except Exception as e:
                 print(f"   ⚠️  Discovery failed: {e}")
                 if not args.no_emulator:
-                    print(f"   Falling back to emulator")
+                    print("   Falling back to emulator")
                     use_emulator = True
                 else:
-                    print(f"   ❌ No emulator fallback allowed")
+                    print("   ❌ No emulator fallback allowed")
                     return 1
 
-    print(f"\n⚙️  Configuration:")
+    print("\n⚙️  Configuration:")
     print(f"   Port: {port}")
     print(f"   Baudrate: {baudrate}")
     print(f"   Board: {board}")
@@ -250,7 +252,7 @@ def run_pytest_tests(args):
     if args.verbose:
         pytest_args.append("-vv")
 
-    print(f"\n🧪 Running pytest...")
+    print("\n🧪 Running pytest...")
     result = subprocess.run(pytest_args, env=env, cwd=str(tests_dir.parent))
     return result.returncode
 

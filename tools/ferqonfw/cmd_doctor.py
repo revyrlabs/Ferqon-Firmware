@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: Copyright (c) 2024-2026 Revyr Labs
 """
 cmd_doctor.py
 -------------
@@ -39,6 +41,7 @@ def check_python() -> bool:
 def check_pyserial() -> bool:
     try:
         import serial  # noqa: F401
+
         print("  pyserial: installed")
         return True
     except ImportError:

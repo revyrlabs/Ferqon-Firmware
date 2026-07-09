@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: Copyright (c) 2024-2026 Revyr Labs
 """
 Device discovery and resolution for Ferqon testing.
 
@@ -79,8 +81,13 @@ def find_board(board: Optional[str] = None) -> Optional[str]:
             if port_hint and not port_info.device.startswith(port_hint):
                 continue
 
-            log.info("Found board '%s' at %s (VID:PID=0x%04X:0x%04X)",
-                     board_name, port_info.device, port_info.vid, port_info.pid)
+            log.info(
+                "Found board '%s' at %s (VID:PID=0x%04X:0x%04X)",
+                board_name,
+                port_info.device,
+                port_info.vid,
+                port_info.pid,
+            )
             return port_info.device
 
     if board:

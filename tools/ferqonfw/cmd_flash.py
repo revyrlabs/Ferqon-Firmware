@@ -1,15 +1,17 @@
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: Copyright (c) 2024-2026 Revyr Labs
 """
 cmd_flash.py
 ------------
 Flash command for ferqonfw CLI - wraps PlatformIO upload.
 """
 
-from typing import Any, Dict
 
 from ferqonfw.board_loader import (
     get_board_pio_env,
     get_firmware_dir,
     get_pio_artifact,
+    get_pio_path,
     require_pio,
     run_cmd,
     load_board,
@@ -51,7 +53,7 @@ def cmd_flash(args) -> int:
     print(f"Running: pio run -e {pio_env} -t upload")
     print("-" * 60)
     result = run_cmd(
-        ["/home/alx/.local/bin/pio", "run", "-e", pio_env, "-t", "upload"],
+        [get_pio_path(), "run", "-e", pio_env, "-t", "upload"],
         cwd=firmware_dir,
     )
     print("-" * 60)

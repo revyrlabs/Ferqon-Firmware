@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: Copyright (c) 2024-2026 Revyr Labs
 # Python dependencies for Ferqon Firmware development
 
 # YAML processing
@@ -18,5 +20,5 @@ pytest-cov>=4.1.0
 # Serial communication
 pyserial>=3.5
 
-# PlatformIO (installed separately via pio install)
-# platformio>=6.0.0
+# PlatformIO Core (also available as `pio` command)
+platformio>=6.0.0

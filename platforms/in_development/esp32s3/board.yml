@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: Copyright (c) 2024-2026 Revyr Labs
 # Ferqon board definition — ESP32-S3
 board: esp32s3
 display_name: "ESP32-S3 DevKit"
@@ -69,7 +71,7 @@ network:
 
 # Versioning
 device_type: "esp32s3-devkit"
-protocol_version: "2.0"
+protocol_version: "1.1.0"
 capability_version: "1.0"
 firmware_version: "1.0.0"
 

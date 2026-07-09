@@ -1,269 +1,187 @@
 # Driver Development Guide
 
-This guide helps you develop drivers for the Ferqon server efficiently.
+This guide helps you develop new `command drivers` for the Ferqon firmware. A driver is a C++ implementation of one or more `FERQON_CMD_*` command IDs, registered at runtime with the dispatcher in `src/dispatcher.cpp`.
+
+> **Scope:** This guide covers firmware-side drivers only. For server-side driver schemas and UI definitions, see the Ferqon server documentation.
 
 ## Quick Start
 
-### 1. Create a Driver YAML
+### 1. Pick a command to implement
 
-Create a YAML file for your driver:
+Ferqon commands are defined in `src/ferqon_commands.h` (generated from `commands.yml`). Pick an existing command or add a new command ID to `commands.yml` and run `tools/gen_commands.py` to regenerate the header.
 
-```yaml
-name: led_pwm
-version: "1.0.0"
-description: LED driver with PWM brightness control
+### 2. Create the driver file
 
-commands:
-  set_brightness:
-    args:
-      brightness:
-        type: int
-        min: 0
-        max: 100
-    returns: status
+Add a new file in `src/drivers/` or `src/` directly:
 
-  toggle:
-    args: {}
-    returns: status
+```cpp
+// src/drivers/my_driver.cpp
+#include "dispatcher.h"
+#include "protocol.h"
+#include "ferqon_log.h"
 
-modes:
-  - id: normal
-    label: Normal
-    default: true
-    type: runtime
-    commands:
-      - set_brightness
-      - toggle
+#include <Arduino.h>  // only for Arduino backends; native target uses stubs
 
-ui:
-  groups:
-    - id: control
-      label: Control
-      order: 1
-      layout: sliders
+static bool my_driver_handler(uint8_t cmd, const uint8_t *params, uint8_t param_len,
+                               uint8_t *response, uint8_t *response_len) {
+    if (cmd != FERQON_CMD_MY_COMMAND) {
+        return false;
+    }
+
+    // Validate payload
+    if (param_len < 1) {
+        response[0] = FERQON_ERR_INVALID_PARAM;
+        *response_len = 1;
+        return true;
+    }
+
+    // Do work
+    uint8_t value = params[0];
+    // ...
+
+    response[0] = FERQON_OK;
+    *response_len = 1;
+    return true;
+}
+
+extern "C" const ferqon_driver_t my_driver = {
+    .handler = my_driver_handler,
+};
 ```
 
-### 2. Validate the Driver
+### 3. Register the driver
 
-Check for errors before generating JSON:
+Add an `extern` declaration in `src/main.cpp` and include it in the `drivers[]` array:
+
+```cpp
+extern "C" const ferqon_driver_t my_driver;
+
+static const ferqon_driver_t *g_drivers[] = {
+    &ping_driver,
+    &echo_driver,
+    &my_driver,
+    // ...
+};
+```
+
+### 4. Build and test
 
 ```bash
-python3 tools/gen_driver_json.py --check my_led.driver.yml
+# Build for the primary platform
+pio run -e pico_arduino
+
+# Run native unit tests to verify the command logic
+pio test -e native
 ```
 
-### 3. Generate Canonical JSON
+## Driver API
 
-Generate the final JSON for server storage:
+A driver implements a single `ferqon_driver_t.handler` function:
+
+```cpp
+typedef bool (*ferqon_driver_handler_t)(uint8_t cmd,
+                                          const uint8_t *params,
+                                          uint8_t param_len,
+                                          uint8_t *response,
+                                          uint8_t *response_len);
+```
+
+- Return `true` if the command was handled. The contents of `response` (up to `response_len` bytes) are sent back as the OK response body.
+- Return `false` to let the next driver attempt to handle the command.
+- The dispatcher copies `response` out immediately; the driver owns the buffer only for the duration of the call.
+
+## Common patterns
+
+### Validating command parameters
+
+Always validate `cmd` and `param_len` before accessing `params`:
+
+```cpp
+if (cmd != FERQON_CMD_MY_COMMAND) return false;
+if (param_len < 2) {
+    response[0] = FERQON_ERR_INVALID_PARAM;
+    *response_len = 1;
+    return true;
+}
+```
+
+### Hardware access in Arduino drivers
+
+Keep platform-specific I/O in the `platforms/<device>/` directory. Call through the platform vtable or `ferqon_cap_*()` helpers:
+
+```cpp
+// Good: delegate to platform IO layer
+extern int pico_gpio_put(uint8_t pin, uint8_t val);
+
+if (!ferqon_cap_pin_is_valid(pin)) {
+    response[0] = FERQON_ERR_INVALID_PIN;
+    *response_len = 1;
+    return true;
+}
+
+int rc = pico_gpio_put(pin, value);
+```
+
+### Native testability
+
+For the `native` test target, the platform IO functions are stubbed. Driver code should compile without any vendor SDK includes. If a driver needs Arduino types, gate those blocks with `#ifdef ARDUINO` or move the platform-specific code to a `platforms/` file.
+
+## Testing
+
+### Native unit tests
+
+Add tests under `test/` for `pio test -e native`:
+
+```cpp
+// test/test_my_driver.cpp
+#include "unity.h"
+#include "dispatcher.h"
+
+extern "C" const ferqon_driver_t my_driver;
+
+void test_my_driver_handles_my_command(void) {
+    uint8_t params[] = {0x42};
+    uint8_t response[8];
+    uint8_t response_len = 0;
+
+    bool handled = my_driver.handler(FERQON_CMD_MY_COMMAND, params, sizeof(params),
+                                      response, &response_len);
+
+    TEST_ASSERT_TRUE(handled);
+    TEST_ASSERT_EQUAL_UINT8(1, response_len);
+    TEST_ASSERT_EQUAL_UINT8(FERQON_OK, response[0]);
+}
+```
+
+### Device smoke tests
+
+Use the Python self-test utilities in `tools/ferqon_selftest.py` or the `ferqonfw` CLI to exercise a command on real hardware:
 
 ```bash
-python3 tools/gen_driver_json.py my_led.driver.yml
-```
-
-### 4. Upload to Server
-
-Use the API to upload your driver:
-
-```bash
-curl -X POST http://localhost:8000/api/drivers \
-  -H "Authorization: Bearer YOUR_TOKEN" \
-  -F "file=@my_led.json"
-```
-
-## Developer-Friendly Features
-
-### YAML Authoring
-- Human-readable format
-- Comments supported
-- Easier to maintain than JSON
-
-### Validation Tools
-- Schema validation (Pydantic models)
-- UI block validation
-- Mode transition validation
-- Pin capability matching
-- Configuration guard for safety
-
-### IDE Support
-- JSON Schema for validation
-- VS Code extension (coming soon)
-- Syntax highlighting
-
-## Configuration Guard
-
-The system includes a configuration guard that validates driver definitions for safety:
-
-### Protection Features
-- **Schema Validation**: Ensures structure matches expected format
-- **Type Safety**: Validates argument types and return types
-- **Range Validation**: Enforces min/max constraints on numeric values
-- **Reference Validation**: Ensures all referenced commands and groups exist
-- **Mode Safety**: Validates mode transitions and default mode constraints
-- **Pin Safety**: Validates pin assignments against device capabilities
-- **UI Consistency**: Ensures UI groups and binds are valid
-
-### Using the Configuration Guard
-
-The configuration guard is automatically applied when:
-- Uploading drivers via the API
-- Creating driver bindings
-- Switching driver modes
-
-You can also manually validate:
-
-```bash
-python3 tools/gen_driver_json.py --check my_led.driver.yml
-```
-
-This will report any safety violations before the driver is deployed.
-
-## Common Patterns
-
-### LED Driver
-```yaml
-commands:
-  set_brightness:
-    args:
-      brightness: {type: int, min: 0, max: 100}
-    returns: status
-  toggle: {args: {}, returns: status}
-```
-
-### Servo Driver
-```yaml
-commands:
-  set_angle:
-    args:
-      angle: {type: int, min: 0, max: 180}
-    returns: status
-  calibrate: {args: {}, returns: status}
-
-modes:
-  - id: normal
-    label: Normal
-    default: true
-    type: runtime
-  - id: calibrating
-    label: Calibrating
-    type: runtime
-    enter_command: calibrate
-```
-
-### Sensor Driver
-```yaml
-commands:
-  read: {args: {}, returns: value}
-  calibrate: {args: {}, returns: status}
-
-provides:
-  channels:
-    - name: reading
-      type: float
-      unit: °C
-
-ui:
-  groups:
-    - id: readout
-      label: Readout
-      layout: readouts
-```
-
-## Testing Your Driver
-
-Use the validation API to test before deploying:
-
-```bash
-curl -X POST http://localhost:8000/api/drivers/validate \
-  -H "Content-Type: application/json" \
-  -d '{"driver_def": {...}, "device_type": "pico"}'
-```
-
-The configuration guard will automatically validate:
-- Schema structure
-- Type safety
-- Range constraints
-- Reference validity
-- Mode transitions
-- Pin assignments
-- UI consistency
-
-## Future Features
-
-The following features are planned for future releases but are not currently integrated:
-
-### AI-Powered Analysis (Future)
-Planned AI-powered static analysis for driver configurations:
-- Intelligent summary generation
-- Improvement suggestions
-- Complexity assessment
-- Automatic documentation
-- Warning detection
-
-This feature is currently stubbed for future development when base features are complete.
-
-## Advanced Topics
-
-### Custom UI Layouts
-```yaml
-ui:
-  groups:
-    - id: advanced
-      label: Advanced Settings
-      order: 2
-      layout: form
-      bind: [config_mode]
-```
-
-### Conditional Visibility
-```yaml
-commands:
-  advanced_config:
-    ui:
-      visible_when:
-        mode: config
-```
-
-### Mode Transitions
-```yaml
-modes:
-  - id: normal
-    type: runtime
-    enter_command: initialize
-    exit_command: cleanup
-```
-
-## Testing Your Driver
-
-Use the validation API to test before deploying:
-
-```bash
-curl -X POST http://localhost:8000/api/drivers/validate \
-  -H "Content-Type: application/json" \
-  -d '{"driver_def": {...}, "device_type": "pico"}'
+python3 tools/ferqon_selftest.py --port /dev/ttyACM0
 ```
 
 ## Troubleshooting
 
-### Validation Errors
-- Check error codes in output
-- Review schema documentation
-- Use `--check` flag for detailed errors
-- Configuration guard prevents invalid configurations from being deployed
+### Command not dispatched
 
-### Pin Conflicts
-- Check device capabilities in `platforms/<device>/generated/capabilities.json`
-- Configuration guard validates pin assignments against device capabilities
-- Use validation API to test before deploying
+- Verify the command ID is in `src/ferqon_commands.h`.
+- Verify the driver is registered in `src/main.cpp`.
+- Verify the driver returns `true` for the correct `cmd`.
 
-### Mode Issues
-- Ensure exactly one mode has `default: true`
-- Verify all referenced commands exist
-- Check transition commands are valid
-- Configuration guard validates mode transitions
+### Unknown command at runtime
+
+The dispatcher logs `FERQON_LOG_SUBTYPE_UNKNOWN_CMD` when no driver claims a command. Enable verbose logging to see the raw command byte.
+
+### Build failures on `native`
+
+- Remove any `#include <Arduino.h>` from the driver code, or wrap it in `#ifdef ARDUINO`.
+- Ensure platform functions are declared in a header that is also provided by the native stub.
 
 ## Next Steps
 
-1. Create your first driver using the YAML template
-2. Validate with the configuration guard
-3. Test with a real device
-4. Contribute to the driver library
-5. Share your patterns for others to use
+1. Add a new command to `commands.yml` and regenerate `src/ferqon_commands.h`.
+2. Implement the driver in `src/drivers/`.
+3. Register it in `src/main.cpp`.
+4. Run `pio test -e native` and `pio run -e pico_arduino`.
+5. Open a pull request with `Signed-off-by` lines.

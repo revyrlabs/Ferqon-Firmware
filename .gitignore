@@ -1,9 +1,34 @@
-generated/
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: Copyright (c) 2024-2026 Revyr Labs
+# Build and cache output
 build/
+.pio/
+
+# Python
 __pycache__/
 *.pyc
 
-# Firmware binaries
+# Editor and OS files
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Native test build artifacts
+tests/scheduling/_build/
+
+# Emulator transient files
+.emu.pid
+.emu.port
+
+# Firmware binaries (ignore loose ones; CI produces artifacts)
 *.bin
 *.hex
 *.elf
+*.uf2
+
+# Root generated directory, if any, used by the pre-build hook.
+# Platform-specific generated files (e.g. platforms/pico/generated/)
+# are committed and verified by CI; regenerate with gen_platform_caps.py.
+/generated/
+platforms/in_development/**/generated/

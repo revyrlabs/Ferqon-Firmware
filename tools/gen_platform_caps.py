@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: Copyright (c) 2024-2026 Revyr Labs
 """
 gen_platform_caps.py
 --------------------
@@ -23,20 +25,23 @@ import json
 import sys
 import argparse
 from pathlib import Path
-from typing import Dict, List, Any
+from typing import Dict, Any
 from jsonschema import validate, ValidationError
+
+COPYRIGHT = "SPDX-FileCopyrightText: Copyright (c) 2024-2026 Revyr Labs"
+SPDX_LICENSE = "SPDX-License-Identifier: Apache-2.0"
 
 
 def load_board_schema() -> Dict[str, Any]:
     """Load the board schema for validation."""
     schema_path = Path(__file__).parent / "schemas" / "board.schema.json"
-    with open(schema_path) as f:
+    with open(schema_path, encoding="utf-8") as f:
         return json.load(f)
 
 
 def load_board_yaml(path: Path, schema: Dict[str, Any] = None) -> Dict[str, Any]:
     """Load and validate board capability YAML."""
-    with open(path) as f:
+    with open(path, encoding="utf-8") as f:
         board = yaml.safe_load(f)
 
     # Schema validation if provided
@@ -76,6 +81,8 @@ def _compute_ringbuf_size(board: Dict[str, Any]) -> int:
 def generate_platform_caps_h(board: Dict[str, Any]) -> str:
     """Generate platform_caps.h content."""
     lines = [
+        f"/* {SPDX_LICENSE} */",
+        f"/* {COPYRIGHT} */",
         "/**",
         " * platform_caps.h",
         " * ----------------",
@@ -88,11 +95,11 @@ def generate_platform_caps_h(board: Dict[str, Any]) -> str:
         "#include <stdint.h>",
         "#include <stdbool.h>",
         "",
-        f"// Board identification",
+        "// Board identification",
         f'#define FERQON_BOARD_NAME          "{board["board"]}"',
         f'#define FERQON_MCU_FAMILY          "{board["mcu"]}"',
         "",
-        f"// System capabilities",
+        "// System capabilities",
         f"#define FERQON_MAX_GPIO            {board['max_gpio']}",
         f"#define FERQON_LED_PIN             {board['led_pin']}",
         f"#define FERQON_PIO_BLOCKS          {board['pio_blocks']}",
@@ -102,7 +109,7 @@ def generate_platform_caps_h(board: Dict[str, Any]) -> str:
         f"#define FERQON_FLASH_SIZE_BYTES    {board.get('flash_size_bytes', 0)}",
         f"#define FERQON_SYS_CLOCK_HZ        {board.get('sys_clock_hz', 0)}",
         "",
-        f"// Scheduling / core topology",
+        "// Scheduling / core topology",
         f"#define FERQON_CORE_COUNT          {board.get('core_count', 1)}",
         f"#define FERQON_RAM_SIZE_BYTES      {board.get('ram_size_bytes', 0)}",
         f"#define FERQON_SCHED_MULTICORE     {1 if board.get('isr_serial_strategy') == 'multicore' else 0}",
@@ -114,21 +121,39 @@ def generate_platform_caps_h(board: Dict[str, Any]) -> str:
 
     # Network capabilities
     network = board.get("network", {})
-    lines.append(f"// Network capabilities")
-    lines.append(f"#define FERQON_NET_HAS_WIFI       {1 if 'wifi' in network.get('link', []) else 0}")
-    lines.append(f"#define FERQON_NET_HAS_BLE        {1 if 'ble' in network.get('link', []) else 0}")
-    lines.append(f"#define FERQON_NET_HAS_ETHERNET  {1 if 'ethernet' in network.get('link', []) else 0}")
-    lines.append(f"#define FERQON_NET_HAS_MQTT       {1 if 'mqtt' in network.get('transport', []) else 0}")
-    lines.append(f"#define FERQON_NET_HAS_OTA        {1 if network.get('ota', False) else 0}")
-    lines.append(f"#define FERQON_PROVISION_SOFTAP   {1 if 'softap' in network.get('provision', []) else 0}")
-    lines.append(f"#define FERQON_PROVISION_BLE      {1 if 'ble' in network.get('provision', []) else 0}")
+    lines.append("// Network capabilities")
+    lines.append(
+        f"#define FERQON_NET_HAS_WIFI       {1 if 'wifi' in network.get('link', []) else 0}"
+    )
+    lines.append(
+        f"#define FERQON_NET_HAS_BLE        {1 if 'ble' in network.get('link', []) else 0}"
+    )
+    lines.append(
+        f"#define FERQON_NET_HAS_ETHERNET  {1 if 'ethernet' in network.get('link', []) else 0}"
+    )
+    lines.append(
+        f"#define FERQON_NET_HAS_MQTT       {1 if 'mqtt' in network.get('transport', []) else 0}"
+    )
+    lines.append(
+        f"#define FERQON_NET_HAS_OTA        {1 if network.get('ota', False) else 0}"
+    )
+    lines.append(
+        f"#define FERQON_PROVISION_SOFTAP   {1 if 'softap' in network.get('provision', []) else 0}"
+    )
+    lines.append(
+        f"#define FERQON_PROVISION_BLE      {1 if 'ble' in network.get('provision', []) else 0}"
+    )
     lines.append("")
 
     # ADC capabilities
     adc_config = board.get("adc", {})
-    lines.append(f"// ADC capabilities")
-    lines.append(f"#define FERQON_ADC_RESOLUTION      {adc_config.get('resolution_bits', 12)}")
-    lines.append(f"#define FERQON_ADC_VREF_MV         {adc_config.get('vref_mv', 3300)}")
+    lines.append("// ADC capabilities")
+    lines.append(
+        f"#define FERQON_ADC_RESOLUTION      {adc_config.get('resolution_bits', 12)}"
+    )
+    lines.append(
+        f"#define FERQON_ADC_VREF_MV         {adc_config.get('vref_mv', 3300)}"
+    )
     lines.append("")
 
     # ADC pin list
@@ -192,6 +217,8 @@ def generate_platform_caps_h(board: Dict[str, Any]) -> str:
 def generate_device_channels_c(board: Dict[str, Any]) -> str:
     """Generate device_channels.c content."""
     lines = [
+        f"/* {SPDX_LICENSE} */",
+        f"/* {COPYRIGHT} */",
         "/**",
         " * device_channels.c",
         " * -----------------",
@@ -211,11 +238,11 @@ def generate_device_channels_c(board: Dict[str, Any]) -> str:
     max_gpio = board["max_gpio"]
     lines.append("    // GPIO pins")
     lines.append("    {")
-    lines.append(f'        .name = "GPIO",')
+    lines.append('        .name = "GPIO",')
     lines.append("        .type = FERQON_CHAN_GPIO,")
     lines.append("        .direction = FERQON_DIR_BIDIR,")
-    lines.append(f'        .pin_start = 0,')
-    lines.append(f'        .pin_count = {max_gpio + 1},')
+    lines.append("        .pin_start = 0,")
+    lines.append(f"        .pin_count = {max_gpio + 1},")
     lines.append("        .resolution = 1,")
     lines.append("        .value_min = 0,")
     lines.append("        .value_max = 1,")
@@ -235,11 +262,11 @@ def generate_device_channels_c(board: Dict[str, Any]) -> str:
             lines.append(f'        .name = "ADC{pin - min(adc_pins)}",')
             lines.append("        .type = FERQON_CHAN_ADC,")
             lines.append("        .direction = FERQON_DIR_INPUT,")
-            lines.append(f'        .pin_start = {pin},')
+            lines.append(f"        .pin_start = {pin},")
             lines.append("        .pin_count = 1,")
-            lines.append(f'        .resolution = {adc_resolution},')
+            lines.append(f"        .resolution = {adc_resolution},")
             lines.append("        .value_min = 0,")
-            lines.append(f'        .value_max = {(1 << adc_resolution) - 1},')
+            lines.append(f"        .value_max = {(1 << adc_resolution) - 1},")
             lines.append('        .unit = "V",')
             lines.append("        .writable = false")
             lines.append("    },")
@@ -254,8 +281,8 @@ def generate_device_channels_c(board: Dict[str, Any]) -> str:
         lines.append('        .name = "PWM",')
         lines.append("        .type = FERQON_CHAN_PWM,")
         lines.append("        .direction = FERQON_DIR_OUTPUT,")
-        lines.append(f'        .pin_start = 0,')
-        lines.append(f'        .pin_count = {max_gpio + 1},')
+        lines.append("        .pin_start = 0,")
+        lines.append(f"        .pin_count = {max_gpio + 1},")
         lines.append("        .resolution = 16,")  # Common PWM resolution
         lines.append("        .value_min = 0,")
         lines.append("        .value_max = 65535,")
@@ -265,13 +292,15 @@ def generate_device_channels_c(board: Dict[str, Any]) -> str:
         lines.append("")
 
     # SPI buses
-    for spi in board["spi"]:
+    for spi in board.get("spi", []):
         lines.append(f'    // SPI{spi["instance"]}')
         lines.append("    {")
         lines.append(f'        .name = "SPI{spi["instance"]}",')
         lines.append("        .type = FERQON_CHAN_SPI,")
         lines.append("        .direction = FERQON_DIR_BIDIR,")
-        lines.append(f'        .pin_start = {spi["sck"][0]},')  # Use first SCK pin as representative
+        lines.append(
+            f'        .pin_start = {spi["sck"][0]},'
+        )  # Use first SCK pin as representative
         lines.append("        .pin_count = 4,")  # SCK, MOSI, MISO, CS
         lines.append("        .resolution = 8,")
         lines.append("        .value_min = 0,")
@@ -282,13 +311,15 @@ def generate_device_channels_c(board: Dict[str, Any]) -> str:
         lines.append("")
 
     # I2C buses
-    for i2c in board["i2c"]:
+    for i2c in board.get("i2c", []):
         lines.append(f'    // I2C{i2c["instance"]}')
         lines.append("    {")
         lines.append(f'        .name = "I2C{i2c["instance"]}",')
         lines.append("        .type = FERQON_CHAN_I2C,")
         lines.append("        .direction = FERQON_DIR_BIDIR,")
-        lines.append(f'        .pin_start = {i2c["sda"][0]},')  # Use first SDA pin as representative
+        lines.append(
+            f'        .pin_start = {i2c["sda"][0]},'
+        )  # Use first SDA pin as representative
         lines.append("        .pin_count = 2,")  # SDA, SCL
         lines.append("        .resolution = 8,")
         lines.append("        .value_min = 0,")
@@ -299,13 +330,15 @@ def generate_device_channels_c(board: Dict[str, Any]) -> str:
         lines.append("")
 
     # UART buses
-    for uart in board["uart"]:
+    for uart in board.get("uart", []):
         lines.append(f'    // UART{uart["instance"]}')
         lines.append("    {")
         lines.append(f'        .name = "UART{uart["instance"]}",')
         lines.append("        .type = FERQON_CHAN_UART,")
         lines.append("        .direction = FERQON_DIR_BIDIR,")
-        lines.append(f'        .pin_start = {uart["tx"][0]},')  # Use first TX pin as representative
+        lines.append(
+            f'        .pin_start = {uart["tx"][0]},'
+        )  # Use first TX pin as representative
         lines.append("        .pin_count = 2,")  # TX, RX
         lines.append("        .resolution = 8,")
         lines.append("        .value_min = 0,")
@@ -318,9 +351,13 @@ def generate_device_channels_c(board: Dict[str, Any]) -> str:
     lines.append("};")
     lines.append("")
     lines.append("// Exported function to get device channels")
-    lines.append("const FERQON_IoChannelSpec_t* FERQON_Device_GetChannels(size_t* out_count) {")
+    lines.append(
+        "const FERQON_IoChannelSpec_t* FERQON_Device_GetChannels(size_t* out_count) {"
+    )
     lines.append("    if (out_count) {")
-    lines.append(f'        *out_count = sizeof(g_device_channels) / sizeof(g_device_channels[0]);')
+    lines.append(
+        "        *out_count = sizeof(g_device_channels) / sizeof(g_device_channels[0]);"
+    )
     lines.append("    }")
     lines.append("    return g_device_channels;")
     lines.append("}")
@@ -331,6 +368,8 @@ def generate_device_channels_c(board: Dict[str, Any]) -> str:
 def generate_pin_macros_h(board: Dict[str, Any]) -> str:
     """Generate pin_macros.h with inline capability check functions."""
     lines = [
+        f"/* {SPDX_LICENSE} */",
+        f"/* {COPYRIGHT} */",
         "/**",
         " * pin_macros.h",
         " * ------------",
@@ -344,10 +383,10 @@ def generate_pin_macros_h(board: Dict[str, Any]) -> str:
         "#include <stdbool.h>",
         "",
         "// Pin capability validation functions (inline for performance)",
-        ""
+        "",
     ]
 
-    max_gpio = board['max_gpio']
+    max_gpio = board["max_gpio"]
     adc_config = board.get("adc", {})
     pwm_config = board.get("pwm", {})
     reserved_pins = board.get("reserved_pins", [])
@@ -412,7 +451,9 @@ def generate_pin_macros_h(board: Dict[str, Any]) -> str:
 
     lines.append("// Instance validation functions")
     spi_instances = [s["instance"] for s in spi]
-    lines.append("static inline bool ferqon_cap_spi_instance_is_valid(uint8_t instance) {")
+    lines.append(
+        "static inline bool ferqon_cap_spi_instance_is_valid(uint8_t instance) {"
+    )
     if spi_instances:
         lines.append("    switch (instance) {")
         for inst in spi_instances:
@@ -427,7 +468,9 @@ def generate_pin_macros_h(board: Dict[str, Any]) -> str:
     lines.append("")
 
     i2c_instances = [i["instance"] for i in i2c]
-    lines.append("static inline bool ferqon_cap_i2c_instance_is_valid(uint8_t instance) {")
+    lines.append(
+        "static inline bool ferqon_cap_i2c_instance_is_valid(uint8_t instance) {"
+    )
     if i2c_instances:
         lines.append("    switch (instance) {")
         for inst in i2c_instances:
@@ -442,7 +485,9 @@ def generate_pin_macros_h(board: Dict[str, Any]) -> str:
     lines.append("")
 
     uart_instances = [u["instance"] for u in uart]
-    lines.append("static inline bool ferqon_cap_uart_instance_is_valid(uint8_t instance) {")
+    lines.append(
+        "static inline bool ferqon_cap_uart_instance_is_valid(uint8_t instance) {"
+    )
     if uart_instances:
         lines.append("    switch (instance) {")
         for inst in uart_instances:
@@ -466,7 +511,7 @@ def generate_capabilities_json(board: Dict[str, Any]) -> str:
         "max_gpio": board["max_gpio"],
         "reserved_pins": board.get("reserved_pins", []),
         "pins": {},
-        "peripherals": {}
+        "peripherals": {},
     }
 
     # Build pin capability map
@@ -523,21 +568,21 @@ def generate_capabilities_json(board: Dict[str, Any]) -> str:
             "sck": spi["sck"],
             "mosi": spi["mosi"],
             "miso": spi["miso"],
-            "cs": spi["cs"]
+            "cs": spi["cs"],
         }
 
     for i2c in board.get("i2c", []):
         instance = i2c["instance"]
         capabilities["peripherals"][f"i2c{instance}"] = {
             "sda": i2c["sda"],
-            "scl": i2c["scl"]
+            "scl": i2c["scl"],
         }
 
     for uart in board.get("uart", []):
         instance = uart["instance"]
         capabilities["peripherals"][f"uart{instance}"] = {
             "tx": uart["tx"],
-            "rx": uart["rx"]
+            "rx": uart["rx"],
         }
 
     adc_config = board.get("adc", {})
@@ -545,28 +590,43 @@ def generate_capabilities_json(board: Dict[str, Any]) -> str:
         capabilities["peripherals"]["adc"] = {
             "channels": adc_config.get("pins", []),
             "resolution": adc_config.get("resolution_bits", 12),
-            "vref_mv": adc_config.get("vref_mv", 3300)
+            "vref_mv": adc_config.get("vref_mv", 3300),
         }
 
     pwm_config = board.get("pwm", {})
     if pwm_config:
         capabilities["peripherals"]["pwm"] = {
-            "slices": board.get("pio_blocks", 0) * board.get("pio_sm_per_block", 4) // 2,  # Approximate
-            "pins": pwm_config.get("pins", [])
+            "slices": board.get("pio_blocks", 0)
+            * board.get("pio_sm_per_block", 4)
+            // 2,  # Approximate
+            "pins": pwm_config.get("pins", []),
         }
 
-    return json.dumps(capabilities, indent=2)
+    return json.dumps(_annotate_json(capabilities), indent=2)
+
+
+def _annotate_json(obj: Dict[str, Any]) -> Dict[str, Any]:
+    """Annotate a dict with license metadata for generated JSON files."""
+    annotated = dict(obj)
+    annotated["_license"] = "Apache-2.0"
+    annotated["_copyright"] = COPYRIGHT
+    return annotated
 
 
 def generate_board_json(board: Dict[str, Any]) -> str:
     """Generate JSON mirror of board configuration for backend tooling."""
-    return json.dumps(board, indent=2)
+    return json.dumps(_annotate_json(board), indent=2)
 
 
-def generate_for_board(board_path: Path, output_dir: Path, schema: Dict[str, Any] = None, check_mode: bool = False) -> bool:
+def generate_for_board(
+    board_path: Path,
+    output_dir: Path,
+    schema: Dict[str, Any] = None,
+    check_mode: bool = False,
+) -> bool:
     """Generate all files for a single board. Returns True if changes detected (or check_mode fails)."""
     board = load_board_yaml(board_path, schema)
-    board_name = board['board']
+    board_name = board["board"]
 
     if check_mode:
         # In check mode, compare generated content with existing files
@@ -594,17 +654,6 @@ def generate_for_board(board_path: Path, output_dir: Path, schema: Dict[str, Any
             print(f"CHECK FAIL: {board_name}/pin_macros.h does not exist")
             changes = True
 
-        # Check device_channels.c
-        generated_c = generate_device_channels_c(board)
-        existing_c_path = output_dir / "device_channels.c"
-        if existing_c_path.exists():
-            if existing_c_path.read_text() != generated_c:
-                print(f"CHECK FAIL: {board_name}/device_channels.c needs regeneration")
-                changes = True
-        else:
-            print(f"CHECK FAIL: {board_name}/device_channels.c does not exist")
-            changes = True
-
         # Check board.json
         generated_json = generate_board_json(board)
         existing_json_path = output_dir / "board.json"
@@ -627,6 +676,17 @@ def generate_for_board(board_path: Path, output_dir: Path, schema: Dict[str, Any
             print(f"CHECK FAIL: {board_name}/capabilities.json does not exist")
             changes = True
 
+        # Check device_channels.c
+        generated_channels = generate_device_channels_c(board)
+        existing_channels_path = output_dir / "device_channels.c"
+        if existing_channels_path.exists():
+            if existing_channels_path.read_text() != generated_channels:
+                print(f"CHECK FAIL: {board_name}/device_channels.c needs regeneration")
+                changes = True
+        else:
+            print(f"CHECK FAIL: {board_name}/device_channels.c does not exist")
+            changes = True
+
         return changes
     else:
         # Generate mode: write files
@@ -638,30 +698,40 @@ def generate_for_board(board_path: Path, output_dir: Path, schema: Dict[str, Any
         pin_macros_h = generate_pin_macros_h(board)
         (output_dir / "pin_macros.h").write_text(pin_macros_h)
 
-        device_channels_c = generate_device_channels_c(board)
-        (output_dir / "device_channels.c").write_text(device_channels_c)
-
         board_json = generate_board_json(board)
         (output_dir / "board.json").write_text(board_json)
 
         capabilities_json = generate_capabilities_json(board)
         (output_dir / "capabilities.json").write_text(capabilities_json)
 
+        device_channels_c = generate_device_channels_c(board)
+        (output_dir / "device_channels.c").write_text(device_channels_c)
+
         print(f"Generated platform capabilities for {board_name}:")
         print(f"  {output_dir / 'platform_caps.h'}")
         print(f"  {output_dir / 'pin_macros.h'}")
-        print(f"  {output_dir / 'device_channels.c'}")
         print(f"  {output_dir / 'board.json'}")
         print(f"  {output_dir / 'capabilities.json'}")
+        print(f"  {output_dir / 'device_channels.c'}")
         return True
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Generate platform capability headers from YAML board definitions")
+    parser = argparse.ArgumentParser(
+        description="Generate platform capability headers from YAML board definitions"
+    )
     parser.add_argument("board", nargs="?", help="Path to board.yml file")
-    parser.add_argument("output_dir", nargs="?", help="Output directory for generated files")
-    parser.add_argument("--all", action="store_true", help="Generate for all platforms/*/board.yml")
-    parser.add_argument("--check", action="store_true", help="Check if generated files are up-to-date (CI mode)")
+    parser.add_argument(
+        "output_dir", nargs="?", help="Output directory for generated files"
+    )
+    parser.add_argument(
+        "--all", action="store_true", help="Generate for all platforms/*/board.yml"
+    )
+    parser.add_argument(
+        "--check",
+        action="store_true",
+        help="Check if generated files are up-to-date (CI mode)",
+    )
     args = parser.parse_args()
 
     # Load schema for validation
@@ -675,7 +745,6 @@ def main() -> None:
 
         any_changes = False
         for board_yml in sorted(platforms_dir.glob("*/board.yml")):
-            board_name = board_yml.parent.name
             output_dir = board_yml.parent / "generated"
             changes = generate_for_board(board_yml, output_dir, schema, args.check)
             if changes:
@@ -683,7 +752,9 @@ def main() -> None:
 
         if args.check:
             if any_changes:
-                print("\nGenerator drift detected! Run: python3 tools/gen_platform_caps.py --all")
+                print(
+                    "\nGenerator drift detected! Run: python3 tools/gen_platform_caps.py --all"
+                )
                 sys.exit(1)
             else:
                 print("\nAll generated files are up-to-date.")
@@ -692,7 +763,11 @@ def main() -> None:
     elif args.board:
         # Generate for single board
         board_path = Path(args.board)
-        output_dir = Path(args.output_dir) if args.output_dir else board_path.parent / "generated"
+        output_dir = (
+            Path(args.output_dir)
+            if args.output_dir
+            else board_path.parent / "generated"
+        )
 
         if not board_path.exists():
             sys.exit(f"ERROR: Board file not found: {board_path}")

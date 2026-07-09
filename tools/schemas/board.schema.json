@@ -43,7 +43,12 @@
     },
     "backend": {
       "type": "string",
-      "enum": ["arduino", "pico-sdk", "idf", "zephyr"],
+      "enum": [
+        "arduino",
+        "pico-sdk",
+        "idf",
+        "zephyr"
+      ],
       "description": "Platform backend implementation to use"
     },
     "mcu": {
@@ -64,7 +69,11 @@
     },
     "adc": {
       "type": "object",
-      "required": ["pins", "resolution_bits", "vref_mv"],
+      "required": [
+        "pins",
+        "resolution_bits",
+        "vref_mv"
+      ],
       "properties": {
         "pins": {
           "type": "array",
@@ -92,7 +101,9 @@
     },
     "pwm": {
       "type": "object",
-      "required": ["pins"],
+      "required": [
+        "pins"
+      ],
       "properties": {
         "pins": {
           "type": "array",
@@ -110,7 +121,13 @@
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["instance", "sck", "mosi", "miso", "cs"],
+        "required": [
+          "instance",
+          "sck",
+          "mosi",
+          "miso",
+          "cs"
+        ],
         "properties": {
           "instance": {
             "type": "integer",
@@ -161,7 +178,11 @@
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["instance", "sda", "scl"],
+        "required": [
+          "instance",
+          "sda",
+          "scl"
+        ],
         "properties": {
           "instance": {
             "type": "integer",
@@ -194,7 +215,11 @@
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["instance", "tx", "rx"],
+        "required": [
+          "instance",
+          "tx",
+          "rx"
+        ],
         "properties": {
           "instance": {
             "type": "integer",
@@ -285,7 +310,10 @@
     },
     "isr_serial_strategy": {
       "type": "string",
-      "enum": ["multicore", "uart_rx_isr"],
+      "enum": [
+        "multicore",
+        "uart_rx_isr"
+      ],
       "description": "Execution strategy for serial responsiveness: 'multicore' splits serial RX and command execution across cores; 'uart_rx_isr' uses UART RX interrupt with ring buffer on single-core MCUs"
     },
     "ram_size_bytes": {
@@ -295,13 +323,22 @@
     },
     "network": {
       "type": "object",
-      "required": ["link", "transport", "ota", "provision"],
+      "required": [
+        "link",
+        "transport",
+        "ota",
+        "provision"
+      ],
       "properties": {
         "link": {
           "type": "array",
           "items": {
             "type": "string",
-            "enum": ["wifi", "ethernet", "ble"]
+            "enum": [
+              "wifi",
+              "ethernet",
+              "ble"
+            ]
           },
           "description": "Network link types available"
         },
@@ -309,7 +346,11 @@
           "type": "array",
           "items": {
             "type": "string",
-            "enum": ["mqtt", "websocket", "serial"]
+            "enum": [
+              "mqtt",
+              "websocket",
+              "serial"
+            ]
           },
           "description": "Protocol transports available"
         },
@@ -321,7 +362,10 @@
           "type": "array",
           "items": {
             "type": "string",
-            "enum": ["softap", "ble"]
+            "enum": [
+              "softap",
+              "ble"
+            ]
           },
           "description": "Provisioning methods available"
         }

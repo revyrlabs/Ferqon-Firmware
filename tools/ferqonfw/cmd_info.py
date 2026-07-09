@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: Copyright (c) 2024-2026 Revyr Labs
 """
 cmd_info.py
 -----------
@@ -15,7 +17,7 @@ def cmd_info(args) -> int:
     caps_path = ssot_dir / f"capabilities.{platform}.json"
 
     try:
-        with open(caps_path) as f:
+        with open(caps_path, encoding="utf-8") as f:
             caps_data = json.load(f)
     except FileNotFoundError:
         print(f"Error: capabilities.{platform}.json not found")
@@ -42,19 +44,25 @@ def cmd_info(args) -> int:
     if spi:
         print(f"\nSPI: {len(spi)} instance(s)")
         for inst in spi:
-            print(f"  Instance {inst['instance']}: SCK {inst['sck']}, MOSI {inst['mosi']}, MISO {inst['miso']}, CS {inst['cs']}")
+            print(
+                f"  Instance {inst['instance']}: SCK {inst['sck']}, MOSI {inst['mosi']}, MISO {inst['miso']}, CS {inst['cs']}"
+            )
 
     # I2C
     i2c = peripherals.get("i2c", [])
     if i2c:
         print(f"\nI2C: {len(i2c)} instance(s)")
         for inst in i2c:
-            print(f"  Instance {inst['instance']}: SDA {inst['sda']}, SCL {inst['scl']}")
+            print(
+                f"  Instance {inst['instance']}: SDA {inst['sda']}, SCL {inst['scl']}"
+            )
 
     # ADC
     adc = peripherals.get("adc", {})
     if adc:
-        print(f"\nADC: {adc.get('resolution', 'unknown')}-bit, {adc.get('vref_mv', 'unknown')}mV")
+        print(
+            f"\nADC: {adc.get('resolution', 'unknown')}-bit, {adc.get('vref_mv', 'unknown')}mV"
+        )
         print(f"  Channels: {adc.get('channels', [])}")
 
     # PWM

@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: Copyright (c) 2024-2026 Revyr Labs
 """Quick diagnostic test for Pico communication (raw-byte protocol)."""
 
 import json
@@ -13,10 +15,14 @@ tools_dir = Path(__file__).parent
 if str(tools_dir) not in sys.path:
     sys.path.insert(0, str(tools_dir))
 
-from device_config import get_default_device_port, get_default_baudrate
-from device_discovery import find_board
+from device_config import (  # noqa: E402
+    get_default_device_port,
+    get_default_baudrate,
+    get_board_name,
+)
+from device_discovery import find_board  # noqa: E402
 
-from serial_protocol import (
+from serial_protocol import (  # noqa: E402
     TYPE_RESPONSE,
     FrameDecoder,
     decode_cmd_payload,
@@ -67,18 +73,18 @@ def send_and_print(ser: serial.Serial, cmd_name: str) -> dict | None:
 
 
 def main() -> int:
-    port = find_board("pico") or get_default_device_port()
+    port = find_board(get_board_name()) or get_default_device_port()
     baudrate = get_default_baudrate()
-    ser = serial.Serial(port, baudrate, timeout=0.1)
-    time.sleep(0.5)
 
-    print(f"Pico connection test ({port} @ {baudrate}):")
-    print(f"Open: {ser.is_open}")
+    with serial.Serial(port, baudrate, timeout=0.1) as ser:
+        time.sleep(0.5)
 
-    send_and_print(ser, "ping")
-    send_and_print(ser, "driver_info")
+        print(f"Pico connection test ({port} @ {baudrate}):")
+        print(f"Open: {ser.is_open}")
 
-    ser.close()
+        send_and_print(ser, "ping")
+        send_and_print(ser, "driver_info")
+
     return 0
 
 

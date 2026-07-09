@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: Copyright (c) 2024-2026 Revyr Labs
 """
 emit_drivers_table.py
 ---------------------
@@ -5,7 +7,6 @@ Emit drivers_table.h from drivers.json.
 """
 
 from pathlib import Path
-import json
 
 
 def emit_drivers_table_h(drivers_data: dict, output_path: Path) -> None:

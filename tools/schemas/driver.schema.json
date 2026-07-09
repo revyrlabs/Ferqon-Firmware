@@ -4,7 +4,11 @@
   "title": "Ferqon Driver Definition",
   "description": "Schema for Ferqon driver definitions including UI layout and mode/state models",
   "type": "object",
-  "required": ["name", "version", "commands"],
+  "required": [
+    "name",
+    "version",
+    "commands"
+  ],
   "properties": {
     "name": {
       "type": "string",
@@ -68,7 +72,10 @@
   "$defs": {
     "pin_requirement": {
       "type": "object",
-      "required": ["role", "kind"],
+      "required": [
+        "role",
+        "kind"
+      ],
       "properties": {
         "role": {
           "type": "string",
@@ -77,7 +84,21 @@
         "kind": {
           "type": "string",
           "description": "Pin capability type",
-          "enum": ["gpio", "pwm", "adc", "spi_sck", "spi_mosi", "spi_miso", "spi_cs", "i2c_sda", "i2c_scl", "uart_tx", "uart_rx", "uart_cts", "uart_rts"]
+          "enum": [
+            "gpio",
+            "pwm",
+            "adc",
+            "spi_sck",
+            "spi_mosi",
+            "spi_miso",
+            "spi_cs",
+            "i2c_sda",
+            "i2c_scl",
+            "uart_tx",
+            "uart_rx",
+            "uart_cts",
+            "uart_rts"
+          ]
         },
         "required": {
           "type": "boolean",
@@ -88,7 +109,10 @@
     },
     "channel": {
       "type": "object",
-      "required": ["name", "type"],
+      "required": [
+        "name",
+        "type"
+      ],
       "properties": {
         "name": {
           "type": "string",
@@ -97,7 +121,13 @@
         "type": {
           "type": "string",
           "description": "Channel type",
-          "enum": ["pwm_out", "gpio_out", "adc_in", "digital_in", "digital_out"]
+          "enum": [
+            "pwm_out",
+            "gpio_out",
+            "adc_in",
+            "digital_in",
+            "digital_out"
+          ]
         },
         "range": {
           "type": "array",
@@ -116,12 +146,19 @@
     },
     "arg_spec": {
       "type": "object",
-      "required": ["type"],
+      "required": [
+        "type"
+      ],
       "properties": {
         "type": {
           "type": "string",
           "description": "Argument type",
-          "enum": ["number", "boolean", "string", "select"]
+          "enum": [
+            "number",
+            "boolean",
+            "string",
+            "select"
+          ]
         },
         "min": {
           "type": "number",
@@ -154,7 +191,14 @@
         "layout": {
           "type": "string",
           "description": "Control layout override",
-          "enum": ["sliders", "buttons", "grid", "form", "rows", "readouts"]
+          "enum": [
+            "sliders",
+            "buttons",
+            "grid",
+            "form",
+            "rows",
+            "readouts"
+          ]
         },
         "group": {
           "type": "string",
@@ -206,7 +250,9 @@
     },
     "command": {
       "type": "object",
-      "required": ["method"],
+      "required": [
+        "method"
+      ],
       "properties": {
         "description": {
           "type": "string",
@@ -235,7 +281,11 @@
     },
     "ui_group": {
       "type": "object",
-      "required": ["id", "label", "order"],
+      "required": [
+        "id",
+        "label",
+        "order"
+      ],
       "properties": {
         "id": {
           "type": "string",
@@ -252,7 +302,14 @@
         "layout": {
           "type": "string",
           "description": "Group layout style",
-          "enum": ["sliders", "buttons", "grid", "form", "rows", "readouts"]
+          "enum": [
+            "sliders",
+            "buttons",
+            "grid",
+            "form",
+            "rows",
+            "readouts"
+          ]
         },
         "bind": {
           "type": "array",
@@ -277,7 +334,11 @@
     },
     "mode": {
       "type": "object",
-      "required": ["id", "label", "type"],
+      "required": [
+        "id",
+        "label",
+        "type"
+      ],
       "properties": {
         "id": {
           "type": "string",
@@ -290,7 +351,10 @@
         "type": {
           "type": "string",
           "description": "Mode type",
-          "enum": ["runtime", "ui-only"]
+          "enum": [
+            "runtime",
+            "ui-only"
+          ]
         },
         "default": {
           "type": "boolean",

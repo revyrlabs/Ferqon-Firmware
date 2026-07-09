@@ -1,9 +1,19 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+/* SPDX-FileCopyrightText: Copyright (c) 2024-2026 Revyr Labs */
+/* Main entry point: register drivers, initialize protocol, and run the loop. */
 #include <Arduino.h>
+#include "board_config.h"
 #include "ferqon_commands.h"
 #include "protocol.h"
 #include "dispatcher.h"
 #include "app_state.h"
 #include "ferqon_log.h"
+
+/* Not every Arduino board package defines LED_BUILTIN; fall back to the board
+ * definition in board_config.h. */
+#ifndef LED_BUILTIN
+#define LED_BUILTIN FERQON_LED_PIN
+#endif
 
 /* Driver extern declarations (defined in their .cpp files). */
 extern "C" const ferqon_driver_t ping_driver;
@@ -53,9 +63,7 @@ void setup() {
     ferqon_register_driver(&driver_info_driver);
     ferqon_register_driver(&debug_driver);
     FERQON_LOG_INFO("Drivers registered");
-    // Test log emission
-    ferqon_send_log("FIRMWARE_STARTUP_TEST");
-    
+
     // Ready
     app_state_set(FERQON_STATE_APP_READY);
     FERQON_LOG_INFO("Ferqon v1 - Ready");

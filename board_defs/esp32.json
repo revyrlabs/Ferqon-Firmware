@@ -55,7 +55,7 @@
   "flash_size_bytes": 4194304,
   "sys_clock_hz": 240000000,
   "device_type": "esp32-devkit",
-  "protocol_version": "2.0",
+  "protocol_version": "1.1.0",
   "capability_version": "1.0",
   "firmware_version": "1.0.0"
 }

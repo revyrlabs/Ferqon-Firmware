@@ -1,17 +1,16 @@
 # Ferqon Firmware
 
-Portable, Apache-2.0 licensed firmware for the Ferqon real-time interaction node. Supports multiple MCU platforms (RP2040, ESP32, STM32, Teensy) with a Linux-kernel-style architecture separating portable `core/` from platform-specific `platforms/<device>/`.
+Portable, Apache-2.0 licensed firmware for the Ferqon real-time interaction node. Supports multiple MCU platforms (RP2040, ESP32, STM32, Teensy) with a Linux-kernel-style architecture separating portable `src/` from platform-specific `platforms/<device>/`.
 
 ## Quick Start
 
 ```bash
 # Clone with submodules
 git clone --recurse-submodules https://github.com/repvi/Ferqon.git
-cd Ferqon/ferqon_firmware
+cd Ferqon/firmware
 
-# Install dependencies
+# Install dependencies (includes PlatformIO Core)
 pip install -r tools/requirements.txt
-pio install  # PlatformIO Core
 
 # Build for Raspberry Pi Pico (Arduino backend)
 pio run -e pico_arduino
@@ -27,16 +26,16 @@ See [docs/adding_a_board.md](docs/adding_a_board.md) for adding support for new 
 Ferqon Firmware follows a Linux-kernel-style split:
 
 ```
-core/                    ← Portable: command parsing, scheduler, drivers
+src/                     ← Portable: command parser, protocol, dispatcher, drivers
   ↕ talks only through FERQON_PLT_* vtable API
 platforms/<device>/      ← Platform-specific: vendor SDK, Arduino lives here
   board.yml              ← Single source of truth
-  generated/*.h          ← Committed, CI-verified headers
+  generated/*.h          ← Generated, CI-verified headers
   <device>_io.cpp        ← Hardware access (gated by capability macros)
 ```
 
 **Three invariants:**
-1. `core/` must build against a `native` target with stub ops — no vendor includes leak in.
+1. `src/` must build against a `native` target with stub ops — no vendor includes leak in.
 2. Every hardware op in `platforms/<device>/` must go through `ferqon_cap_*()` validators from generated headers.
 3. One YAML → one header set → one platform folder. Adding a board is purely additive.
 
@@ -45,14 +44,14 @@ platforms/<device>/      ← Platform-specific: vendor SDK, Arduino lives here
 | Platform | MCU | Backend | Status |
 |----------|-----|---------|--------|
 | pico | RP2040 | Arduino | ✅ Primary |
-| rp2040 | RP2040 | Arduino | ✅ |
-| pico_native | RP2040 | Pico SDK | ✅ |
-| esp32 | ESP32 | Arduino | ✅ |
-| esp32s3 | ESP32-S3 | Arduino | ✅ |
-| stm32f4 | STM32F4 | Arduino | ✅ |
-| stm32f7 | STM32F7 | Arduino | ✅ |
-| teensy40 | Teensy 4.0 | Arduino | ✅ |
-| teensy41 | Teensy 4.1 | Arduino | ✅ |
+| rp2040 | RP2040 | Arduino | 🚧 In development (see `platforms/in_development/rp2040/`) |
+| pico_native | RP2040 | Pico SDK | 🚧 In development (see `platforms/in_development/rp2040/`) |
+| esp32 | ESP32 | Arduino | 🚧 In development (see `platforms/in_development/esp32/`) |
+| esp32s3 | ESP32-S3 | Arduino | 🚧 In development (see `platforms/in_development/esp32s3/`) |
+| stm32f4 | STM32F4 | Arduino | 🚧 In development (see `platforms/in_development/stm32f4/`) |
+| stm32f7 | STM32F7 | Arduino | 🚧 In development (see `platforms/in_development/stm32f7/`) |
+| teensy40 | Teensy 4.0 | Arduino | 🚧 In development (see `platforms/in_development/teensy40/`) |
+| teensy41 | Teensy 4.1 | Arduino | 🚧 In development (see `platforms/in_development/teensy41/`) |
 
 ## Documentation
 
@@ -62,13 +61,14 @@ platforms/<device>/      ← Platform-specific: vendor SDK, Arduino lives here
 - [docs/protocol.md](docs/protocol.md) — Device-side protocol subsystem
 - [docs/validation_model.md](docs/validation_model.md) — Three-layer validation strategy
 
-## DUT (Device Under Test)
+## Examples and HIL Tests
 
-For Ferqon Hardware-in-the-Loop testing, reference DUT firmware is provided in the `dut/` directory (sibling to `firmware/`). See [dut/README.md](../dut/README.md) for:
-- Arduino DUT sketches (Uno/Nano, ESP32, RP2040)
-- DUT flashing utilities
-- Wiring diagrams
-- System-HIL test harness
+For example scripts and Hardware-in-the-Loop test helpers, see the `examples/` directory:
+- `example_full_hil_test.py`
+- `example_gpio_test.py`
+- `example_uart_test.py`
+- `example_ping_test.py`
+- `simple_echo_test.py`
 
 ## Development Workflow
 
@@ -81,10 +81,8 @@ For Ferqon Hardware-in-the-Loop testing, reference DUT firmware is provided in t
 ## Testing
 
 ```bash
-# Native unit tests (core portability)
-pio test -e native_ringbuf
-pio test -e native_multicore
-pio test -e native_singlecore
+# Native unit tests (protocol constants, no hardware required)
+pio test -e native
 
 # Hardware smoke test (requires attached device)
 python3 tools/diagnose.py --port /dev/ttyACM0

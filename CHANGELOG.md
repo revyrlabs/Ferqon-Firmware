@@ -15,14 +15,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CI pipeline with generator drift detection
 
 ### Changed
-- Moved `drivers/` under `core/drivers/`
+- Moved `drivers/` under `src/drivers/`
 - Renamed `hil_configs/` to `examples/`
 - Archived legacy CommandParser/IOController to `legacy/`
 
 ### Deprecated
 - JSON board definitions (use YAML `board.yml` instead)
 
-## [1.0.0] - 2024-XX-XX
+## [1.0.0] - 2024-08-01
 
 ### Added
 - Initial release
@@ -36,5 +36,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Multicore scheduling
 - Native unit tests
 
-[Unreleased]: https://github.com/repvi/ferqon_firmware/compare/v1.0.0...HEAD
-[1.0.0]: https://github.com/repvi/ferqon_firmware/releases/tag/v1.0.0
+[Unreleased]: https://github.com/repvi/Ferqon/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/repvi/Ferqon/releases/tag/v1.0.0

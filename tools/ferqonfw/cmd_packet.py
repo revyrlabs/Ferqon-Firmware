@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: Copyright (c) 2024-2026 Revyr Labs
 """
 cmd_packet.py
 -------------
@@ -22,7 +24,7 @@ def encode_packet(command_name: str, params: dict) -> str:
     commands_path = ssot_dir / "commands.json"
 
     try:
-        with open(commands_path) as f:
+        with open(commands_path, encoding="utf-8") as f:
             commands_data = json.load(f)
     except FileNotFoundError:
         raise ValueError("commands.json not found")
@@ -106,36 +108,40 @@ def decode_packet(hex_str: str) -> str:
     result.append(f"START: 0x{start:02X}")
 
     if status_or_cmd == 0x00:
-        result.append(f"STATUS: 0x00 (OK)")
+        result.append("STATUS: 0x00 (OK)")
         result.append(f"DATA_LEN: 0x{length:02X}")
         if length > 0:
-            data = packet[3:3+length]
+            data = packet[3 : 3 + length]
             result.append(f"DATA: {' '.join(f'{b:02X}' for b in data)}")
         checksum_idx = 3 + length
         if checksum_idx < len(packet):
             checksum = packet[checksum_idx]
             expected_checksum = calculate_checksum(bytes(packet[:checksum_idx]))
-            result.append(f"CHECKSUM: 0x{checksum:02X} ({'valid' if checksum == expected_checksum else 'invalid'})")
+            result.append(
+                f"CHECKSUM: 0x{checksum:02X} ({'valid' if checksum == expected_checksum else 'invalid'})"
+            )
     elif status_or_cmd == 0xFF:
-        result.append(f"STATUS: 0xFF (ERROR)")
+        result.append("STATUS: 0xFF (ERROR)")
         result.append(f"DATA_LEN: 0x{length:02X}")
         if length > 0:
             error_code = packet[3]
             result.append(f"ERROR_CODE: 0x{error_code:02X}")
             if length > 1:
-                detail = packet[4:4+length-1]
+                detail = packet[4 : 4 + length - 1]
                 result.append(f"DETAIL: {' '.join(f'{b:02X}' for b in detail)}")
         checksum_idx = 3 + length
         if checksum_idx < len(packet):
             checksum = packet[checksum_idx]
             expected_checksum = calculate_checksum(bytes(packet[:checksum_idx]))
-            result.append(f"CHECKSUM: 0x{checksum:02X} ({'valid' if checksum == expected_checksum else 'invalid'})")
+            result.append(
+                f"CHECKSUM: 0x{checksum:02X} ({'valid' if checksum == expected_checksum else 'invalid'})"
+            )
     else:
         # Request
         ssot_dir = get_ssot_dir()
         commands_path = ssot_dir / "commands.json"
         try:
-            with open(commands_path) as f:
+            with open(commands_path, encoding="utf-8") as f:
                 commands_data = json.load(f)
             cmd_name = None
             for name, cmd in commands_data["commands"].items():
@@ -151,13 +157,15 @@ def decode_packet(hex_str: str) -> str:
 
         result.append(f"PARAM_LEN: 0x{length:02X}")
         if length > 0:
-            params = packet[3:3+length]
+            params = packet[3 : 3 + length]
             result.append(f"PARAMS: {' '.join(f'{b:02X}' for b in params)}")
         checksum_idx = 3 + length
         if checksum_idx < len(packet):
             checksum = packet[checksum_idx]
             expected_checksum = calculate_checksum(bytes(packet[:checksum_idx]))
-            result.append(f"CHECKSUM: 0x{checksum:02X} ({'valid' if checksum == expected_checksum else 'invalid'})")
+            result.append(
+                f"CHECKSUM: 0x{checksum:02X} ({'valid' if checksum == expected_checksum else 'invalid'})"
+            )
 
     return "\n".join(result)
 

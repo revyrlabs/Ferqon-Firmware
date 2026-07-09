@@ -1,3 +1,5 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+/* SPDX-FileCopyrightText: Copyright (c) 2024-2026 Revyr Labs */
 #ifndef FERQON_DRIVER_CALL_H
 #define FERQON_DRIVER_CALL_H
 

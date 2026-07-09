@@ -1,3 +1,6 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+/* SPDX-FileCopyrightText: Copyright (c) 2024-2026 Revyr Labs */
+/* Command dispatcher: route parsed requests to the registered driver. */
 #include "dispatcher.h"
 #include "ferqon_log.h"
 #include "protocol.h"
@@ -13,10 +16,12 @@ void ferqon_dispatcher_init(void) {
 }
 
 void ferqon_register_driver(const ferqon_driver_t *driver) {
-    if (g_driver_count < FERQON_MAX_DRIVERS) {
-        memcpy(&g_drivers[g_driver_count], driver, sizeof(ferqon_driver_t));
-        g_driver_count++;
+    if (g_driver_count >= FERQON_MAX_DRIVERS) {
+        FERQON_LOG_ERROR("driver table full; cannot register %s", driver->name);
+        return;
     }
+    memcpy(&g_drivers[g_driver_count], driver, sizeof(ferqon_driver_t));
+    g_driver_count++;
 }
 
 bool ferqon_dispatch_request(const ferqon_request_t *req) {

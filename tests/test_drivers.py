@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: Copyright (c) 2024-2026 Revyr Labs
 """
 test_drivers.py — Test Ferqon driver system
 ==========================================
@@ -28,7 +30,7 @@ from pathlib import Path
 # regardless of the working directory the test is run from.
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / 'tools'))
 
-from device_config import get_default_baudrate
+from device_config import get_default_baudrate, get_board_name
 
 try:
     import serial
@@ -66,7 +68,7 @@ class DriverTestCase(unittest.TestCase):
         # If no serial connection, try to auto-discover and set one up
         if cls.ser is None:
             try:
-                port = find_board("pico")
+                port = find_board(get_board_name())
                 if port:
                     cls.ser = serial.Serial(port, get_default_baudrate(), timeout=5.0)
                     cls.pico_port = port

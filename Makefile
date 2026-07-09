@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: Copyright (c) 2024-2026 Revyr Labs
 .PHONY: pico esp32 esp32s3 teensy40 teensy41 clean all help selftest selftest-emu identify flash-and-test emu-start emu-stop emu-test
 
 # Default target
@@ -5,8 +7,8 @@
 
 # Board-specific build targets
 pico:
-	@echo "Building for Raspberry Pi Pico..."
-	pio run -e pico
+	@echo "Building for Raspberry Pi Pico (Arduino backend)..."
+	pio run -e pico_arduino
 
 esp32:
 	@echo "Building for ESP32..."
@@ -27,7 +29,7 @@ teensy41:
 # Build all boards
 all:
 	@echo "Building for all boards..."
-	pio run -e pico
+	pio run -e pico_arduino
 	pio run -e esp32
 	pio run -e esp32s3
 	pio run -e teensy40

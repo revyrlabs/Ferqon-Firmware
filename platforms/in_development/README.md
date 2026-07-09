@@ -14,16 +14,13 @@ A platform can be promoted from this directory to the main `platforms/` director
 
 ## Current Status
 
-- **arduino/**: Legacy Arduino backend (pre-v1 protocol) - needs v1 protocol implementation
-- **esp32/**: ESP32 platform - incomplete
-- **esp32s3/**: ESP32-S3 platform - incomplete
-- **rp2040/**: Generic RP2040 platform - incomplete
-- **stm32f4/**: STM32F4 platform - incomplete
-- **stm32f7/**: STM32F7 platform - incomplete
-- **teensy40/**: Teensy 4.0 platform - incomplete
-- **teensy41/**: Teensy 4.1 platform - incomplete
-- **core/**: Legacy core runtime - being replaced by new modular structure
-- **protocol/**: Legacy protocol implementation - replaced by v1 protocol in src/protocol/
+- **esp32/**: ESP32 board definition - incomplete
+- **esp32s3/**: ESP32-S3 board definition - incomplete
+- **rp2040/**: Generic RP2040 board definition - incomplete
+- **stm32f4/**: STM32F4 board definition - incomplete
+- **stm32f7/**: STM32F7 board definition - incomplete
+- **teensy40/**: Teensy 4.0 board definition - incomplete
+- **teensy41/**: Teensy 4.1 board definition - incomplete
 
 ## Migration Path
 

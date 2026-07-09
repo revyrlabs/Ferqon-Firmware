@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: Copyright (c) 2024-2026 Revyr Labs
 """
 Firmware-side test configuration.
 
@@ -52,8 +54,8 @@ def get_pio_path() -> str:
     pio_path = shutil.which("pio")
     if pio_path:
         return pio_path
-    # Fallback to common location
-    return "/home/alx/.local/bin/pio"
+    # Fallback to common executable name; the caller should check existence
+    return "pio"
 
 
 def get_backend_url() -> str:

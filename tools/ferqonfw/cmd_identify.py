@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: Copyright (c) 2024-2026 Revyr Labs
 """
 cmd_identify.py
 --------------
@@ -17,21 +19,27 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from ferqon_emulator import FerqonEmulator
 from ferqon_selftest import SerialTransport, EmulatorTransport
 from ferqon_hw.frame_codec import encode_frame as _encode_frame
-from ferqon_hw.serial_backend import open_serial
+
 
 # Load SSOT
 def _load_commands_json() -> dict[str, Any]:
     """Load commands.json SSOT from multiple possible locations."""
     candidates = [
         Path(__file__).parent.parent.parent / "protocol" / "ssot" / "commands.json",
-        Path(__file__).parent.parent.parent.parent / "sandbox" / "protocol_sdk" / "sdk" / "serial" / "commands.json",
+        Path(__file__).parent.parent.parent.parent
+        / "sandbox"
+        / "protocol_sdk"
+        / "sdk"
+        / "serial"
+        / "commands.json",
         Path("/app/protocol_sdk/sdk/serial/commands.json"),
     ]
     for p in candidates:
         if p.exists():
-            with open(p) as f:
+            with open(p, encoding="utf-8") as f:
                 return json.load(f)
     raise FileNotFoundError("commands.json SSOT not found in any candidate location")
+
 
 _SPEC = _load_commands_json()
 
@@ -78,7 +86,7 @@ def cmd_identify(args: argparse.Namespace) -> int:
             return 1
 
         body = resp.get("body", b"")
-        
+
         # Strip packet type byte if present (PKT_DONE = 3)
         if body and body[0] in (1, 2, 3, 4, 5, 6, 7):  # Valid packet types
             body = body[1:]

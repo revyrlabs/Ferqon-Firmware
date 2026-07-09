@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: Copyright (c) 2024-2026 Revyr Labs
 """
 main.py
 -------
@@ -46,94 +48,126 @@ from ferqonfw.cmd_selftest import cmd_selftest
 
 def main():
     parser = argparse.ArgumentParser(
-        prog='ferqonfw',
-        description='Ferqon Firmware CLI - Build, flash, and manage Ferqon firmware'
+        prog="ferqonfw",
+        description="Ferqon Firmware CLI - Build, flash, and manage Ferqon firmware",
     )
 
-    subparsers = parser.add_subparsers(dest='command', help='Available commands')
+    subparsers = parser.add_subparsers(dest="command", help="Available commands")
 
     # list command
-    list_parser = subparsers.add_parser('list', help='List available platforms')
+    list_parser = subparsers.add_parser("list", help="List available platforms")
     list_parser.set_defaults(func=cmd_list)
 
     # build command
-    build_parser = subparsers.add_parser('build', help='Build firmware for a platform')
-    build_parser.add_argument('platform', help='Platform name (e.g., pico, esp32)')
+    build_parser = subparsers.add_parser("build", help="Build firmware for a platform")
+    build_parser.add_argument("platform", help="Platform name (e.g., pico, esp32)")
     build_parser.set_defaults(func=cmd_build)
 
     # flash command
-    flash_parser = subparsers.add_parser('flash', help='Flash firmware to a platform')
-    flash_parser.add_argument('platform', help='Platform name (e.g., pico, esp32)')
+    flash_parser = subparsers.add_parser("flash", help="Flash firmware to a platform")
+    flash_parser.add_argument("platform", help="Platform name (e.g., pico, esp32)")
     flash_parser.set_defaults(func=cmd_flash)
 
     # clean command
-    clean_parser = subparsers.add_parser('clean', help='Clean build artifacts')
-    clean_parser.add_argument('platform', help='Platform name (e.g., pico, esp32)')
+    clean_parser = subparsers.add_parser("clean", help="Clean build artifacts")
+    clean_parser.add_argument("platform", help="Platform name (e.g., pico, esp32)")
     clean_parser.set_defaults(func=cmd_clean)
 
     # doctor command
-    doctor_parser = subparsers.add_parser('doctor', help='Check environment and dependencies')
+    doctor_parser = subparsers.add_parser(
+        "doctor", help="Check environment and dependencies"
+    )
     doctor_parser.set_defaults(func=cmd_doctor)
 
     # gen command
-    gen_parser = subparsers.add_parser('gen', help='Generate protocol artifacts')
-    gen_subparsers = gen_parser.add_subparsers(dest='gen_target', help='Generation target')
+    gen_parser = subparsers.add_parser("gen", help="Generate protocol artifacts")
+    gen_subparsers = gen_parser.add_subparsers(
+        dest="gen_target", help="Generation target"
+    )
 
-    gen_core_parser = gen_subparsers.add_parser('core', help='Generate board-agnostic headers')
-    gen_core_parser.set_defaults(func=cmd_gen, gen_target='core')
+    gen_core_parser = gen_subparsers.add_parser(
+        "core", help="Generate board-agnostic headers"
+    )
+    gen_core_parser.set_defaults(func=cmd_gen, gen_target="core")
 
-    gen_board_parser = gen_subparsers.add_parser('board', help='Generate per-board tables')
-    gen_board_parser.add_argument('platform', help='Platform name (e.g., pico, esp32)')
-    gen_board_parser.set_defaults(func=cmd_gen, gen_target='board')
+    gen_board_parser = gen_subparsers.add_parser(
+        "board", help="Generate per-board tables"
+    )
+    gen_board_parser.add_argument("platform", help="Platform name (e.g., pico, esp32)")
+    gen_board_parser.set_defaults(func=cmd_gen, gen_target="board")
 
-    gen_all_parser = gen_subparsers.add_parser('all', help='Generate all artifacts')
-    gen_all_parser.set_defaults(func=cmd_gen, gen_target='all')
+    gen_all_parser = gen_subparsers.add_parser("all", help="Generate all artifacts")
+    gen_all_parser.set_defaults(func=cmd_gen, gen_target="all")
 
     gen_parser.set_defaults(func=cmd_gen, gen_target=None)
 
     # validate command
-    validate_parser = subparsers.add_parser('validate', help='Validate SSOT JSON files')
-    validate_parser.add_argument('--json', action='store_true', help='Output JSON format')
+    validate_parser = subparsers.add_parser("validate", help="Validate SSOT JSON files")
+    validate_parser.add_argument(
+        "--json", action="store_true", help="Output JSON format"
+    )
     validate_parser.set_defaults(func=cmd_validate)
 
     # packet command
-    packet_parser = subparsers.add_parser('packet', help='Encode/decode packets')
-    packet_subparsers = packet_parser.add_subparsers(dest='packet_action', help='Packet action')
+    packet_parser = subparsers.add_parser("packet", help="Encode/decode packets")
+    packet_subparsers = packet_parser.add_subparsers(
+        dest="packet_action", help="Packet action"
+    )
 
-    packet_encode_parser = packet_subparsers.add_parser('encode', help='Encode a command to hex')
-    packet_encode_parser.add_argument('command', help='Command name (e.g., ping, pin_mode)')
-    packet_encode_parser.add_argument('--param', action='append', help='Parameters (key=value)', default=[])
+    packet_encode_parser = packet_subparsers.add_parser(
+        "encode", help="Encode a command to hex"
+    )
+    packet_encode_parser.add_argument(
+        "command", help="Command name (e.g., ping, pin_mode)"
+    )
+    packet_encode_parser.add_argument(
+        "--param", action="append", help="Parameters (key=value)", default=[]
+    )
     packet_encode_parser.set_defaults(func=cmd_packet_encode)
 
-    packet_decode_parser = packet_subparsers.add_parser('decode', help='Decode a hex packet')
-    packet_decode_parser.add_argument('hex', help='Hex packet (e.g., "AB 09 00 A2")')
+    packet_decode_parser = packet_subparsers.add_parser(
+        "decode", help="Decode a hex packet"
+    )
+    packet_decode_parser.add_argument("hex", help='Hex packet (e.g., "AB 09 00 A2")')
     packet_decode_parser.set_defaults(func=cmd_packet_decode)
 
     # drivers command
-    drivers_parser = subparsers.add_parser('drivers', help='Driver management')
-    drivers_subparsers = drivers_parser.add_subparsers(dest='drivers_action', help='Driver action')
+    drivers_parser = subparsers.add_parser("drivers", help="Driver management")
+    drivers_subparsers = drivers_parser.add_subparsers(
+        dest="drivers_action", help="Driver action"
+    )
 
-    drivers_list_parser = drivers_subparsers.add_parser('list', help='List drivers')
+    drivers_list_parser = drivers_subparsers.add_parser("list", help="List drivers")
     drivers_list_parser.set_defaults(func=cmd_drivers_list)
 
     # info command
-    info_parser = subparsers.add_parser('info', help='Show platform capabilities')
-    info_parser.add_argument('platform', help='Platform name (e.g., pico, esp32)')
+    info_parser = subparsers.add_parser("info", help="Show platform capabilities")
+    info_parser.add_argument("platform", help="Platform name (e.g., pico, esp32)")
     info_parser.set_defaults(func=cmd_info)
 
     # identify command
-    identify_parser = subparsers.add_parser('identify', help='Detect whether device is running Ferqon firmware')
+    identify_parser = subparsers.add_parser(
+        "identify", help="Detect whether device is running Ferqon firmware"
+    )
     identify_group = identify_parser.add_mutually_exclusive_group(required=True)
-    identify_group.add_argument('--port', help='Serial port (e.g., /dev/ttyACM0)')
-    identify_group.add_argument('--emulator', action='store_true', help='Use in-process emulator')
+    identify_group.add_argument("--port", help="Serial port (e.g., /dev/ttyACM0)")
+    identify_group.add_argument(
+        "--emulator", action="store_true", help="Use in-process emulator"
+    )
     identify_parser.set_defaults(func=cmd_identify)
 
     # selftest command
-    selftest_parser = subparsers.add_parser('selftest', help='Run self-test matrix against device or emulator')
+    selftest_parser = subparsers.add_parser(
+        "selftest", help="Run self-test matrix against device or emulator"
+    )
     selftest_group = selftest_parser.add_mutually_exclusive_group(required=True)
-    selftest_group.add_argument('--port', help='Serial port (e.g., /dev/ttyACM0)')
-    selftest_group.add_argument('--emulator', action='store_true', help='Use in-process emulator')
-    selftest_parser.add_argument('--json', action='store_true', help='Output JSON summary')
+    selftest_group.add_argument("--port", help="Serial port (e.g., /dev/ttyACM0)")
+    selftest_group.add_argument(
+        "--emulator", action="store_true", help="Use in-process emulator"
+    )
+    selftest_parser.add_argument(
+        "--json", action="store_true", help="Output JSON summary"
+    )
     selftest_parser.set_defaults(func=cmd_selftest)
 
     args = parser.parse_args()
@@ -152,5 +186,5 @@ def main():
         return 1
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     sys.exit(main())
