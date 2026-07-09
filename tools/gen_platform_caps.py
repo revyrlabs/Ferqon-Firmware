@@ -809,7 +809,10 @@ def main() -> None:
     args = parser.parse_args()
 
     # Load schema for validation
-    schema = load_board_schema()
+    try:
+        schema = load_board_schema()
+    except (FileNotFoundError, json.JSONDecodeError) as exc:
+        sys.exit(f"ERROR: Could not load board schema: {exc}")
 
     if args.all:
         # Generate for all platforms
@@ -820,7 +823,10 @@ def main() -> None:
         any_changes = False
         for board_yml in sorted(platforms_dir.glob("*/board.yml")):
             output_dir = board_yml.parent / "generated"
-            changes = generate_for_board(board_yml, output_dir, schema, args.check)
+            try:
+                changes = generate_for_board(board_yml, output_dir, schema, args.check)
+            except (OSError, ValueError, KeyError) as exc:
+                sys.exit(f"ERROR: Failed to process {board_yml}: {exc}")
             if changes:
                 any_changes = True
 
@@ -846,7 +852,10 @@ def main() -> None:
         if not board_path.exists():
             sys.exit(f"ERROR: Board file not found: {board_path}")
 
-        changes = generate_for_board(board_path, output_dir, schema, args.check)
+        try:
+            changes = generate_for_board(board_path, output_dir, schema, args.check)
+        except (OSError, ValueError, KeyError) as exc:
+            sys.exit(f"ERROR: Failed to process {board_path}: {exc}")
 
         if args.check:
             if changes:

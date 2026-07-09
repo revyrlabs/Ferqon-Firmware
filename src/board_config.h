@@ -101,7 +101,7 @@
 
 #else
     /* Force build failure if board is not explicitly specified */
-    #error "FERQON_BOARD not defined. Please specify the target board in platformio.ini build_flags."
+    #error "No FERQON_BOARD_* macro defined. Please specify the target board in platformio.ini build_flags."
 #endif
 
 /* Helper macros for ADC pin calculation */

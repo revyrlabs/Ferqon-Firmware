@@ -7,6 +7,16 @@ version = 1
 # headers (e.g., strict JSON) without breaking consumers.
 
 [[annotations]]
+path = "**/*.md"
+SPDX-License-Identifier = "Apache-2.0"
+SPDX-FileCopyrightText = "Copyright (c) 2024-2026 Revyr Labs"
+
+[[annotations]]
+path = "NOTICE"
+SPDX-License-Identifier = "Apache-2.0"
+SPDX-FileCopyrightText = "Copyright (c) 2024-2026 Revyr Labs"
+
+[[annotations]]
 path = "protocol/ssot/commands.json"
 SPDX-License-Identifier = "Apache-2.0"
 SPDX-FileCopyrightText = "Copyright (c) 2024-2026 Revyr Labs"
@@ -18,20 +28,5 @@ SPDX-FileCopyrightText = "Copyright (c) 2024-2026 Revyr Labs"
 
 [[annotations]]
 path = "platforms/*/generated/*.json"
-SPDX-License-Identifier = "Apache-2.0"
-SPDX-FileCopyrightText = "Copyright (c) 2024-2026 Revyr Labs"
-
-[[annotations]]
-path = "*.md"
-SPDX-License-Identifier = "Apache-2.0"
-SPDX-FileCopyrightText = "Copyright (c) 2024-2026 Revyr Labs"
-
-[[annotations]]
-path = "docs/*.md"
-SPDX-License-Identifier = "Apache-2.0"
-SPDX-FileCopyrightText = "Copyright (c) 2024-2026 Revyr Labs"
-
-[[annotations]]
-path = "NOTICE"
 SPDX-License-Identifier = "Apache-2.0"
 SPDX-FileCopyrightText = "Copyright (c) 2024-2026 Revyr Labs"

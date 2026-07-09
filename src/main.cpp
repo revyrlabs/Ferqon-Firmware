@@ -12,7 +12,11 @@
 /* Not every Arduino board package defines LED_BUILTIN; fall back to the board
  * definition in board_config.h. */
 #ifndef LED_BUILTIN
+#ifdef FERQON_LED_PIN
 #define LED_BUILTIN FERQON_LED_PIN
+#else
+#error "LED_BUILTIN not defined and FERQON_LED_PIN not set for this board"
+#endif
 #endif
 
 /* Driver extern declarations (defined in their .cpp files). */

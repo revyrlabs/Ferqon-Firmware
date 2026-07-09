@@ -53,27 +53,48 @@ from device_config import get_default_baudrate
 _DEFAULT_EMPTY_STRING = ""
 _DEFAULT_ZERO = 0
 
+
 # Load SSOT
 def _load_commands_json() -> dict[str, Any]:
     """Load commands.json SSOT. Use FERQON_COMMANDS_JSON to override."""
     commands_json_env = os.getenv("FERQON_COMMANDS_JSON")
     candidates = [Path(commands_json_env)] if commands_json_env else []
-    candidates.append(Path(__file__).parent.parent.parent / "protocol" / "ssot" / "commands.json")
+    candidates.append(
+        Path(__file__).parent.parent.parent / "protocol" / "ssot" / "commands.json"
+    )
     for p in candidates:
         if p.exists():
             with open(p, encoding="utf-8") as f:
-                return json.load(f)
+                spec = json.load(f)
+            required_keys = ("commands", "tlv_types", "ferqon_signature")
+            missing = [k for k in required_keys if k not in spec]
+            if missing:
+                raise ValueError(
+                    f"commands.json at {p} missing required keys: {missing}"
+                )
+            return spec
     # Fallback to minimal defaults
     return {
         "tlv_types": {
-            "DEVICE_NAME": 1, "MCU_TYPE": 2, "FIRMWARE_VERSION": 3,
-            "PROTOCOL_VERSION": 4, "FERQON_SIGNATURE": 16, "DRIVER": 1,
+            "DEVICE_NAME": 1,
+            "MCU_TYPE": 2,
+            "FIRMWARE_VERSION": 3,
+            "PROTOCOL_VERSION": 4,
+            "FERQON_SIGNATURE": 16,
+            "DRIVER": 1,
         },
         "ferqon_signature": {"magic": "FERQON"},
-        "commands": {"ping": {"id": 9}, "echo": {"id": 8}, "driver_info": {"id": 2},
-                     "device_info": {"id": 11}, "capabilities": {"id": 12},
-                     "gpio_read": {"id": 16}, "gpio_write": {"id": 17}},
+        "commands": {
+            "ping": {"id": 9},
+            "echo": {"id": 8},
+            "driver_info": {"id": 2},
+            "device_info": {"id": 11},
+            "capabilities": {"id": 12},
+            "gpio_read": {"id": 16},
+            "gpio_write": {"id": 17},
+        },
     }
+
 
 _SPEC = _load_commands_json()
 
@@ -199,24 +220,25 @@ class SerialTransport(Transport):
         # Write frame
         self._conn.write(frame)
         self._conn.flush()
-        
+
         # Read response
         start = time.time()
         buf = bytearray()
         decoder = None
         try:
             from ferqon_hw.frame_codec import FrameDecoder
+
             decoder = FrameDecoder()
         except ImportError:
             # Fallback simple decoder
             pass
-        
+
         while time.time() - start < timeout_s:
             data = self._conn.read(1)
             if not data:
                 continue
             buf.extend(data)
-            
+
             # Try to decode frame
             if decoder:
                 frames = decoder.feed(data)
@@ -238,7 +260,7 @@ class SerialTransport(Transport):
                 cmd_id = buf[2]
                 length = buf[3]
                 if len(buf) >= 6 + length:
-                    body = bytes(buf[4:4+length])
+                    body = bytes(buf[4 : 4 + length])
                     # Strip packet type byte if present
                     if body and body[0] in (1, 2, 3, 4, 5, 6, 7):
                         body = body[1:]
@@ -248,7 +270,7 @@ class SerialTransport(Transport):
                         "cmd_id": cmd_id,
                         "body": body,
                     }
-        
+
         return {"ok": False, "error": "timeout"}
 
     def close(self) -> None:
@@ -289,7 +311,12 @@ class EmulatorTransport(Transport):
         elif payload and payload[0] == 4:  # PKT_ERROR
             return {"ok": False, "error": "error response"}
         else:
-            return {"ok": True, "ack": True, "pkt_type": payload[0] if payload else 0, "body": payload[1:] if payload else b""}
+            return {
+                "ok": True,
+                "ack": True,
+                "pkt_type": payload[0] if payload else 0,
+                "body": payload[1:] if payload else b"",
+            }
 
     def close(self) -> None:
         pass
@@ -555,7 +582,9 @@ def run_tests(transport: Transport) -> TestSummary:
     for test in tests:
         result = test(transport)
         summary.add_result(result)
-        print(f"{result.status.value:4} | {result.name:20} | {result.duration_ms:6.1f}ms")
+        print(
+            f"{result.status.value:4} | {result.name:20} | {result.duration_ms:6.1f}ms"
+        )
         if result.error:
             print(f"      Error: {result.error}")
 
@@ -567,7 +596,9 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Ferqon firmware self-test")
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument("--port", help="Serial port (e.g., /dev/ttyACM0)")
-    group.add_argument("--emulator", action="store_true", help="Use in-process emulator")
+    group.add_argument(
+        "--emulator", action="store_true", help="Use in-process emulator"
+    )
     parser.add_argument("--json", action="store_true", help="Output JSON summary")
     args = parser.parse_args()
 
@@ -597,7 +628,9 @@ def main() -> int:
         summary = run_tests(transport)
 
         print("-" * 60)
-        print(f"Total: {summary.total} | Passed: {summary.passed} | Failed: {summary.failed} | Skipped: {summary.skipped}")
+        print(
+            f"Total: {summary.total} | Passed: {summary.passed} | Failed: {summary.failed} | Skipped: {summary.skipped}"
+        )
         print(f"Duration: {summary.duration_ms:.1f}ms")
 
         if args.json:

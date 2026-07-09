@@ -25,8 +25,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `board_defs/` directory removed in favor of `platforms/<board>/board.yml`
 
 ### Removed
-- Legacy `device_channels.c` generated artifact
 - `board_defs/` deprecated JSON board definitions
+
+### Fixed
+- `device_channels.c` regenerated with a new `device_descriptor.h` so it is self-contained and compiles
 
 ## [1.0.0] - 2024-08-01
 
