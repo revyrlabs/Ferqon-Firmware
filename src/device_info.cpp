@@ -57,10 +57,14 @@ static uint16_t append_signature(uint8_t *buf, uint16_t max_len) {
 
 static uint32_t get_free_ram(void) {
 #ifdef __MBED__
+#if MBED_HEAP_STATS_ENABLED
     mbed_stats_heap_t stats;
     mbed_stats_heap_get(&stats);
     uint32_t used = stats.current_size + stats.overhead_size;
     return (stats.reserved_size > used) ? (stats.reserved_size - used) : 0;
+#else
+    return FERQON_RAM_SIZE_BYTES;
+#endif
 #elif defined(ESP32) || defined(ESP8266)
     return ESP.getFreeHeap();
 #else
@@ -73,6 +77,9 @@ static bool parse_version(const char *version, uint8_t *major, uint8_t *minor, u
     if (!version) return false;
     unsigned int maj = 0, min = 0, pat = 0;
     if (sscanf(version, "%u.%u.%u", &maj, &min, &pat) != 3) {
+        return false;
+    }
+    if (maj > 255 || min > 255 || pat > 255) {
         return false;
     }
     *major = (uint8_t)maj;
@@ -119,16 +126,19 @@ static bool driver_info_handler(uint8_t seq, uint8_t cmd_id,
         if (!name) continue;
 
         uint16_t name_len = (uint16_t)strlen(name);
-        if (name_len > 254) name_len = 254;  /* cmd_id + name must fit in uint8_t length */
-        if (i + 2 + name_len > cap) break;
+        if (name_len > 253) name_len = 253;  /* keep within 1-byte length field */
+
+        uint16_t driver_tlv = (uint16_t)(2 + name_len);
+        uint16_t command_tlv = (uint16_t)(3 + name_len);
+        if (i + driver_tlv + command_tlv > cap) continue;
+
         i += append_str_tlv(&response[i], TLV_DRIVER, name, cap - i);
 
-        if (i + 3 + name_len > cap) break;
         response[i] = TLV_COMMAND;
         response[i + 1] = (uint8_t)(1 + name_len);
         response[i + 2] = g_drivers[d].id;
         memcpy(&response[i + 3], name, name_len);
-        i += (uint16_t)(3 + name_len);
+        i += command_tlv;
     }
 
     /* VERSION TLV: type=0x04, len=3, major, minor, patch */
@@ -151,7 +161,6 @@ static bool device_info_dispatch(uint8_t seq, uint8_t cmd_id,
                                 const uint8_t *params, uint8_t param_len,
                                 uint8_t *response, uint8_t *response_len,
                                 bool *already_responded) {
-    /* Always return true for DEVICE_INFO command */
     if (cmd_id == FERQON_CMD_DEVICE_INFO) {
         return device_info_handler(seq, cmd_id, params, param_len, response, response_len, already_responded);
     }
@@ -162,7 +171,6 @@ static bool driver_info_dispatch(uint8_t seq, uint8_t cmd_id,
                                 const uint8_t *params, uint8_t param_len,
                                 uint8_t *response, uint8_t *response_len,
                                 bool *already_responded) {
-    /* Always return true for DRIVER_INFO command */
     if (cmd_id == FERQON_CMD_DRIVER_INFO) {
         return driver_info_handler(seq, cmd_id, params, param_len, response, response_len, already_responded);
     }

@@ -96,14 +96,13 @@ def print_board_summary(board_data: dict) -> None:
     flash_kb = board_data.get("flash_size_bytes", 0) // 1024
     clock_mhz = board_data.get("sys_clock_hz", 0) // 1_000_000
 
-    # Get ADC pins from new YAML structure
     adc_config = board_data.get("adc", {})
     adc_pins = adc_config.get("pins", [])
 
     if strategy == "multicore":
         sched_desc = "multicore (Core 0=serial RX, Core 1=command exec)"
     elif strategy == "uart_rx_isr":
-        sched_desc = "single-core (UART RX ISR + ring buffer → main loop)"
+        sched_desc = "single-core (UART RX ISR + ring buffer -> main loop)"
     else:
         sched_desc = strategy
 
@@ -117,7 +116,7 @@ def print_board_summary(board_data: dict) -> None:
     print(f"│  RAM:       {ram_kb} KB")
     print(f"│  Flash:     {flash_kb} KB")
     print(f"│  Clock:     {clock_mhz} MHz")
-    print(f"│  GPIO:      0–{board_data.get('max_gpio', '?')}")
+    print(f"│  GPIO:      0-{board_data.get('max_gpio', '?')}")
     print(f"│  ADC pins:  {len(adc_pins)}")
     print(f"│  Backend:   {board_data.get('backend', '?')}")
     print("└" + "─" * 60)
@@ -131,7 +130,6 @@ def run_gen_platform_caps(firmware_dir: Path, board_data: dict) -> bool:
     root_generated_dir = firmware_dir / "generated"
     gen_script = firmware_dir / "tools" / "gen_platform_caps.py"
 
-    # Ensure generated directories exist
     board_generated_dir.mkdir(parents=True, exist_ok=True)
     root_generated_dir.mkdir(parents=True, exist_ok=True)
 
@@ -141,7 +139,12 @@ def run_gen_platform_caps(firmware_dir: Path, board_data: dict) -> bool:
         print(f"Error: Generator script not found: {gen_script}")
         return False
 
-    cmd = [sys.executable, str(gen_script), str(board_yml), str(board_generated_dir)]
+    cmd = [
+        sys.executable,
+        str(gen_script),
+        str(board_yml),
+        str(board_generated_dir)
+    ]
 
     print(f"Running: {' '.join(cmd)}")
     result = subprocess.run(cmd, capture_output=True, text=True)

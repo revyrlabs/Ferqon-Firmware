@@ -70,6 +70,4 @@ static const uint8_t FERQON_RESERVED_PINS[] = {
 
 // Device descriptor constants
 #define FERQON_DEVICE_TYPE         "pico-rp2040"
-#define FERQON_PROTOCOL_VERSION    "1.1.0"
 #define FERQON_CAPABILITY_VERSION  "1.0"
-#define FERQON_FIRMWARE_VERSION     "1.0.0"

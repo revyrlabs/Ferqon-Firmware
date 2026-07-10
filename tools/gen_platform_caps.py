@@ -207,9 +207,7 @@ def generate_platform_caps_h(board: Dict[str, Any]) -> str:
     # Device descriptor constants
     lines.append("// Device descriptor constants")
     lines.append(f'#define FERQON_DEVICE_TYPE         "{board["device_type"]}"')
-    lines.append(f'#define FERQON_PROTOCOL_VERSION    "{board["protocol_version"]}"')
     lines.append(f'#define FERQON_CAPABILITY_VERSION  "{board["capability_version"]}"')
-    lines.append(f'#define FERQON_FIRMWARE_VERSION     "{board["firmware_version"]}"')
     lines.append("")
 
     return "\n".join(lines)
