@@ -40,62 +40,30 @@ _DEFAULT_ZERO = 0
 
 # Load SSOT
 def _load_commands_json() -> dict[str, Any]:
-    """Load commands.json SSOT from multiple possible locations."""
-    candidates = [
-        Path(__file__).parent.parent / "protocol" / "ssot" / "commands.json",
-        Path(__file__).parent.parent.parent
-        / "sandbox"
-        / "protocol_sdk"
-        / "sdk"
-        / "serial"
-        / "commands.json",
-        Path("/app/protocol_sdk/sdk/serial/commands.json"),
-    ]
-    for p in candidates:
-        if p.exists():
-            with open(p, encoding="utf-8") as f:
-                return json.load(f)
-    # Fallback to minimal defaults
-    return {
-        "frame": {"start_byte": 171, "crc_poly": 4129, "crc_init": 65535},
-        "tlv_types": {
-            "DEVICE_NAME": 1,
-            "MCU_TYPE": 2,
-            "FIRMWARE_VERSION": 3,
-            "PROTOCOL_VERSION": 4,
-            "BUILD_TIMESTAMP": 5,
-            "FREE_RAM": 8,
-            "UPTIME_MS": 9,
-            "FERQON_SIGNATURE": 16,
-            "DRIVER": 1,
-            "COMMAND": 2,
-            "VERSION": 4,
-        },
-        "ferqon_signature": {
-            "magic": "FERQON",
-            "vendor": "revyrlabs",
-            "capability_version": 1,
-        },
-        "commands": {
-            "ping": {"id": 9},
-            "echo": {"id": 8},
-            "driver_info": {"id": 2},
-            "device_info": {"id": 11},
-            "capabilities": {"id": 12},
-            "gpio_read": {"id": 16},
-            "gpio_write": {"id": 17},
-        },
-        "packet_types": {"REQUEST": 1, "ACK": 2, "DONE": 3, "ERROR": 4},
-    }
+    """Load commands.json SSOT from the firmware protocol directory."""
+    path = Path(__file__).resolve().parents[1] / "protocol" / "ssot" / "commands.json"
+    if not path.exists():
+        raise FileNotFoundError(f"commands.json SSOT not found: {path}")
+    with open(path, encoding="utf-8") as f:
+        return json.load(f)
+
+
+def _load_board_json(board: str) -> dict[str, Any]:
+    """Load generated board.json for the requested board."""
+    path = Path(__file__).resolve().parents[1] / "platforms" / board / "generated" / "board.json"
+    if not path.exists():
+        raise FileNotFoundError(f"Generated board.json not found for board '{board}': {path}")
+    with open(path, encoding="utf-8") as f:
+        return json.load(f)
 
 
 _SPEC = _load_commands_json()
 
 # Protocol constants from SSOT
-_frame = _SPEC.get("frame", {})
-START_BYTE = _frame.get("start_byte", 0xAB)
-CRC_POLY = _frame.get("crc_poly", 0x1021)
-CRC_INIT = _frame.get("crc_init", 0xFFFF)
+_frame = _SPEC["frame"]
+START_BYTE = _frame["start_byte"]
+CRC_POLY = _frame["crc_poly"]
+CRC_INIT = _frame["crc_init"]
 
 _packet_types = _SPEC["packet_types"]
 PKT_REQUEST = _packet_types["REQUEST"]
@@ -128,10 +96,10 @@ TLV_COMMAND = _tlv_types["COMMAND"]
 TLV_VERSION = _tlv_types["VERSION"]
 
 # Signature configuration from SSOT
-_signature_config = _SPEC.get("ferqon_signature", {})
-FERQON_SIGNATURE_MAGIC = _signature_config.get("magic", "FERQON").encode("utf-8")
-FERQON_SIGNATURE_VENDOR = _signature_config.get("vendor", "revyrlabs").encode("utf-8")
-FERQON_SIGNATURE_CAP_VERSION = _signature_config.get("capability_version", 1)
+_signature_config = _SPEC["ferqon_signature"]
+FERQON_SIGNATURE_MAGIC = _signature_config["magic"].encode("utf-8")
+FERQON_SIGNATURE_VENDOR = _signature_config["vendor"].encode("utf-8")
+FERQON_SIGNATURE_CAP_VERSION = _signature_config["capability_version"]
 
 log = logging.getLogger(__name__)
 
@@ -198,12 +166,13 @@ class FerqonEmulator:
     when using PTY mode. In-process mode is stateless per call.
     """
 
-    def __init__(self, pty: bool = False):
+    def __init__(self, pty: bool = False, board: str = "pico"):
         """Initialize emulator.
 
         Args:
             pty: If True, create a PTY-backed virtual serial port.
-                  If False, operate in in-process mode (send_frame method).
+                 If False, operate in in-process mode (send_frame method).
+            board: Board name; used to load generated board.json.
         """
         self._pty = pty
         self._master_fd: int | None = None
@@ -211,9 +180,10 @@ class FerqonEmulator:
         self._pty_path: str | None = None
         self._running = False
         self._thread: threading.Thread | None = None
-        self._state = EmulatorState(gpio_pins={i: 0 for i in range(30)})
-        self._state.start_time = time.time()
         self._lock = threading.Lock()
+        self._board = _load_board_json(board)
+        self._state = EmulatorState(gpio_pins={i: 0 for i in range(self._board["max_gpio"] + 1)})
+        self._state.start_time = time.time()
 
     def _update_uptime(self) -> None:
         """Update uptime counter."""
@@ -247,8 +217,9 @@ class FerqonEmulator:
         # Command: GPIO_WRITE
         response.extend(bytes([TLV_COMMAND, 1 + 5, CMD_GPIO_WRITE]))
         response.extend(b"gpio")
-        # Version
-        response.extend(bytes([TLV_VERSION, 3, 1, 1, 0]))  # major=1, minor=1, patch=0
+        # Version from SSOT
+        major, minor, patch = (int(v) for v in _SPEC["version"].split(".")[:3])
+        response.extend(bytes([TLV_VERSION, 3, major, minor, patch]))
         return build_frame(seq, CMD_DRIVER_INFO, bytes(response))
 
     def _handle_device_info(self, seq: int, payload: bytes) -> bytes:
@@ -256,13 +227,14 @@ class FerqonEmulator:
         self._update_uptime()
         response = bytearray()
 
-        # Standard TLVs
-        response.extend(self._build_tlv(TLV_DEVICE_NAME, b"pico"))
-        response.extend(self._build_tlv(TLV_MCU_TYPE, b"rp2040"))
-        response.extend(self._build_tlv(TLV_FIRMWARE_VERSION, b"1.1.0"))
-        response.extend(self._build_tlv(TLV_PROTOCOL_VERSION, b"1.1.0"))
-        response.extend(self._build_u32_tlv(TLV_BUILD_TIMESTAMP, 0x12345678))
-        response.extend(self._build_u32_tlv(TLV_FREE_RAM, 270336 - 58076))
+        # Standard TLVs derived from generated board config and SSOT
+        response.extend(self._build_tlv(TLV_DEVICE_NAME, self._board["board"].encode("utf-8")))
+        response.extend(self._build_tlv(TLV_MCU_TYPE, self._board["mcu"].encode("utf-8")))
+        version_bytes = _SPEC["version"].encode("utf-8")
+        response.extend(self._build_tlv(TLV_FIRMWARE_VERSION, version_bytes))
+        response.extend(self._build_tlv(TLV_PROTOCOL_VERSION, version_bytes))
+        response.extend(self._build_u32_tlv(TLV_BUILD_TIMESTAMP, int(time.time())))
+        response.extend(self._build_u32_tlv(TLV_FREE_RAM, self._board["ram_size_bytes"]))
         response.extend(self._build_u32_tlv(TLV_UPTIME_MS, self._state.uptime_ms))
 
         # Ferqon signature TLV (for detection)
@@ -277,7 +249,10 @@ class FerqonEmulator:
 
     def _handle_capabilities(self, seq: int, payload: bytes) -> bytes:
         """Handle CAPABILITIES command."""
-        caps_json = b'{"mcu":"rp2040","device_name":"pico"}'
+        caps_json = json.dumps(
+            {"mcu": self._board["mcu"], "device_name": self._board["board"]},
+            separators=(",", ":"),
+        ).encode("utf-8")
         caps_payload = bytes([PKT_DONE]) + caps_json
         return build_frame(seq, CMD_CAPABILITIES, caps_payload)
 

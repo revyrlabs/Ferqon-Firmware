@@ -8,56 +8,24 @@ ferqonfw identify command — probe device and print detection classification.
 """
 
 import argparse
-import json
 import sys
 from pathlib import Path
-from typing import Any
 
 # Add parent tools directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from ferqon_emulator import FerqonEmulator
+from ferqon_emulator import (
+    FerqonEmulator,
+    TLV_DEVICE_NAME,
+    TLV_MCU_TYPE,
+    TLV_FIRMWARE_VERSION,
+    TLV_PROTOCOL_VERSION,
+    TLV_FERQON_SIGNATURE,
+    CMD_DEVICE_INFO,
+    FERQON_SIGNATURE_MAGIC,
+)
 from ferqon_selftest import SerialTransport, EmulatorTransport
 from ferqon_hw.frame_codec import encode_frame as _encode_frame
-
-
-# Load SSOT
-def _load_commands_json() -> dict[str, Any]:
-    """Load commands.json SSOT from multiple possible locations."""
-    candidates = [
-        Path(__file__).parent.parent.parent / "protocol" / "ssot" / "commands.json",
-        Path(__file__).parent.parent.parent.parent
-        / "sandbox"
-        / "protocol_sdk"
-        / "sdk"
-        / "serial"
-        / "commands.json",
-        Path("/app/protocol_sdk/sdk/serial/commands.json"),
-    ]
-    for p in candidates:
-        if p.exists():
-            with open(p, encoding="utf-8") as f:
-                return json.load(f)
-    raise FileNotFoundError("commands.json SSOT not found in any candidate location")
-
-
-_SPEC = _load_commands_json()
-
-# TLV types from SSOT
-_tlv_types = _SPEC["tlv_types"]
-TLV_DEVICE_NAME = _tlv_types["DEVICE_NAME"]
-TLV_MCU_TYPE = _tlv_types["MCU_TYPE"]
-TLV_FIRMWARE_VERSION = _tlv_types["FIRMWARE_VERSION"]
-TLV_PROTOCOL_VERSION = _tlv_types["PROTOCOL_VERSION"]
-TLV_FERQON_SIGNATURE = _tlv_types["FERQON_SIGNATURE"]
-
-# Command IDs from SSOT
-_commands = _SPEC["commands"]
-CMD_DEVICE_INFO = _commands["device_info"]["id"]
-
-# Signature configuration from SSOT
-_signature_config = _SPEC["ferqon_signature"]
-FERQON_SIGNATURE_MAGIC = _signature_config["magic"].encode("utf-8")
 
 
 def cmd_identify(args: argparse.Namespace) -> int:

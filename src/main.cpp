@@ -41,10 +41,10 @@ unsigned long last_heartbeat_ms = 0;
 static const unsigned long HEARTBEAT_INTERVAL_MS = 5000;
 
 void setup() {
-    Serial.begin(115200);
+    Serial.begin(FERQON_SERIAL_BAUD);
     pinMode(LED_BUILTIN, OUTPUT);
     
-    FERQON_LOG_INFO("Ferqon v1 firmware starting");
+    FERQON_LOG_INFO("Ferqon %s firmware starting", FERQON_FW_VERSION);
     
     ferqon_dispatcher_init();
 
@@ -70,7 +70,7 @@ void setup() {
 
     // Ready
     app_state_set(FERQON_STATE_APP_READY);
-    FERQON_LOG_INFO("Ferqon v1 - Ready");
+    FERQON_LOG_INFO("Ferqon %s ready", FERQON_FW_VERSION);
 }
 
 void loop() {
