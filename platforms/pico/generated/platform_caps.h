@@ -22,17 +22,17 @@
 #define FERQON_PIO_BLOCKS          2
 #define FERQON_PIO_SM_PER_BLOCK    4
 #define FERQON_DMA_CHANNELS        12
-#define FERQON_MULTICORE           1
+#define FERQON_MULTICORE           0
 #define FERQON_FLASH_SIZE_BYTES    2097152
 #define FERQON_SYS_CLOCK_HZ        125000000
 
 // Scheduling / core topology
 #define FERQON_CORE_COUNT          2
 #define FERQON_RAM_SIZE_BYTES      264000
-#define FERQON_SCHED_MULTICORE     1
-#define FERQON_SCHED_UART_ISR      0
-#define FERQON_SCHED_QUEUE_DEPTH   16
-#define FERQON_ISR_RINGBUF_SIZE    0
+#define FERQON_SCHED_MULTICORE     0
+#define FERQON_SCHED_UART_ISR      1
+#define FERQON_SCHED_QUEUE_DEPTH   0
+#define FERQON_ISR_RINGBUF_SIZE    256
 
 // Network capabilities
 #define FERQON_NET_HAS_WIFI       0

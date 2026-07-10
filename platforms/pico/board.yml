@@ -9,11 +9,11 @@ pio_env: pico_arduino
 
 # Core & memory topology
 core_count: 2
-isr_serial_strategy: multicore       # multicore | uart_rx_isr
+isr_serial_strategy: uart_rx_isr    # multicore | uart_rx_isr
 ram_size_bytes: 264000
 flash_size_bytes: 2097152
 sys_clock_hz: 125000000
-multicore: true
+multicore: false
 
 # GPIO
 max_gpio: 29
