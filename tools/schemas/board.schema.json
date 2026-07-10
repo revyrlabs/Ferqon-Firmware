@@ -141,6 +141,7 @@
               "minimum": 0,
               "maximum": 255
             },
+            "minItems": 1,
             "description": "Valid pins for SCK clock"
           },
           "mosi": {
@@ -196,6 +197,7 @@
               "minimum": 0,
               "maximum": 255
             },
+            "minItems": 1,
             "description": "Valid pins for SDA data"
           },
           "scl": {
@@ -233,6 +235,7 @@
               "minimum": 0,
               "maximum": 255
             },
+            "minItems": 1,
             "description": "Valid pins for TX transmit"
           },
           "rx": {

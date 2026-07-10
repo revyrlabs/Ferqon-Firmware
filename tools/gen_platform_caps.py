@@ -348,6 +348,8 @@ def generate_device_channels_c(board: Dict[str, Any]) -> str:
 
     # SPI buses
     for spi in board.get("spi", []):
+        if not spi.get("sck"):
+            continue
         lines.append(f'    // SPI{spi["instance"]}')
         lines.append("    {")
         lines.append(f'        .name = "SPI{spi["instance"]}",')
@@ -367,6 +369,8 @@ def generate_device_channels_c(board: Dict[str, Any]) -> str:
 
     # I2C buses
     for i2c in board.get("i2c", []):
+        if not i2c.get("sda"):
+            continue
         lines.append(f'    // I2C{i2c["instance"]}')
         lines.append("    {")
         lines.append(f'        .name = "I2C{i2c["instance"]}",')
@@ -386,6 +390,8 @@ def generate_device_channels_c(board: Dict[str, Any]) -> str:
 
     # UART buses
     for uart in board.get("uart", []):
+        if not uart.get("tx"):
+            continue
         lines.append(f'    // UART{uart["instance"]}')
         lines.append("    {")
         lines.append(f'        .name = "UART{uart["instance"]}",')
