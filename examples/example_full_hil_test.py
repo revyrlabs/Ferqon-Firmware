@@ -13,7 +13,7 @@ This test exercises the complete HIL command set:
 
 Flow overview
 -------------
-  Step 1  Enter HIL mode
+  Step 1  Enter HIL mode 
   Step 2  Configure MCU GPIO as output, drive DUT reset pin LOW
   Step 3  Release DUT reset (HIGH) — MCU waits for DUT ready pin to go HIGH
   Step 4  DUT UART handshake — MCU sends "READY?" and expects "OK" back
