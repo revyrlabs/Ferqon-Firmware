@@ -3,6 +3,12 @@
 ---
 extends: default
 
+ignore:
+  - .git/
+  - .pio/
+  - .github/
+  - tests/scheduling/
+
 rules:
   line-length:
     max: 120
@@ -15,4 +21,4 @@ rules:
   comments-indentation: {}
   document-start: disable
   truthy:
-    allowed-values: ['true', 'false', 'yes', 'no']
+    allowed-values: ['true', 'false', 'yes', 'no', 'on', 'off']

@@ -9,7 +9,7 @@ Ferqon firmware is maintained by the Revyr Labs team and community contributors.
 
 | Name | Role | Contact |
 |------|------|---------|
-| Revyr Labs | Core maintainer | https://github.com/repvi/Ferqon |
+| Revyr Labs | Core maintainer | https://github.com/repvi/Ferqon-Firmware |
 
 ## Responsibilities
 
@@ -20,7 +20,7 @@ Ferqon firmware is maintained by the Revyr Labs team and community contributors.
 
 ## How to Reach Us
 
-- Open an issue or pull request on GitHub: https://github.com/repvi/Ferqon
+- Open an issue or pull request on GitHub: https://github.com/repvi/Ferqon-Firmware
 - For security concerns, please see [SECURITY.md](SECURITY.md)
 
 ## Becoming a Maintainer

@@ -18,7 +18,6 @@ import sys
 from pathlib import Path
 from typing import List, Tuple
 
-
 # Arduino API calls that require capability guards
 ARDUINO_APIS = {
     "analogRead": "ferqon_cap_pin_supports_adc",

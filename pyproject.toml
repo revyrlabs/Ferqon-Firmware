@@ -1,0 +1,12 @@
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: Copyright (c) 2026 Revyr Labs
+
+[tool.ruff]
+target-version = "py310"
+line-length = 88
+
+[tool.ruff.lint]
+per-file-ignores = { "tools/ferqonfw/main.py" = ["E402"], "tests/hil/ferqon_selftest.py" = ["E402"] }
+
+[tool.black]
+line-length = 88

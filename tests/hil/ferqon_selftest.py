@@ -24,27 +24,23 @@ from enum import Enum
 from pathlib import Path
 from typing import Any
 
-# Add tools to path for device_config imports.
+# Add tools to path for local imports.
 tools_dir = Path(__file__).resolve().parent.parent.parent / "tools"
 if str(tools_dir) not in sys.path:
     sys.path.insert(0, str(tools_dir))
 
-# Add hw_sdk to path. Use FERQON_HW_SDK_PATH if set, otherwise assume the
-# sibling packages/hw-sdk layout in the workspace root.
-hw_sdk_env = os.getenv("FERQON_HW_SDK_PATH")
-if hw_sdk_env:
-    hw_sdk = Path(hw_sdk_env)
-else:
-    repo_root = Path(__file__).resolve().parent.parent.parent
-    hw_sdk = repo_root / "packages" / "hw-sdk" / "ferqon_hw"
-if str(hw_sdk) not in sys.path:
-    sys.path.insert(0, str(hw_sdk))
+try:
+    import serial
+except ImportError as exc:  # pragma: no cover - only hits runtime
+    raise ImportError("pyserial is required: pip install pyserial") from exc
 
-from ferqon_hw.serial_backend import (
-    open_serial,
-)
-from ferqon_hw.frame_codec import (
+from serial_protocol import (
     encode_frame as _encode_frame,
+    FrameDecoder,
+    PKT_REQUEST,
+    PKT_DONE,
+    PKT_ACK,
+    PKT_ERROR,
     START_BYTE,
 )
 from device_config import get_default_baudrate
@@ -120,11 +116,6 @@ TLV_DRIVER = _tlv_types.get("DRIVER", 0x01)
 # Signature configuration from SSOT
 _signature_config = _SPEC.get("ferqon_signature", {})
 FERQON_SIGNATURE_MAGIC = _signature_config.get("magic", "FERQON").encode("utf-8")
-
-# Packet types from SSOT
-_packet_types = _SPEC.get("packet_types", {})
-PKT_REQUEST = _packet_types.get("REQUEST", 1)
-PKT_DONE = _packet_types.get("DONE", 3)
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 log = logging.getLogger(__name__)
@@ -202,6 +193,9 @@ class Transport:
         raise NotImplementedError
 
 
+_RESPONSE_PACKET_TYPES = {PKT_DONE, PKT_ACK, PKT_ERROR}
+
+
 class SerialTransport(Transport):
     """Real serial port transport."""
 
@@ -211,65 +205,34 @@ class SerialTransport(Transport):
         self._conn = None
 
     def connect(self) -> None:
-        self._conn = open_serial(self.port, baud=self.baudrate, timeout_s=2.0)
+        self._conn = serial.Serial(self.port, self.baudrate, timeout=2.0)
         time.sleep(0.5)  # Wait for device to be ready
 
     def send_frame(self, frame: bytes, timeout_s: float = 2.0) -> dict[str, Any]:
         if self._conn is None:
             raise RuntimeError("Transport not connected")
-        # Write frame
         self._conn.write(frame)
         self._conn.flush()
 
-        # Read response
-        start = time.time()
-        buf = bytearray()
-        decoder = None
-        try:
-            from ferqon_hw.frame_codec import FrameDecoder
-
-            decoder = FrameDecoder()
-        except ImportError:
-            # Fallback simple decoder
-            pass
-
-        while time.time() - start < timeout_s:
-            data = self._conn.read(1)
-            if not data:
+        decoder = FrameDecoder()
+        deadline = time.time() + timeout_s
+        self._conn.timeout = timeout_s
+        while time.time() < deadline:
+            chunk = self._conn.read(1)
+            if not chunk:
                 continue
-            buf.extend(data)
-
-            # Try to decode frame
-            if decoder:
-                frames = decoder.feed(data)
-                if frames:
-                    decoded = frames[0]
-                    body = decoded.payload
-                    # Strip packet type byte if present
-                    if body and body[0] in (1, 2, 3, 4, 5, 6, 7):
-                        body = body[1:]
+            for _, _, pkt_type, payload in decoder.feed(chunk):
+                if pkt_type not in _RESPONSE_PACKET_TYPES:
+                    continue
+                body = payload[1:] if payload else b""
+                if pkt_type == PKT_ERROR:
                     return {
-                        "ok": True,
-                        "seq": decoded.seq,
-                        "cmd_id": decoded.cmd_id,
+                        "ok": False,
+                        "error": "error response",
+                        "pkt_type": pkt_type,
                         "body": body,
                     }
-            elif len(buf) >= 6 and buf[0] == START_BYTE:
-                # Simple parsing without full decoder
-                seq = buf[1]
-                cmd_id = buf[2]
-                length = buf[3]
-                if len(buf) >= 6 + length:
-                    body = bytes(buf[4 : 4 + length])
-                    # Strip packet type byte if present
-                    if body and body[0] in (1, 2, 3, 4, 5, 6, 7):
-                        body = body[1:]
-                    return {
-                        "ok": True,
-                        "seq": seq,
-                        "cmd_id": cmd_id,
-                        "body": body,
-                    }
+                return {"ok": True, "pkt_type": pkt_type, "body": body}
 
         return {"ok": False, "error": "timeout"}
 
@@ -290,33 +253,26 @@ class EmulatorTransport(Transport):
 
     def send_frame(self, frame: bytes, timeout_s: float = 2.0) -> dict[str, Any]:
         response = self.emulator.send_frame(frame)
-        # Parse response into the same format as _send_frame
         if not response:
             return {"ok": False, "error": "no response"}
-        if len(response) < 6:
-            return {"ok": False, "error": "response too short"}
         if response[0] != START_BYTE:
             return {"ok": False, "error": "invalid start byte"}
 
-        seq = response[1]
-        cmd_id = response[2]
-        payload_len = response[3]
-        payload = response[4 : 4 + payload_len]
+        decoder = FrameDecoder()
+        frames = decoder.feed(response)
+        if not frames:
+            return {"ok": False, "error": "could not decode response"}
 
-        # Check packet type
-        if payload and payload[0] == 3:  # PKT_DONE
-            return {"ok": True, "ack": True, "pkt_type": 3, "body": payload[1:]}
-        elif payload and payload[0] == 2:  # PKT_ACK
-            return {"ok": True, "ack": True, "pkt_type": 2, "body": b""}
-        elif payload and payload[0] == 4:  # PKT_ERROR
-            return {"ok": False, "error": "error response"}
-        else:
+        _, _, pkt_type, payload = frames[0]
+        body = payload[1:] if payload else b""
+        if pkt_type == PKT_ERROR:
             return {
-                "ok": True,
-                "ack": True,
-                "pkt_type": payload[0] if payload else 0,
-                "body": payload[1:] if payload else b"",
+                "ok": False,
+                "error": "error response",
+                "pkt_type": pkt_type,
+                "body": body,
             }
+        return {"ok": True, "pkt_type": pkt_type, "body": body}
 
     def close(self) -> None:
         pass

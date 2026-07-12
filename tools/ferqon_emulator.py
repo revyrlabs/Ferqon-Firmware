@@ -50,9 +50,17 @@ def _load_commands_json() -> dict[str, Any]:
 
 def _load_board_json(board: str) -> dict[str, Any]:
     """Load generated board.json for the requested board."""
-    path = Path(__file__).resolve().parents[1] / "platforms" / board / "generated" / "board.json"
+    path = (
+        Path(__file__).resolve().parents[1]
+        / "platforms"
+        / board
+        / "generated"
+        / "board.json"
+    )
     if not path.exists():
-        raise FileNotFoundError(f"Generated board.json not found for board '{board}': {path}")
+        raise FileNotFoundError(
+            f"Generated board.json not found for board '{board}': {path}"
+        )
     with open(path, encoding="utf-8") as f:
         return json.load(f)
 
@@ -182,7 +190,9 @@ class FerqonEmulator:
         self._thread: threading.Thread | None = None
         self._lock = threading.Lock()
         self._board = _load_board_json(board)
-        self._state = EmulatorState(gpio_pins={i: 0 for i in range(self._board["max_gpio"] + 1)})
+        self._state = EmulatorState(
+            gpio_pins={i: 0 for i in range(self._board["max_gpio"] + 1)}
+        )
         self._state.start_time = time.time()
 
     def _update_uptime(self) -> None:
@@ -204,8 +214,8 @@ class FerqonEmulator:
 
     def _handle_echo(self, seq: int, payload: bytes) -> bytes:
         """Handle ECHO command."""
-        # Echo back the payload after the packet type byte
-        echo_payload = bytes([PKT_DONE]) + payload[1:] if payload else bytes([PKT_DONE])
+        # _handle_frame already strips the PKT_REQUEST byte; echo back what remains.
+        echo_payload = bytes([PKT_DONE]) + payload if payload else bytes([PKT_DONE])
         return build_frame(seq, CMD_ECHO, echo_payload)
 
     def _handle_driver_info(self, seq: int, payload: bytes) -> bytes:
@@ -220,7 +230,7 @@ class FerqonEmulator:
         # Version from SSOT
         major, minor, patch = (int(v) for v in _SPEC["version"].split(".")[:3])
         response.extend(bytes([TLV_VERSION, 3, major, minor, patch]))
-        return build_frame(seq, CMD_DRIVER_INFO, bytes(response))
+        return build_frame(seq, CMD_DRIVER_INFO, bytes([PKT_DONE]) + bytes(response))
 
     def _handle_device_info(self, seq: int, payload: bytes) -> bytes:
         """Handle DEVICE_INFO command with Ferqon signature."""
@@ -228,13 +238,19 @@ class FerqonEmulator:
         response = bytearray()
 
         # Standard TLVs derived from generated board config and SSOT
-        response.extend(self._build_tlv(TLV_DEVICE_NAME, self._board["board"].encode("utf-8")))
-        response.extend(self._build_tlv(TLV_MCU_TYPE, self._board["mcu"].encode("utf-8")))
+        response.extend(
+            self._build_tlv(TLV_DEVICE_NAME, self._board["board"].encode("utf-8"))
+        )
+        response.extend(
+            self._build_tlv(TLV_MCU_TYPE, self._board["mcu"].encode("utf-8"))
+        )
         version_bytes = _SPEC["version"].encode("utf-8")
         response.extend(self._build_tlv(TLV_FIRMWARE_VERSION, version_bytes))
         response.extend(self._build_tlv(TLV_PROTOCOL_VERSION, version_bytes))
         response.extend(self._build_u32_tlv(TLV_BUILD_TIMESTAMP, int(time.time())))
-        response.extend(self._build_u32_tlv(TLV_FREE_RAM, self._board["ram_size_bytes"]))
+        response.extend(
+            self._build_u32_tlv(TLV_FREE_RAM, self._board["ram_size_bytes"])
+        )
         response.extend(self._build_u32_tlv(TLV_UPTIME_MS, self._state.uptime_ms))
 
         # Ferqon signature TLV (for detection)
@@ -245,7 +261,7 @@ class FerqonEmulator:
         )
         response.extend(self._build_tlv(TLV_FERQON_SIGNATURE, signature))
 
-        return build_frame(seq, CMD_DEVICE_INFO, bytes(response))
+        return build_frame(seq, CMD_DEVICE_INFO, bytes([PKT_DONE]) + bytes(response))
 
     def _handle_capabilities(self, seq: int, payload: bytes) -> bytes:
         """Handle CAPABILITIES command."""
@@ -258,12 +274,13 @@ class FerqonEmulator:
 
     def _handle_gpio_read(self, seq: int, payload: bytes) -> bytes:
         """Handle GPIO_READ command."""
-        if len(payload) < 2:
+        # _handle_frame already strips the PKT_REQUEST byte.
+        if len(payload) < 1:
             # Malformed, return error
             error_payload = bytes([PKT_ERROR, 2, 2, 0, 0])  # INVALID_PARAMS
             return build_frame(seq, CMD_GPIO_READ, error_payload)
 
-        pin = payload[1]  # Skip packet type byte
+        pin = payload[0]
         with self._lock:
             value = self._state.gpio_pins.get(pin, 0)
 
@@ -272,13 +289,14 @@ class FerqonEmulator:
 
     def _handle_gpio_write(self, seq: int, payload: bytes) -> bytes:
         """Handle GPIO_WRITE command."""
-        if len(payload) < 3:
+        # _handle_frame already strips the PKT_REQUEST byte.
+        if len(payload) < 2:
             # Malformed, return error
             error_payload = bytes([PKT_ERROR, 2, 2, 0, 0])  # INVALID_PARAMS
             return build_frame(seq, CMD_GPIO_WRITE, error_payload)
 
-        pin = payload[1]
-        value = payload[2]
+        pin = payload[0]
+        value = payload[1]
 
         with self._lock:
             self._state.gpio_pins[pin] = value
@@ -430,10 +448,13 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if args.pty:
+        import sys
+
         emu = FerqonEmulator(pty=True)
         port = emu.start()
-        print(f"Emulator running on: {port}")
-        print("Press Ctrl+C to stop")
+        print(port)
+        print(f"Emulator running on: {port}", file=sys.stderr)
+        print("Press Ctrl+C to stop", file=sys.stderr)
         try:
             while True:
                 time.sleep(1)

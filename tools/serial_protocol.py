@@ -143,14 +143,25 @@ def encode_frame(seq: int, cmd_id: int, payload: bytes) -> bytes:
 def encode_cmd_payload(
     cmd_id: int, body: bytes = b"", packet_type: int = PKT_REQUEST, meta: int = 0
 ) -> bytes:
-    """Encode command payload with packet type header."""
-    return bytes([packet_type, meta]) + body
+    """Encode command payload with packet type header.
+
+    Info commands (device_info, driver_info) do not take a REQUEST prefix.
+    The meta argument is unused and retained for compatibility.
+    """
+    info_ids = _get_info_command_ids()
+    if cmd_id in info_ids:
+        return body
+    return bytes([packet_type]) + body
 
 
 def encode_driver_call(
     driver_name: str, method: str, args: dict[str, object] | None = None
 ) -> bytes:
-    """Encode driver call payload."""
+    """Encode driver call payload as null-terminated driver, method, and args.
+
+    The firmware driver_call_handler expects the payload to be:
+        driver_name\x00 method\x00 key=value;key=value\x00
+    """
     args = args or {}
     driver = driver_name.encode("utf-8")
     call = method.encode("utf-8")
@@ -162,19 +173,22 @@ def encode_driver_call(
         parts.append(f"{key}={value}")
     kv = ";".join(parts).encode("utf-8")
 
-    body = bytearray()
-    body.append(len(driver))
-    body.extend(driver)
-    body.append(len(call))
-    body.extend(call)
-    body.extend(kv)
-    return bytes(body)
+    return driver + b"\x00" + call + b"\x00" + kv
+
+
+def _get_info_command_ids() -> set[int]:
+    """Return command IDs that do not require a REQUEST prefix."""
+    try:
+        ids = load_command_ids()
+        return {ids.get("device_info", 0), ids.get("driver_info", 0)}
+    except Exception:
+        return set()
 
 
 def decode_cmd_payload(payload: bytes) -> RuntimeResponse:
     """Decode command response payload.
 
-    For PKT_DONE: [PKT_DONE][meta][message...]
+    For PKT_DONE: [PKT_DONE][body...]
     For PKT_ERROR: [PKT_ERROR][code][category][retryable][ctx][detail...]
     """
     if len(payload) < 1:
@@ -183,13 +197,13 @@ def decode_cmd_payload(payload: bytes) -> RuntimeResponse:
     pkt_type = payload[0]
 
     if pkt_type == PKT_DONE:
-        # DONE: [type][meta][message...]
-        meta = payload[1] if len(payload) > 1 else 0
-        msg = payload[2:].decode("utf-8", errors="replace")
+        # DONE: [type][body...]
+        body = payload[1:]
+        msg = body.decode("utf-8", errors="replace")
         return RuntimeResponse(
             cmd_id=0,
             ok=True,
-            ack=((meta & 0x01) != 0),
+            ack=False,
             message=msg,
         )
     elif pkt_type == PKT_ERROR:

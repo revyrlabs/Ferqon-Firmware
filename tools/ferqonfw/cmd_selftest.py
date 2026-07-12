@@ -8,11 +8,6 @@ ferqonfw selftest command — run self-test matrix against device or emulator.
 """
 
 import argparse
-import sys
-from pathlib import Path
-
-# Add parent tools directory to path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from ferqon_selftest import SerialTransport, EmulatorTransport, run_tests
 

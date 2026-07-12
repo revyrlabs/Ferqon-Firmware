@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 # SPDX-FileCopyrightText: Copyright (c) 2026 Revyr Labs
-.PHONY: pico esp32 esp32s3 teensy40 teensy41 clean all help selftest selftest-emu identify flash-and-test emu-start emu-stop emu-test
+.PHONY: pico esp32 esp32s3 teensy40 teensy41 clean all help test selftest selftest-emu identify flash-and-test emu-start emu-stop emu-test
 
 # Default target
 .DEFAULT_GOAL := help
@@ -26,14 +26,15 @@ teensy41:
 	@echo "Building for Teensy 4.1..."
 	pio run -e teensy41
 
-# Build all boards
+# Build all supported production boards
+ALL_BOARDS := pico_arduino
+
 all:
-	@echo "Building for all boards..."
-	pio run -e pico_arduino
-	pio run -e esp32
-	pio run -e esp32s3
-	pio run -e teensy40
-	pio run -e teensy41
+	@echo "Building for all supported boards..."
+	@for env in $(ALL_BOARDS); do \
+		echo "Building: pio run -e $$env"; \
+		pio run -e $$env || exit 1; \
+	done
 
 # Clean build artifacts
 clean:
@@ -70,6 +71,11 @@ monitor:
 config:
 	@echo "Showing PlatformIO configuration..."
 	pio project config
+
+# Test targets
+test:
+	@echo "Running native unit tests..."
+	pio test -e native
 
 # Self-test targets
 selftest:
@@ -123,9 +129,7 @@ EMU_PORT_FILE := .emu.port
 
 emu-start:
 	@echo "Starting emulator in PTY mode..."
-	@cd tools && python3 -c "import sys; sys.path.insert(0, '.'); from ferqon_emulator import FerqonEmulator; e=FerqonEmulator(pty=True); print(e.start())" > ../$(EMU_PORT_FILE)
-	@cd tools && python3 ferqon_emulator.py --pty &
-	@echo $$! > $(EMU_PID_FILE)
+	@python3 tools/ferqon_emulator.py --pty > $(EMU_PORT_FILE) & echo $$! > $(EMU_PID_FILE)
 	@sleep 1
 	@echo "Emulator started on port: $$(cat $(EMU_PORT_FILE))"
 	@echo "Use 'make emu-test' to run self-test, or 'make emu-stop' to stop"
@@ -167,7 +171,7 @@ help:
 	@echo "  make esp32s3     - Build for ESP32-S3"
 	@echo "  make teensy40    - Build for Teensy 4.0"
 	@echo "  make teensy41    - Build for Teensy 4.1"
-	@echo "  make all         - Build for all boards"
+	@echo "  make all         - Build for all supported boards (pico_arduino)"
 	@echo ""
 	@echo "Upload targets:"
 	@echo "  make upload-pico     - Upload to Raspberry Pi Pico"
@@ -180,6 +184,7 @@ help:
 	@echo "  make clean      - Clean build artifacts"
 	@echo "  make monitor    - Start serial monitor"
 	@echo "  make config     - Show PlatformIO configuration"
+	@echo "  make test       - Run native unit tests (no hardware required)"
 	@echo "  make help       - Show this help message"
 	@echo ""
 	@echo "Self-test and detection:"

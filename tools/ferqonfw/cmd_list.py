@@ -6,7 +6,6 @@ cmd_list.py
 List command for ferqonfw CLI - list available platforms.
 """
 
-
 from ferqonfw.board_loader import load_all_boards
 
 

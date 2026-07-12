@@ -1,0 +1,14 @@
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: Copyright (c) 2026 Revyr Labs
+
+# Global owners for the Ferqon-Firmware repository
+* @repvi
+
+# Tooling and build system
+/tools/ @repvi
+/Makefile @repvi
+/platformio.ini @repvi
+
+# Generated files are owned by the automation that produces them
+/generated/ @repvi
+/platforms/*/generated/ @repvi

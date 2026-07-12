@@ -33,25 +33,25 @@ pwm:
 # Peripherals
 spi:
   - instance: 0
-    sck:  [5, 13]
+    sck: [5, 13]
     mosi: [7, 15]
     miso: [6, 14]
-    cs:   [4, 12]
+    cs: [4, 12]
   - instance: 1
-    sck:  [3, 10]
+    sck: [3, 10]
     mosi: [5, 12]
     miso: [4, 11]
-    cs:   [2, 9]
+    cs: [2, 9]
   - instance: 2
-    sck:  [10, 15]
+    sck: [10, 15]
     mosi: [12, 17]
     miso: [11, 16]
-    cs:   [9, 14]
+    cs: [9, 14]
   - instance: 3
-    sck:  [2, 15]
+    sck: [2, 15]
     mosi: [3, 16]
     miso: [4, 17]
-    cs:   [5, 18]
+    cs: [5, 18]
 
 i2c:
   - {instance: 0, sda: [7, 9], scl: [6, 8]}

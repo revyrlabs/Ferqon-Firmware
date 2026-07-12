@@ -61,8 +61,14 @@ def cmd_gen(args) -> int:
         platform = args.platform
         board_yml = get_platforms_dir() / platform / "board.yml"
         if not board_yml.exists():
-            print(f"Error: board.yml not found for platform '{platform}': {board_yml}")
-            return 1
+            in_dev = get_platforms_dir() / "in_development" / platform / "board.yml"
+            if in_dev.exists():
+                board_yml = in_dev
+            else:
+                print(
+                    f"Error: board.yml not found for platform '{platform}': {board_yml}"
+                )
+                return 1
 
         print(f"Generating per-board capability tables for {platform}...")
         gen_script = _TOOLS_DIR / "gen_platform_caps.py"

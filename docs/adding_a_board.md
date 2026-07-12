@@ -5,13 +5,13 @@ This guide walks through adding a new MCU board to Ferqon firmware.
 ## 1. Scaffold the Platform Directory
 
 ```bash
-tools/new_board.py my_board --mcu rp2040 --backend arduino
+mkdir -p platforms/in_development/my_board
 ```
 
-If `new_board.py` does not exist, create the directory manually:
+Create the directory layout:
 
 ```
-platforms/my_board/
+platforms/in_development/my_board/
   board.yml
   my_board_io.cpp
   my_board_backend.cpp
@@ -19,6 +19,8 @@ platforms/my_board/
   my_board_config.cpp
   generated/
 ```
+
+Mature boards can be moved to `platforms/<board>/` once they are fully supported.
 
 ## 2. Define Capabilities in `board.yml`
 
@@ -64,16 +66,16 @@ uart:
 ## 3. Generate Headers
 
 ```bash
-python3 tools/gen_platform_caps.py platforms/my_board/board.yml
+python3 tools/gen_platform_caps.py platforms/in_development/my_board/board.yml
 ```
 
 This creates:
 
-- `platforms/my_board/generated/platform_caps.h`
-- `platforms/my_board/generated/pin_macros.h`
-- `platforms/my_board/generated/device_channels.c`
-- `platforms/my_board/generated/board.json`
-- `platforms/my_board/generated/capabilities.json`
+- `platforms/in_development/my_board/generated/platform_caps.h`
+- `platforms/in_development/my_board/generated/pin_macros.h`
+- `platforms/in_development/my_board/generated/device_channels.c`
+- `platforms/in_development/my_board/generated/board.json`
+- `platforms/in_development/my_board/generated/capabilities.json`
 
 ## 4. Add a PlatformIO Environment
 
@@ -87,7 +89,6 @@ board = pico
 monitor_speed = 115200
 build_flags =
     -I${PROJECT_DIR}/generated
-    -I${PROJECT_DIR}/platforms/my_board/generated
     -DFERQON_FW_VERSION='"${common.protocol_version}"'
     -DFERQON_BOARD_MY_BOARD
 lib_deps =
@@ -124,9 +125,9 @@ extern "C" void my_board_register_backend(void) {
 
 ```bash
 pio run -e my_board_arduino
-pio test -e native
+make test
 ```
 
 ## 8. Commit
 
-Commit the new `platforms/my_board/` directory, including `generated/`, and update `platformio.ini` and the CI matrix if needed.
+Commit the new `platforms/in_development/my_board/` directory, including `generated/`, and update `platformio.ini` and the CI matrix if needed. New boards should start in `platforms/in_development/` and move to `platforms/<board>/` when they are production-ready.
