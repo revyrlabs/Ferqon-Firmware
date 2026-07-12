@@ -6,7 +6,6 @@ cmd_flash.py
 Flash command for ferqonfw CLI - wraps PlatformIO upload.
 """
 
-
 from ferqonfw.board_loader import (
     get_board_pio_env,
     get_firmware_dir,

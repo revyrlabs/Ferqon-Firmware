@@ -224,9 +224,6 @@ bool ferqon_parser_feed(ferqon_parser_t *parser, uint8_t byte, ferqon_request_t 
             parser->payload_idx = 0;
             if (parser->param_len == 0) {
                 parser->state = FERQON_STATE_CRC_LO;
-            } else if (parser->param_len > FERQON_MAX_PAYLOAD_BYTES) {
-                /* Can't happen with u8 but keep the guard explicit. */
-                ferqon_parser_reset(parser);
             } else {
                 parser->state = FERQON_STATE_PAYLOAD;
             }

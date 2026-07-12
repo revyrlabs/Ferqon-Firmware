@@ -7,20 +7,57 @@ Info command for ferqonfw CLI - show platform capabilities.
 """
 
 import json
-from ferqonfw.board_loader import get_ssot_dir
+from pathlib import Path
+
+from ferqonfw.board_loader import load_board
+
+
+def _get_caps_data(platform: str) -> dict:
+    """Load capabilities from generated JSON or board YAML."""
+    board_data = load_board(platform)
+    firmware_dir = Path(__file__).resolve().parent.parent.parent
+
+    # Prefer generated capabilities JSON if available.
+    caps_path = (
+        firmware_dir / "platforms" / platform / "generated" / "capabilities.json"
+    )
+    if not caps_path.exists():
+        in_dev = (
+            firmware_dir
+            / "platforms"
+            / "in_development"
+            / platform
+            / "generated"
+            / "capabilities.json"
+        )
+        if in_dev.exists():
+            caps_path = in_dev
+
+    if caps_path.exists():
+        with open(caps_path, encoding="utf-8") as f:
+            return json.load(f)
+
+    if board_data:
+        return {
+            "mcu": board_data.get("mcu", "unknown"),
+            "device_name": board_data.get("device_name", platform),
+            "protocol_version": board_data.get("protocol_version", "unknown"),
+            "firmware_version": board_data.get("firmware_version", "unknown"),
+            "max_gpio": board_data.get("max_gpio", "unknown"),
+            "reserved_pins": board_data.get("reserved_pins", []),
+            "peripherals": board_data.get("peripherals", {}),
+        }
+
+    return {}
 
 
 def cmd_info(args) -> int:
     """Show platform capabilities."""
     platform = args.platform
-    ssot_dir = get_ssot_dir()
-    caps_path = ssot_dir / f"capabilities.{platform}.json"
+    caps_data = _get_caps_data(platform)
 
-    try:
-        with open(caps_path, encoding="utf-8") as f:
-            caps_data = json.load(f)
-    except FileNotFoundError:
-        print(f"Error: capabilities.{platform}.json not found")
+    if not caps_data:
+        print(f"Error: no capabilities found for platform '{platform}'")
         return 1
 
     print(f"MCU: {caps_data.get('mcu', 'unknown')}")
@@ -45,7 +82,8 @@ def cmd_info(args) -> int:
         print(f"\nSPI: {len(spi)} instance(s)")
         for inst in spi:
             print(
-                f"  Instance {inst['instance']}: SCK {inst['sck']}, MOSI {inst['mosi']}, MISO {inst['miso']}, CS {inst['cs']}"
+                f"  Instance {inst['instance']}: SCK {inst['sck']}, "
+                f"MOSI {inst['mosi']}, MISO {inst['miso']}, CS {inst['cs']}"
             )
 
     # I2C
@@ -61,7 +99,8 @@ def cmd_info(args) -> int:
     adc = peripherals.get("adc", {})
     if adc:
         print(
-            f"\nADC: {adc.get('resolution', 'unknown')}-bit, {adc.get('vref_mv', 'unknown')}mV"
+            f"\nADC: {adc.get('resolution', 'unknown')}-bit, "
+            f"{adc.get('vref_mv', 'unknown')}mV"
         )
         print(f"  Channels: {adc.get('channels', [])}")
 

@@ -7,12 +7,11 @@ Shared utilities for ferqonfw CLI: path resolution, subprocess, board loading.
 """
 
 import json
+import os
 import shutil
 import subprocess
-import sys
 from pathlib import Path
 from typing import Any, Dict, Optional, Sequence
-
 
 # ---------------------------------------------------------------------------
 # Path resolver — single source of truth for every filesystem location.
@@ -33,11 +32,11 @@ def get_ssot_dir() -> Path:
 
 
 def get_schemas_dir() -> Path:
-    return get_protocol_dir() / "schemas"
+    return get_firmware_dir() / "tools" / "schemas"
 
 
 def get_generated_dir() -> Path:
-    return get_protocol_dir() / "generated"
+    return get_firmware_dir() / "generated"
 
 
 def get_platforms_dir() -> Path:
@@ -49,7 +48,14 @@ def get_board_yml_path(board_name: str) -> Path:
 
 
 def get_pio_artifact(pio_env: str) -> Path:
-    return get_firmware_dir() / ".pio" / "build" / pio_env / "firmware.uf2"
+    """Return the most likely firmware artifact for the given PlatformIO env."""
+    build_dir = get_firmware_dir() / ".pio" / "build" / pio_env
+    if build_dir.exists():
+        for ext in ("uf2", "bin", "hex", "elf"):
+            candidate = build_dir / f"firmware.{ext}"
+            if candidate.exists():
+                return candidate
+    return build_dir / "firmware.uf2"
 
 
 def get_gen_caps_script() -> Path:
@@ -64,7 +70,7 @@ def get_board_generated_dir(board_name: str) -> Path:
 def get_pio_path() -> str:
     """Get the PlatformIO CLI path."""
     # Allow override via env, otherwise use shutil.which to find it
-    custom_path = sys.getenv("FERQON_PIO_BIN")
+    custom_path = os.getenv("FERQON_PIO_BIN")
     if custom_path:
         return custom_path
     pio_path = shutil.which("pio")
@@ -172,7 +178,12 @@ def load_all_boards() -> Dict[str, Dict[str, Any]]:
         print(f"Error: Platforms directory not found: {platforms_dir}")
         return boards
 
-    for board_yml in platforms_dir.glob("*/board.yml"):
+    search_paths = [platforms_dir.glob("*/board.yml")]
+    in_development = platforms_dir / "in_development"
+    if in_development.exists():
+        search_paths.append(in_development.glob("*/board.yml"))
+
+    for board_yml in sorted(p for paths in search_paths for p in paths):
         board_slug = board_yml.parent.name
         try:
             import yaml
@@ -192,7 +203,10 @@ def load_board(board_name: str) -> Optional[Dict[str, Any]]:
     """Load a single board YAML directly — no directory scan."""
     yml_path = get_board_yml_path(board_name)
     if not yml_path.exists():
-        return None
+        # Boards in development are kept under platforms/in_development/.
+        yml_path = get_platforms_dir() / "in_development" / board_name / "board.yml"
+        if not yml_path.exists():
+            return None
     try:
         import yaml
 

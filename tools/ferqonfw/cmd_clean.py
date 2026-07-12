@@ -6,7 +6,6 @@ cmd_clean.py
 Clean command for ferqonfw CLI - wraps PlatformIO clean.
 """
 
-
 from ferqonfw.board_loader import (
     get_board_pio_env,
     get_firmware_dir,

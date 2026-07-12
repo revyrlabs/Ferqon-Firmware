@@ -6,7 +6,6 @@ cmd_build.py
 Build command for ferqonfw CLI - wraps PlatformIO.
 """
 
-
 from ferqonfw.board_loader import (
     get_board_pio_env,
     get_firmware_dir,

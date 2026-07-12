@@ -67,6 +67,10 @@ def cmd_validate(args) -> int:
             errors.append((ssot_name, str(e)))
             continue
 
+        if not schema_path.exists():
+            print(f"  SKIP: schema {schema_name} not found; JSON syntax OK")
+            continue
+
         ok, msg = validate_json_schema(data, schema_path)
         if ok:
             print("  OK")

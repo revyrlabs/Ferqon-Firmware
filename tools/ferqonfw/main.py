@@ -28,8 +28,10 @@ import sys
 import argparse
 from pathlib import Path
 
-# Add parent tools directory to path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent))
+# Add tools and tests/hil to path for imports
+_repo_root = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(_repo_root / "tools"))
+sys.path.insert(0, str(_repo_root / "tests" / "hil"))
 
 # Import command handlers
 from ferqonfw.cmd_list import cmd_list
@@ -111,7 +113,7 @@ def main():
     # packet command
     packet_parser = subparsers.add_parser("packet", help="Encode/decode packets")
     packet_subparsers = packet_parser.add_subparsers(
-        dest="packet_action", help="Packet action"
+        dest="packet_action", help="Packet action", required=True
     )
 
     packet_encode_parser = packet_subparsers.add_parser(
@@ -139,6 +141,7 @@ def main():
 
     drivers_list_parser = drivers_subparsers.add_parser("list", help="List drivers")
     drivers_list_parser.set_defaults(func=cmd_drivers_list)
+    drivers_parser.set_defaults(func=cmd_drivers_list)
 
     # info command
     info_parser = subparsers.add_parser("info", help="Show platform capabilities")

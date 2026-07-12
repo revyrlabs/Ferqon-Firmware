@@ -5,18 +5,30 @@ Portable, Apache-2.0 licensed firmware for the Ferqon real-time interaction node
 ## Quick Start
 
 ```bash
-# Clone with submodules
-git clone --recurse-submodules https://github.com/repvi/Ferqon.git
-cd Ferqon/firmware
+# Clone the repo
+git clone https://github.com/repvi/Ferqon-Firmware.git
+cd Ferqon-Firmware
 
 # Install dependencies (includes PlatformIO Core)
 pip install -r tools/requirements.txt
+
+# Build for all supported boards
+make all
 
 # Build for Raspberry Pi Pico (Arduino backend)
 pio run -e pico_arduino
 
 # Flash
+make upload-pico
+# or
 pio run -e pico_arduino -t upload
+
+# Quick self-test using the in-process emulator
+make selftest-emu
+
+# Or use the ferqonfw CLI
+./tools/ferqonfw/ferqonfw identify --emulator
+./tools/ferqonfw/ferqonfw selftest --emulator
 ```
 
 See [docs/adding_a_board.md](docs/adding_a_board.md) for adding support for new hardware.
@@ -63,12 +75,25 @@ platforms/<device>/      ← Platform-specific: vendor SDK, Arduino lives here
 
 ## Examples and HIL Tests
 
-For example scripts and Hardware-in-the-Loop test helpers, see the `examples/` directory:
-- `example_full_hil_test.py`
-- `example_gpio_test.py`
-- `example_uart_test.py`
-- `example_ping_test.py`
-- `simple_echo_test.py`
+For Hardware-in-the-Loop helpers, see `tests/hil/ferqon_selftest.py` and the
+`ferqonfw` CLI (`tools/ferqonfw/ferqonfw`).
+
+Example commands:
+
+```bash
+./tools/ferqonfw/ferqonfw identify --port /dev/ttyACM0
+./tools/ferqonfw/ferqonfw selftest --port /dev/ttyACM0
+./tools/ferqonfw/ferqonfw packet encode ping
+./tools/ferqonfw/ferqonfw packet decode "AB 01 09 01 01 F5 4F"
+```
+
+An in-process emulator is available for quick validation without hardware:
+
+```bash
+make emu-start
+make emu-test
+make emu-stop
+```
 
 ## Development Workflow
 
@@ -82,10 +107,13 @@ For example scripts and Hardware-in-the-Loop test helpers, see the `examples/` d
 
 ```bash
 # Native unit tests (protocol constants, no hardware required)
-pio test -e native
+make test
 
 # Hardware smoke test (requires attached device)
-python3 tools/diagnose.py --port /dev/ttyACM0
+./tools/ferqonfw/ferqonfw selftest --port /dev/ttyACM0
+
+# Or use the emulator
+./tools/ferqonfw/ferqonfw selftest --emulator
 ```
 
 ## Contributing

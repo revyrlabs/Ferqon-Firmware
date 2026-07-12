@@ -2,8 +2,8 @@
 /* SPDX-FileCopyrightText: Copyright (c) 2026 Revyr Labs */
 /* Ferqon serial protocol constants.
  *
- * Auto-generated from firmware/protocol/ssot/commands.json (v1.1.0).
- * DO NOT EDIT — regenerate with: python3 firmware/tools/gen_protocol.py
+ * Auto-generated from protocol/ssot/commands.json (v1.1.0).
+ * DO NOT EDIT — regenerate with: python3 tools/gen_protocol.py
  */
 
 #ifndef FERQON_COMMANDS_H

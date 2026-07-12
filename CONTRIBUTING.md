@@ -29,23 +29,22 @@ Use GitHub Issues to propose new features or enhancements. Provide:
 See [docs/adding_a_board.md](docs/adding_a_board.md) for a complete guide. The short version:
 
 ```bash
-# Scaffold a new platform
-tools/new_board.py my_board --mcu rp2040 --backend arduino
+# Create a new platform directory
+mkdir -p platforms/in_development/my_board
+cp platforms/pico/board.yml platforms/in_development/my_board/board.yml
 
-# Fill in board.yml
-vim platforms/my_board/board.yml
-
-# Implement platform files
-# - my_board_backend.cpp (vtable registration)
-# - my_board_io.cpp (hardware ops, gated by ferqon_cap_* macros)
-# - my_board_system.cpp (clocks, watchdog, USB-CDC)
-# - my_board_config.cpp (persistent storage)
+# Fill in board.yml for your hardware
+vim platforms/in_development/my_board/board.yml
 
 # Generate headers
-tools/gen_platform_caps.py platforms/my_board/board.yml
+python3 tools/gen_platform_caps.py platforms/in_development/my_board/board.yml
+
+# Generate protocol constants
+python3 tools/gen_protocol.py
 
 # Build and test
 pio run -e my_board_arduino
+make test
 ```
 
 **Critical:** Never edit files in `platforms/*/generated/` manually. These are auto-generated from `board.yml`.
@@ -55,18 +54,20 @@ pio run -e my_board_arduino
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/amazing-feature`)
 3. Make your changes
-4. Run `tools/gen_platform_caps.py --all` and commit any generated changes
-5. Run tests: `pio test -e native` (native tests) and `pio run` (build matrix)
-6. Commit with clear messages
-7. Push to your fork (`git push origin feature/amazing-feature`)
-8. Open a Pull Request
+4. Run `python3 tools/gen_platform_caps.py --all` and commit any generated changes
+5. Run `python3 tools/gen_protocol.py --check` to verify protocol constants
+6. Run tests: `make test` (native tests) and `make all` (build matrix)
+7. Run lint: `ruff check .` and `black --check .`
+8. Commit with clear messages (use `git commit -s` for DCO sign-off)
+9. Push to your fork (`git push origin feature/amazing-feature`)
+10. Open a Pull Request
 
 ### Development Workflow
 
-1. **Clone with submodules:**
+1. **Clone the repo:**
    ```bash
-   git clone --recurse-submodules https://github.com/repvi/Ferqon.git
-   cd Ferqon/firmware
+   git clone https://github.com/repvi/Ferqon-Firmware.git
+   cd Ferqon-Firmware
    ```
 
 2. **Install dependencies:**
@@ -141,7 +142,7 @@ The CI linter `tools/lint_platform_guards.py` enforces this.
 ## Testing
 
 - **Native tests:** Run `pio test -e native` to verify `src/` portability
-- **Hardware tests:** Use `tools/diagnose.py` for smoke testing on real devices
+- **Hardware tests:** Use `tools/ferqonfw/ferqonfw selftest --port /dev/ttyACM0` for smoke testing on real devices, or `--emulator` for the in-process emulator
 - **PlatformIO matrix:** CI builds all environments to catch platform-specific breakage
 
 ## Developer Certificate of Origin (DCO)

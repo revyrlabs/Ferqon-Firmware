@@ -27,6 +27,11 @@ SPDX-License-Identifier = "Apache-2.0"
 SPDX-FileCopyrightText = "Copyright (c) 2026 Revyr Labs"
 
 [[annotations]]
-path = "platforms/*/generated/*.json"
+path = "platforms/**/generated/*.json"
+SPDX-License-Identifier = "Apache-2.0"
+SPDX-FileCopyrightText = "Copyright (c) 2026 Revyr Labs"
+
+[[annotations]]
+path = "generated/*.h"
 SPDX-License-Identifier = "Apache-2.0"
 SPDX-FileCopyrightText = "Copyright (c) 2026 Revyr Labs"

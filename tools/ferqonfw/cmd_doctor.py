@@ -7,6 +7,7 @@ Doctor command for ferqonfw CLI - checks environment and dependencies.
 """
 
 import sys
+from pathlib import Path
 
 from ferqonfw.board_loader import (
     get_platforms_dir,
@@ -49,6 +50,22 @@ def check_pyserial() -> bool:
         return False
 
 
+def _check_paths(
+    checks: list[tuple[str, Path]], optional: set[str] | None = None
+) -> bool:
+    all_ok = True
+    optional = optional or set()
+    for name, path in checks:
+        if path.exists():
+            print(f"  {name}: found")
+        else:
+            mark = " (optional)" if name in optional else ""
+            print(f"  {name}: not found{mark}")
+            if name not in optional:
+                all_ok = False
+    return all_ok
+
+
 def check_protocol_dir() -> bool:
     protocol_dir = get_protocol_dir()
     checks = [
@@ -58,14 +75,10 @@ def check_protocol_dir() -> bool:
         ("examples/", protocol_dir / "examples"),
         ("generated/", protocol_dir / "generated"),
     ]
-    all_ok = True
-    for name, path in checks:
-        if path.exists():
-            print(f"  {name}: found")
-        else:
-            print(f"  {name}: not found")
-            all_ok = False
-    return all_ok
+    # Only ssot/ is mandatory for firmware builds; the rest are optional extras.
+    return _check_paths(
+        checks, optional={"spec/", "schemas/", "examples/", "generated/"}
+    )
 
 
 def check_ssot_files() -> bool:
@@ -76,14 +89,9 @@ def check_ssot_files() -> bool:
         ("errors.json", ssot_dir / "errors.json"),
         ("capabilities.pico.json", ssot_dir / "capabilities.pico.json"),
     ]
-    all_ok = True
-    for name, path in checks:
-        if path.exists():
-            print(f"  {name}: found")
-        else:
-            print(f"  {name}: not found")
-            all_ok = False
-    return all_ok
+    return _check_paths(
+        checks, optional={"drivers.json", "errors.json", "capabilities.pico.json"}
+    )
 
 
 def check_schema_files() -> bool:
@@ -94,14 +102,8 @@ def check_schema_files() -> bool:
         ("errors.schema.json", schemas_dir / "errors.schema.json"),
         ("capabilities.schema.json", schemas_dir / "capabilities.schema.json"),
     ]
-    all_ok = True
-    for name, path in checks:
-        if path.exists():
-            print(f"  {name}: found")
-        else:
-            print(f"  {name}: not found")
-            all_ok = False
-    return all_ok
+    # Schemas are optional in the standalone firmware repo.
+    return _check_paths(checks, optional={n for n, _ in checks})
 
 
 def check_boards() -> bool:
@@ -131,14 +133,7 @@ def check_firmware_dir() -> bool:
         ("core/", firmware_dir / "core"),
         ("platforms/", firmware_dir / "platforms"),
     ]
-    all_ok = True
-    for name, path in checks:
-        if path.exists():
-            print(f"  {name}: found")
-        else:
-            print(f"  {name}: not found")
-            all_ok = False
-    return all_ok
+    return _check_paths(checks, optional={"core/"})
 
 
 def cmd_doctor(args) -> int:

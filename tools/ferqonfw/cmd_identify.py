@@ -8,12 +8,8 @@ ferqonfw identify command — probe device and print detection classification.
 """
 
 import argparse
-import sys
-from pathlib import Path
 
-# Add parent tools directory to path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent))
-
+from serial_protocol import encode_frame as _encode_frame
 from ferqon_emulator import (
     FerqonEmulator,
     TLV_DEVICE_NAME,
@@ -25,7 +21,6 @@ from ferqon_emulator import (
     FERQON_SIGNATURE_MAGIC,
 )
 from ferqon_selftest import SerialTransport, EmulatorTransport
-from ferqon_hw.frame_codec import encode_frame as _encode_frame
 
 
 def cmd_identify(args: argparse.Namespace) -> int:
@@ -54,10 +49,6 @@ def cmd_identify(args: argparse.Namespace) -> int:
             return 1
 
         body = resp.get("body", b"")
-
-        # Strip packet type byte if present (PKT_DONE = 3)
-        if body and body[0] in (1, 2, 3, 4, 5, 6, 7):  # Valid packet types
-            body = body[1:]
 
         # Parse TLVs
         def parse_tlv(data: bytes) -> dict[int, bytes]:

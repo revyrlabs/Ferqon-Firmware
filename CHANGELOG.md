@@ -8,17 +8,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- OSS restructure as Apache-2.0 licensed submodule
-- YAML-based board definition system (single source of truth)
-- Capability gating via generated `ferqon_cap_*()` helpers
-- Protocol subsystem with frame-based serial parser
-- CI pipeline with generator drift detection and build matrix
-- Native unit tests with Unity
+- Apache-2.0 open-source release with DCO and SPDX/REUSE compliance
+- `pyproject.toml` with ruff and black configuration
+- `ferqonfw` CLI for build, flash, info, identify, selftest, packet, and validation
+- In-process serial emulator (`tools/ferqon_emulator.py`) and HIL self-test script
+- `make test` target for native unit tests
 
 ### Changed
 - `src/` now contains all portable command handlers and drivers
-- `examples/` now contains HIL example scripts
 - `tests/hil/` now contains hardware-in-the-loop test helpers
+- `ferqonfw` commands now use the local `tools/serial_protocol.py` instead of an external SDK
+- CI workflows now use least-privilege `permissions` and no longer clone submodules
 
 ### Deprecated
 - JSON board definitions (use YAML `board.yml` instead)
@@ -26,9 +26,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 - `board_defs/` deprecated JSON board definitions
+- Broken `examples/` scripts, `tools/diagnose.py`, `tools/run_driver_tests.py`, `tools/serial_client.py`
+- Stale `tests/test_*.py`, `tests/conftest.py`, and `tests/scheduling/` unit tests
 
 ### Fixed
 - `device_channels.c` regenerated with a new `device_descriptor.h` so it is self-contained and compiles
+- `tools/serial_protocol.py` frame encoder and driver-call payload now match the firmware dispatcher
+- `src/protocol.cpp` removed a dead `param_len > MAX_PAYLOAD` guard that caused a compiler warning
+- `tools/ferqonfw` board loader, generator, and doctor commands now support `platforms/in_development/`
+- `tools/ferqonfw` packet command now uses the correct CRC-16 frame format
 
 ## [1.0.0] - 2024-08-01
 
@@ -44,5 +50,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Multicore scheduling
 - Native unit tests
 
-[Unreleased]: https://github.com/repvi/Ferqon/compare/v1.0.0...HEAD
-[1.0.0]: https://github.com/repvi/Ferqon/releases/tag/v1.0.0
+[Unreleased]: https://github.com/repvi/Ferqon-Firmware/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/repvi/Ferqon-Firmware/releases/tag/v1.0.0
