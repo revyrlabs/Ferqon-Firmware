@@ -21,4 +21,4 @@ pytest-cov>=4.1.0
 pyserial>=3.5
 
 # PlatformIO Core (also available as `pio` command)
-platformio>=6.0.0
+platformio>=6.1.19
