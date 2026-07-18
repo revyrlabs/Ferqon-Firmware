@@ -1,0 +1,11 @@
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: Copyright (c) 2026 Revyr Labs
+# Production-only Python dependencies for Ferqon firmware builds.
+#
+# The canonical dependency declarations are in pyproject.toml.
+# This file is a thin wrapper for tools that expect a requirements file.
+# Install: pip install -r tools/requirements-prod.txt
+#      or: pip install .
+
+# Install the production package (pulls pyserial, platformio, PyYAML)
+-e ..

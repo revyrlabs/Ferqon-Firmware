@@ -1,0 +1,44 @@
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: Copyright (c) 2026 Revyr Labs
+name: Generator Drift Check
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+permissions:
+  contents: read
+
+jobs:
+  drift-check:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+
+    - name: Set up Python
+      uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f392efede  # v5.0.0
+      with:
+        python-version: '3.10'
+
+    - name: Install dependencies
+      run: |
+        pip install -r tools/requirements-dev.txt
+
+    - name: Check platform generator drift (production boards)
+      run: |
+        python tools/gen_platform_caps.py --all --check
+
+    - name: Verify generator runs for in-development boards
+      # In-development generated/ directories are gitignored, so --check
+      # would always report drift (no committed files to compare against).
+      # Instead, we verify the generator runs without errors on in-development
+      # board definitions — this catches schema/YAML regressions early.
+      run: |
+        python tools/gen_platform_caps.py --all --include-dev
+
+    - name: Check protocol generator drift
+      run: |
+        python tools/gen_protocol.py --check

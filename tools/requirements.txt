@@ -1,0 +1,12 @@
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: Copyright (c) 2026 Revyr Labs
+# Python dependencies for Ferqon Firmware development.
+#
+# This file is retained for backward compatibility.
+# The canonical dependency declarations are in pyproject.toml.
+#
+# For production-only builds: pip install -r tools/requirements-prod.txt
+# For development:            pip install -r tools/requirements-dev.txt
+# Or directly from pyproject: pip install -e .[dev]
+
+-r requirements-dev.txt

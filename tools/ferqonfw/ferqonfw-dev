@@ -1,0 +1,6 @@
+#!/bin/bash
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: Copyright (c) 2026 Revyr Labs
+# ferqonfw-dev entrypoint (development-only CLI)
+cd "$(dirname "$0")"
+python3 dev_main.py "$@"

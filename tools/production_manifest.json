@@ -1,0 +1,154 @@
+{
+  "_license": "Apache-2.0",
+  "_copyright": "SPDX-FileCopyrightText: Copyright (c) 2026 Revyr Labs",
+  "_description": "Production source manifest for Ferqon firmware. The bundler (tools/create_production_bundle.py) copies only the files listed here into a sealed staging directory. Forbidden paths are explicitly excluded and verified absent.",
+  "production_environments": [
+    "pico_arduino",
+    "esp32",
+    "esp32s3",
+    "teensy40",
+    "teensy41"
+  ],
+  "production_boards": [
+    "pico",
+    "esp32",
+    "esp32s3",
+    "teensy40",
+    "teensy41"
+  ],
+  "source_files": [
+    "src/adc.cpp",
+    "src/app_state.cpp",
+    "src/app_state.h",
+    "src/board_config.h",
+    "src/capabilities.cpp",
+    "src/debug.cpp",
+    "src/device_info.cpp",
+    "src/dispatcher.cpp",
+    "src/dispatcher.h",
+    "src/driver_call.cpp",
+    "src/driver_call.h",
+    "src/echo.cpp",
+    "src/ferqon_commands.h",
+    "src/ferqon_log.cpp",
+    "src/ferqon_log.h",
+    "src/gpio.cpp",
+    "src/main.cpp",
+    "src/ping.cpp",
+    "src/protocol.cpp",
+    "src/protocol.h",
+    "src/pulse.cpp",
+    "src/reset.cpp",
+    "src/uart.cpp"
+  ],
+  "board_files": {
+    "pico": [
+      "platforms/pico/board.yml",
+      "platforms/pico/generated/platform_caps.h",
+      "platforms/pico/generated/pin_macros.h",
+      "platforms/pico/generated/board.json",
+      "platforms/pico/generated/capabilities.json",
+      "platforms/pico/generated/device_descriptor.h",
+      "platforms/pico/generated/device_channels.c"
+    ],
+    "esp32": [
+      "platforms/esp32/board.yml",
+      "platforms/esp32/generated/platform_caps.h",
+      "platforms/esp32/generated/pin_macros.h",
+      "platforms/esp32/generated/board.json",
+      "platforms/esp32/generated/capabilities.json",
+      "platforms/esp32/generated/device_descriptor.h",
+      "platforms/esp32/generated/device_channels.c"
+    ],
+    "esp32s3": [
+      "platforms/esp32s3/board.yml",
+      "platforms/esp32s3/generated/platform_caps.h",
+      "platforms/esp32s3/generated/pin_macros.h",
+      "platforms/esp32s3/generated/board.json",
+      "platforms/esp32s3/generated/capabilities.json",
+      "platforms/esp32s3/generated/device_descriptor.h",
+      "platforms/esp32s3/generated/device_channels.c"
+    ],
+    "teensy40": [
+      "platforms/teensy40/board.yml",
+      "platforms/teensy40/generated/platform_caps.h",
+      "platforms/teensy40/generated/pin_macros.h",
+      "platforms/teensy40/generated/board.json",
+      "platforms/teensy40/generated/capabilities.json",
+      "platforms/teensy40/generated/device_descriptor.h",
+      "platforms/teensy40/generated/device_channels.c"
+    ],
+    "teensy41": [
+      "platforms/teensy41/board.yml",
+      "platforms/teensy41/generated/platform_caps.h",
+      "platforms/teensy41/generated/pin_macros.h",
+      "platforms/teensy41/generated/board.json",
+      "platforms/teensy41/generated/capabilities.json",
+      "platforms/teensy41/generated/device_descriptor.h",
+      "platforms/teensy41/generated/device_channels.c"
+    ]
+  },
+  "config_files": [
+    "platformio.ini",
+    "Makefile",
+    "pyproject.toml",
+    "tools/production_config.json",
+    "tools/production_manifest.json",
+    "tools/requirements-prod.txt",
+    ".gitignore",
+    ".editorconfig",
+    ".yamllint"
+  ],
+  "build_hook_files": [
+    "tools/pio_pre_build.py"
+  ],
+  "cli_files": [
+    "tools/ferqonfw/__init__.py",
+    "tools/ferqonfw/main.py",
+    "tools/ferqonfw/protocol.py",
+    "tools/ferqonfw/board_loader.py",
+    "tools/ferqonfw/cmd_build.py",
+    "tools/ferqonfw/cmd_clean.py",
+    "tools/ferqonfw/cmd_doctor.py",
+    "tools/ferqonfw/cmd_flash.py",
+    "tools/ferqonfw/cmd_identify.py",
+    "tools/ferqonfw/cmd_info.py",
+    "tools/ferqonfw/cmd_list.py",
+    "tools/ferqonfw/cmd_packet.py",
+    "tools/ferqonfw/cmd_selftest.py",
+    "tools/ferqonfw/ferqonfw"
+  ],
+  "protocol_files": [
+    "protocol/ssot/commands.json"
+  ],
+  "doc_files": [
+    "README.md",
+    "PRODUCTION_BUILD.md",
+    "LICENSE",
+    "NOTICE"
+  ],
+  "forbidden_paths": [
+    "tests/",
+    "examples/",
+    "platforms/in_development/",
+    "tools/ferqon_emulator.py",
+    "tools/ferqonfw/dev_main.py",
+    "tools/ferqonfw/cmd_gen.py",
+    "tools/ferqonfw/cmd_validate.py",
+    "tools/ferqonfw/cmd_drivers.py",
+    "tools/ferqonfw/cmd_identify_dev.py",
+    "tools/ferqonfw/cmd_selftest_dev.py",
+    "tools/ferqonfw/ferqonfw-dev",
+    "tools/ferqonfw/codegen/",
+    "tools/gen_protocol.py",
+    "tools/gen_platform_caps.py",
+    "tools/lint_platform_guards.py",
+    "tools/device_config.py",
+    "tools/device_discovery.py",
+    "tools/diagnose.py",
+    "tools/requirements.txt",
+    "tools/requirements-dev.txt",
+    "tools/DRIVER_DEVELOPMENT.md",
+    "tools/schemas/"
+  ]
+}

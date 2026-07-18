@@ -1,0 +1,55 @@
+Ferqon Firmware
+Copyright 2026 Revyr Labs
+
+This product includes software developed at Revyr Labs (https://revyrlabs.com).
+
+The Ferqon Firmware project is licensed under the Apache License, Version 2.0.
+See the LICENSE file for the full license text.
+
+Third-Party Dependencies
+------------------------
+
+This firmware incorporates or may incorporate the following third-party
+components with their respective licenses:
+
+- PlatformIO Core (Apache-2.0)
+- Arduino Framework (LGPL-2.1-or-later)
+- Pico SDK (BSD-3-Clause)
+- Unity Test Framework (MIT)
+
+For detailed license information on each dependency, please refer to the
+respective project repositories and license files.
+
+Platform-Specific Dependencies (In-Development Boards)
+-------------------------------------------------------
+
+The following dependencies apply only when building for in-development
+community boards. They are NOT required for the production build matrix
+(pico, esp32, esp32s3, teensy40, teensy41).
+
+- ESP8266: ESP8266 Arduino Core (LGPL-2.1-or-later)
+- STM32 Blue Pill: STM32Cube HAL (BSD-3-Clause)
+- Arduino Mega 2560: Arduino AVR Core (LGPL-2.1-or-later)
+
+Production Platform Licenses
+----------------------------
+
+When building for production platforms, the following licenses apply:
+
+- Raspberry Pi Pico/RP2040: Pico SDK (BSD-3-Clause), Arduino-Pico core (LGPL-2.1-or-later)
+- ESP32/ESP32-S3: ESP-IDF (Apache-2.0), Arduino-ESP32 core (LGPL-2.1-or-later)
+- Teensy 4.0/4.1: Teensyduino (LGPL-2.1-or-later)
+
+Binary Distribution Notice
+--------------------------
+
+Firmware binaries built with the Arduino or Teensyduino backends may statically
+link the Arduino core and/or other LGPL-2.1-or-later components. If you
+distribute a compiled firmware binary (.uf2, .hex, .elf, etc.) that includes
+such components, the LGPL requires you to provide, or offer to provide, the
+corresponding source code and library source code to recipients. This does not
+affect distribution of the Ferqon Firmware source code, which is licensed under
+Apache-2.0.
+
+Please ensure compliance with all applicable licenses when distributing
+firmware built for specific platforms.

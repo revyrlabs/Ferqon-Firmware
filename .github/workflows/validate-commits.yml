@@ -1,0 +1,55 @@
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: Copyright (c) 2026 Revyr Labs
+
+name: Validate Commits
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+permissions:
+  contents: read
+
+jobs:
+  dco:
+    runs-on: ubuntu-latest
+    name: DCO / Signed-off-by
+    steps:
+      - name: Check out
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+        with:
+          fetch-depth: 0
+
+      - name: Check DCO sign-off
+        run: |
+          # If this is a PR, check commits from the base branch.
+          if [ -n "${{ github.event.pull_request.base.sha }}" ]; then
+            range="${{ github.event.pull_request.base.sha }}..HEAD"
+          else
+            # For a push, check the commits just pushed.
+            range="${{ github.event.before }}..${{ github.event.after }}"
+            # Fallback for new branches or when 'before' is all zeros.
+            if [ "$range" = "0000000000000000000000000000000000000000..${{ github.event.after }}" ] || [ -z "$range" ]; then
+              range="HEAD"
+            fi
+          fi
+
+          echo "Checking DCO sign-off for range: $range"
+          missing=$(git log --format='%H' "$range" | while read -r commit; do
+            if [ -z "$(git show -s --format='%B' "$commit" | grep -E '^Signed-off-by: .+ <.+@.+>\s*$')" ]; then
+              echo "$commit"
+            fi
+          done)
+
+          if [ -n "$missing" ]; then
+            echo "The following commits are missing a Signed-off-by line:"
+            for commit in $missing; do
+              echo "  $commit - $(git show -s --format='%s' "$commit")"
+            done
+            echo "Please run 'git commit -s' and re-push."
+            exit 1
+          fi
+
+          echo "All commits have a valid Signed-off-by line."

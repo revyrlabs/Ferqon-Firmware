@@ -1,0 +1,37 @@
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: Copyright (c) 2026 Revyr Labs
+
+version = 1
+
+# This REUSE.toml file bulk-annotates files that cannot carry inline comment
+# headers (e.g., strict JSON) without breaking consumers.
+
+[[annotations]]
+path = "**/*.md"
+SPDX-License-Identifier = "Apache-2.0"
+SPDX-FileCopyrightText = "Copyright (c) 2026 Revyr Labs"
+
+[[annotations]]
+path = "NOTICE"
+SPDX-License-Identifier = "Apache-2.0"
+SPDX-FileCopyrightText = "Copyright (c) 2026 Revyr Labs"
+
+[[annotations]]
+path = "protocol/ssot/commands.json"
+SPDX-License-Identifier = "Apache-2.0"
+SPDX-FileCopyrightText = "Copyright (c) 2026 Revyr Labs"
+
+[[annotations]]
+path = "tools/schemas/*.schema.json"
+SPDX-License-Identifier = "Apache-2.0"
+SPDX-FileCopyrightText = "Copyright (c) 2026 Revyr Labs"
+
+[[annotations]]
+path = "platforms/**/generated/*.json"
+SPDX-License-Identifier = "Apache-2.0"
+SPDX-FileCopyrightText = "Copyright (c) 2026 Revyr Labs"
+
+[[annotations]]
+path = "generated/*.h"
+SPDX-License-Identifier = "Apache-2.0"
+SPDX-FileCopyrightText = "Copyright (c) 2026 Revyr Labs"

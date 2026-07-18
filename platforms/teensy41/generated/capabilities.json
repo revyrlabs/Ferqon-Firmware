@@ -1,0 +1,567 @@
+{
+  "device_type": "teensy41",
+  "mcu": "imxrt1062",
+  "max_gpio": 55,
+  "reserved_pins": [
+    54
+  ],
+  "pins": {
+    "0": [
+      "gpio_in",
+      "gpio_out",
+      "pwm",
+      "uart0_rx"
+    ],
+    "1": [
+      "gpio_in",
+      "gpio_out",
+      "pwm",
+      "uart0_tx"
+    ],
+    "2": [
+      "gpio_in",
+      "gpio_out",
+      "pwm"
+    ],
+    "3": [
+      "gpio_in",
+      "gpio_out",
+      "pwm",
+      "i2c2_sda"
+    ],
+    "4": [
+      "gpio_in",
+      "gpio_out",
+      "pwm",
+      "i2c2_scl"
+    ],
+    "5": [
+      "gpio_in",
+      "gpio_out",
+      "pwm"
+    ],
+    "6": [
+      "gpio_in",
+      "gpio_out",
+      "pwm"
+    ],
+    "7": [
+      "gpio_in",
+      "gpio_out",
+      "pwm",
+      "uart2_rx"
+    ],
+    "8": [
+      "gpio_in",
+      "gpio_out",
+      "pwm",
+      "uart2_tx"
+    ],
+    "9": [
+      "gpio_in",
+      "gpio_out",
+      "pwm"
+    ],
+    "10": [
+      "gpio_in",
+      "gpio_out",
+      "pwm",
+      "spi0_cs"
+    ],
+    "11": [
+      "gpio_in",
+      "gpio_out",
+      "pwm",
+      "spi0_mosi"
+    ],
+    "12": [
+      "gpio_in",
+      "gpio_out",
+      "pwm",
+      "spi0_miso"
+    ],
+    "13": [
+      "gpio_in",
+      "gpio_out",
+      "spi0_sck"
+    ],
+    "14": [
+      "gpio_in",
+      "gpio_out",
+      "adc",
+      "pwm",
+      "uart1_tx"
+    ],
+    "15": [
+      "gpio_in",
+      "gpio_out",
+      "adc",
+      "pwm",
+      "uart1_rx"
+    ],
+    "16": [
+      "gpio_in",
+      "gpio_out",
+      "adc",
+      "pwm",
+      "i2c1_scl"
+    ],
+    "17": [
+      "gpio_in",
+      "gpio_out",
+      "adc",
+      "pwm",
+      "i2c1_sda"
+    ],
+    "18": [
+      "gpio_in",
+      "gpio_out",
+      "adc",
+      "pwm",
+      "spi2_cs",
+      "i2c0_sda"
+    ],
+    "19": [
+      "gpio_in",
+      "gpio_out",
+      "adc",
+      "pwm",
+      "spi2_miso",
+      "i2c0_scl"
+    ],
+    "20": [
+      "gpio_in",
+      "gpio_out",
+      "adc",
+      "pwm",
+      "spi2_mosi"
+    ],
+    "21": [
+      "gpio_in",
+      "gpio_out",
+      "adc",
+      "pwm",
+      "spi2_sck"
+    ],
+    "22": [
+      "gpio_in",
+      "gpio_out",
+      "adc",
+      "pwm"
+    ],
+    "23": [
+      "gpio_in",
+      "gpio_out",
+      "adc",
+      "pwm"
+    ],
+    "24": [
+      "gpio_in",
+      "gpio_out",
+      "adc",
+      "pwm",
+      "i2c3_sda"
+    ],
+    "25": [
+      "gpio_in",
+      "gpio_out",
+      "adc",
+      "pwm",
+      "spi1_cs",
+      "i2c3_scl"
+    ],
+    "26": [
+      "gpio_in",
+      "gpio_out",
+      "adc",
+      "pwm",
+      "spi1_mosi"
+    ],
+    "27": [
+      "gpio_in",
+      "gpio_out",
+      "pwm",
+      "spi1_sck"
+    ],
+    "28": [
+      "gpio_in",
+      "gpio_out",
+      "pwm",
+      "spi1_miso"
+    ],
+    "29": [
+      "gpio_in",
+      "gpio_out",
+      "pwm"
+    ],
+    "30": [
+      "gpio_in",
+      "gpio_out",
+      "pwm"
+    ],
+    "31": [
+      "gpio_in",
+      "gpio_out",
+      "pwm",
+      "uart3_tx"
+    ],
+    "32": [
+      "gpio_in",
+      "gpio_out",
+      "pwm",
+      "uart3_rx"
+    ],
+    "33": [
+      "gpio_in",
+      "gpio_out",
+      "pwm",
+      "uart4_tx"
+    ],
+    "34": [
+      "gpio_in",
+      "gpio_out",
+      "pwm",
+      "uart4_rx"
+    ],
+    "35": [
+      "gpio_in",
+      "gpio_out",
+      "pwm",
+      "uart5_tx"
+    ],
+    "36": [
+      "gpio_in",
+      "gpio_out",
+      "pwm",
+      "uart5_rx"
+    ],
+    "37": [
+      "gpio_in",
+      "gpio_out",
+      "pwm",
+      "uart6_tx"
+    ],
+    "38": [
+      "gpio_in",
+      "gpio_out",
+      "pwm",
+      "uart6_rx"
+    ],
+    "39": [
+      "gpio_in",
+      "gpio_out",
+      "pwm"
+    ],
+    "40": [
+      "gpio_in",
+      "gpio_out",
+      "pwm"
+    ],
+    "41": [
+      "gpio_in",
+      "gpio_out",
+      "pwm"
+    ],
+    "42": [
+      "gpio_in",
+      "gpio_out",
+      "pwm"
+    ],
+    "43": [
+      "gpio_in",
+      "gpio_out",
+      "pwm"
+    ],
+    "44": [
+      "gpio_in",
+      "gpio_out",
+      "pwm"
+    ],
+    "45": [
+      "gpio_in",
+      "gpio_out",
+      "pwm"
+    ],
+    "46": [
+      "gpio_in",
+      "gpio_out",
+      "pwm"
+    ],
+    "47": [
+      "gpio_in",
+      "gpio_out",
+      "pwm"
+    ],
+    "48": [
+      "gpio_in",
+      "gpio_out",
+      "pwm",
+      "uart7_tx"
+    ],
+    "49": [
+      "gpio_in",
+      "gpio_out",
+      "pwm",
+      "uart7_rx"
+    ],
+    "50": [
+      "gpio_in",
+      "gpio_out",
+      "pwm"
+    ],
+    "51": [
+      "gpio_in",
+      "gpio_out",
+      "pwm",
+      "uart8_rx"
+    ],
+    "52": [
+      "gpio_in",
+      "gpio_out",
+      "pwm",
+      "uart8_tx"
+    ],
+    "53": [
+      "gpio_in",
+      "gpio_out",
+      "pwm"
+    ],
+    "54": [
+      "gpio_in",
+      "gpio_out",
+      "pwm"
+    ],
+    "55": [
+      "gpio_in",
+      "gpio_out"
+    ]
+  },
+  "peripherals": {
+    "spi0": {
+      "sck": [
+        13
+      ],
+      "mosi": [
+        11
+      ],
+      "miso": [
+        12
+      ],
+      "cs": [
+        10
+      ]
+    },
+    "spi1": {
+      "sck": [
+        27
+      ],
+      "mosi": [
+        26
+      ],
+      "miso": [
+        28
+      ],
+      "cs": [
+        25
+      ]
+    },
+    "spi2": {
+      "sck": [
+        21
+      ],
+      "mosi": [
+        20
+      ],
+      "miso": [
+        19
+      ],
+      "cs": [
+        18
+      ]
+    },
+    "i2c0": {
+      "sda": [
+        18
+      ],
+      "scl": [
+        19
+      ]
+    },
+    "i2c1": {
+      "sda": [
+        17
+      ],
+      "scl": [
+        16
+      ]
+    },
+    "i2c2": {
+      "sda": [
+        3
+      ],
+      "scl": [
+        4
+      ]
+    },
+    "i2c3": {
+      "sda": [
+        24
+      ],
+      "scl": [
+        25
+      ]
+    },
+    "uart0": {
+      "tx": [
+        1
+      ],
+      "rx": [
+        0
+      ]
+    },
+    "uart1": {
+      "tx": [
+        14
+      ],
+      "rx": [
+        15
+      ]
+    },
+    "uart2": {
+      "tx": [
+        8
+      ],
+      "rx": [
+        7
+      ]
+    },
+    "uart3": {
+      "tx": [
+        31
+      ],
+      "rx": [
+        32
+      ]
+    },
+    "uart4": {
+      "tx": [
+        33
+      ],
+      "rx": [
+        34
+      ]
+    },
+    "uart5": {
+      "tx": [
+        35
+      ],
+      "rx": [
+        36
+      ]
+    },
+    "uart6": {
+      "tx": [
+        37
+      ],
+      "rx": [
+        38
+      ]
+    },
+    "uart7": {
+      "tx": [
+        48
+      ],
+      "rx": [
+        49
+      ]
+    },
+    "uart8": {
+      "tx": [
+        52
+      ],
+      "rx": [
+        51
+      ]
+    },
+    "adc": {
+      "channels": [
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26
+      ],
+      "resolution": 12,
+      "vref_mv": 3300
+    },
+    "pwm": {
+      "slices": 0,
+      "pins": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        49,
+        50,
+        51,
+        52,
+        53,
+        54
+      ]
+    }
+  },
+  "_license": "Apache-2.0",
+  "_copyright": "SPDX-FileCopyrightText: Copyright (c) 2026 Revyr Labs"
+}

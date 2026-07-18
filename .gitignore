@@ -1,0 +1,54 @@
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: Copyright (c) 2026 Revyr Labs
+# Build and cache output
+build/
+.pio/
+dist/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+*.egg-info/
+*.egg
+
+# Python tool caches and coverage
+.ruff_cache/
+.pytest_cache/
+.mypy_cache/
+.tox/
+.coverage
+htmlcov/
+coverage.xml
+
+# Editor and OS files
+*.swp
+*.swo
+*~
+.DS_Store
+
+# IDE-specific configuration (internal tooling, not for public repo)
+.vscode/
+.idea/
+.cursor/
+
+# Emulator transient files
+.emu.pid
+.emu.port
+
+# Firmware binaries (ignore loose ones at repo root; CI produces artifacts)
+# Build artifacts in .pio/ are already covered by the .pio/ ignore above.
+/*.bin
+/*.hex
+/*.elf
+/*.uf2
+
+# Root generated directory, if any, used by the pre-build hook.
+# Platform-specific generated files (e.g. platforms/pico/generated/)
+# are committed and verified by CI; regenerate with gen_platform_caps.py.
+/generated/
+platforms/in_development/**/generated/
+
+# Production board generated artifacts are committed and CI-verified.
+# Only in_development generated dirs are ignored (above).

@@ -1,0 +1,72 @@
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: Copyright (c) 2026 Revyr Labs
+name: Lint
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+
+    - name: Set up Python
+      uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f392efede  # v5.0.0
+      with:
+        python-version: '3.10'
+
+    - name: Install development dependencies
+      run: |
+        pip install -e ".[dev]"
+        pip install reuse
+
+    - name: Check REUSE compliance (SPDX headers)
+      run: |
+        reuse lint
+
+    - name: Lint Python with ruff
+      run: |
+        ruff check .
+
+    - name: Format check Python with black
+      run: |
+        black --check .
+
+    - name: Lint YAML with yamllint
+      run: |
+        yamllint -c .yamllint platforms/*/board.yml platforms/in_development/*/board.yml
+
+    - name: Check platform capability guards
+      run: |
+        python tools/lint_platform_guards.py
+
+    - name: Check C/C++ formatting with clang-format
+      run: |
+        if ! command -v clang-format &>/dev/null; then
+          echo "clang-format not installed, skipping C/C++ format check"
+          exit 0
+        fi
+        # Check all C/C++ source files in src/ and tests/
+        changed_files=$(find src/ tests/ -name '*.cpp' -o -name '*.h' -o -name '*.c' 2>/dev/null)
+        if [ -z "$changed_files" ]; then
+          echo "No C/C++ files to check"
+          exit 0
+        fi
+        diff_output=""
+        for file in $changed_files; do
+          diff_output+=$(diff -u "$file" <(clang-format "$file") 2>/dev/null || true)
+        done
+        if [ -n "$diff_output" ]; then
+          echo "C/C++ formatting issues found. Run 'clang-format -i src/*.cpp src/*.h tests/*.cpp' to fix."
+          echo "$diff_output"
+          exit 1
+        fi
+        echo "C/C++ formatting OK"

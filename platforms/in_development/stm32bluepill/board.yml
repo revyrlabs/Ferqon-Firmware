@@ -1,0 +1,80 @@
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: Copyright (c) 2026 Revyr Labs
+# Ferqon board definition — STM32 Blue Pill (STM32F103C8)
+board: stm32bluepill
+display_name: "STM32 Blue Pill (STM32F103C8)"
+mcu: stm32f103
+backend: arduino
+pio_env: stm32bluepill
+
+# Core & memory topology
+core_count: 1
+isr_serial_strategy: uart_rx_isr
+ram_size_bytes: 20480
+flash_size_bytes: 65536
+sys_clock_hz: 72000000
+multicore: false
+
+# GPIO
+# STM32F103C8 has 32 GPIO pins (PA0-PA15, PB0-PB15).
+# Arduino core maps these as pin 0-31.
+max_gpio: 31
+led_pin: 13
+reserved_pins: [0, 1]
+
+# ADC
+adc:
+  pins: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+  resolution_bits: 12
+  vref_mv: 3300
+
+# PWM
+pwm:
+  pins: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+
+# Peripherals
+spi:
+  - instance: 0
+    sck: [5]
+    mosi: [7]
+    miso: [6]
+    cs: [4]
+  - instance: 1
+    sck: [3]
+    mosi: [5]
+    miso: [4]
+    cs: [2]
+
+i2c:
+  - {instance: 0, sda: [7], scl: [6]}
+  - {instance: 1, sda: [11], scl: [10]}
+
+uart:
+  - {instance: 0, tx: [9], rx: [10]}
+  - {instance: 1, tx: [2], rx: [3]}
+  - {instance: 2, tx: [12], rx: [13]}
+
+# Advanced / optional
+pio_blocks: 0
+pio_sm_per_block: 0
+dma_channels: 7
+
+# Network capabilities
+network:
+  link: []
+  transport: [serial]
+  ota: false
+  provision: []
+
+# Versioning
+device_type: "stm32-bluepill"
+protocol_version: "1.1.0"
+capability_version: "1.0"
+firmware_version: "1.1.0"
+
+notes: |
+  STM32 Blue Pill (STM32F103C8T6).
+  3 hardware UARTs — Serial, Serial1, Serial2.
+  Uses Arduino STM32 core (stm32duino).
+  12-bit ADC with 3.3V reference.
+  72 MHz Cortex-M3.

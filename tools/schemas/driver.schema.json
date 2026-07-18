@@ -1,0 +1,394 @@
+{
+  "$schema": "http://json-schema.org/draft-2020-12/schema#",
+  "$id": "https://ferqon.dev/schemas/driver.schema.json",
+  "title": "Ferqon Driver Definition",
+  "description": "Schema for Ferqon driver definitions including UI layout and mode/state models",
+  "type": "object",
+  "required": [
+    "name",
+    "version",
+    "commands"
+  ],
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Driver identifier (kebab-case)",
+      "pattern": "^[a-z][a-z0-9-]*$"
+    },
+    "version": {
+      "type": "string",
+      "description": "Semantic version (e.g., 1.0.0)",
+      "pattern": "^\\d+\\.\\d+\\.\\d+(-[a-zA-Z0-9.-]+)?$"
+    },
+    "description": {
+      "type": "string",
+      "description": "Human-readable description"
+    },
+    "requires": {
+      "type": "object",
+      "description": "Hardware requirements",
+      "properties": {
+        "pins": {
+          "type": "array",
+          "description": "Pin role requirements",
+          "items": {
+            "$ref": "#/$defs/pin_requirement"
+          }
+        }
+      }
+    },
+    "provides": {
+      "type": "object",
+      "description": "Driver outputs and capabilities",
+      "properties": {
+        "channels": {
+          "type": "array",
+          "description": "Output channels for UI readouts",
+          "items": {
+            "$ref": "#/$defs/channel"
+          }
+        }
+      }
+    },
+    "commands": {
+      "type": "object",
+      "description": "Command definitions",
+      "additionalProperties": {
+        "$ref": "#/$defs/command"
+      }
+    },
+    "ui": {
+      "$ref": "#/$defs/ui_block",
+      "description": "UI layout and grouping"
+    },
+    "modes": {
+      "type": "array",
+      "description": "Driver mode/state definitions",
+      "items": {
+        "$ref": "#/$defs/mode"
+      }
+    }
+  },
+  "$defs": {
+    "pin_requirement": {
+      "type": "object",
+      "required": [
+        "role",
+        "kind"
+      ],
+      "properties": {
+        "role": {
+          "type": "string",
+          "description": "Pin role identifier (e.g., red, sda, tx)"
+        },
+        "kind": {
+          "type": "string",
+          "description": "Pin capability type",
+          "enum": [
+            "gpio",
+            "pwm",
+            "adc",
+            "spi_sck",
+            "spi_mosi",
+            "spi_miso",
+            "spi_cs",
+            "i2c_sda",
+            "i2c_scl",
+            "uart_tx",
+            "uart_rx",
+            "uart_cts",
+            "uart_rts"
+          ]
+        },
+        "required": {
+          "type": "boolean",
+          "description": "Whether this pin is required or optional",
+          "default": true
+        }
+      }
+    },
+    "channel": {
+      "type": "object",
+      "required": [
+        "name",
+        "type"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Channel identifier (used by args.bind)"
+        },
+        "type": {
+          "type": "string",
+          "description": "Channel type",
+          "enum": [
+            "pwm_out",
+            "gpio_out",
+            "adc_in",
+            "digital_in",
+            "digital_out"
+          ]
+        },
+        "range": {
+          "type": "array",
+          "description": "Value range [min, max]",
+          "items": {
+            "type": "number"
+          },
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "unit": {
+          "type": "string",
+          "description": "Unit symbol (e.g., V, Hz, %)"
+        }
+      }
+    },
+    "arg_spec": {
+      "type": "object",
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "description": "Argument type",
+          "enum": [
+            "number",
+            "boolean",
+            "string",
+            "select"
+          ]
+        },
+        "min": {
+          "type": "number",
+          "description": "Minimum value (for number type)"
+        },
+        "max": {
+          "type": "number",
+          "description": "Maximum value (for number type)"
+        },
+        "default": {
+          "description": "Default value"
+        },
+        "bind": {
+          "type": "string",
+          "description": "Channel name to bind this arg to"
+        },
+        "options": {
+          "type": "array",
+          "description": "Options for select type",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "command_ui": {
+      "type": "object",
+      "description": "Command-specific UI hints",
+      "properties": {
+        "layout": {
+          "type": "string",
+          "description": "Control layout override",
+          "enum": [
+            "sliders",
+            "buttons",
+            "grid",
+            "form",
+            "rows",
+            "readouts"
+          ]
+        },
+        "group": {
+          "type": "string",
+          "description": "UI group ID (must exist in ui.groups)"
+        },
+        "order": {
+          "type": "integer",
+          "description": "Order within group"
+        },
+        "variant": {
+          "type": "string",
+          "description": "UI variant (e.g., compact, detailed)"
+        },
+        "visible_when": {
+          "$ref": "#/$defs/visibility_condition"
+        }
+      }
+    },
+    "visibility_condition": {
+      "type": "object",
+      "description": "Conditional visibility expression",
+      "properties": {
+        "mode": {
+          "type": "string",
+          "description": "Show when in this mode"
+        },
+        "field": {
+          "type": "string",
+          "description": "Field name to check"
+        },
+        "equals": {
+          "description": "Value to compare (for field condition)"
+        },
+        "all": {
+          "type": "array",
+          "description": "All conditions must be true (AND)",
+          "items": {
+            "$ref": "#/$defs/visibility_condition"
+          }
+        },
+        "any": {
+          "type": "array",
+          "description": "At least one condition must be true (OR)",
+          "items": {
+            "$ref": "#/$defs/visibility_condition"
+          }
+        }
+      }
+    },
+    "command": {
+      "type": "object",
+      "required": [
+        "method"
+      ],
+      "properties": {
+        "description": {
+          "type": "string",
+          "description": "Command description"
+        },
+        "method": {
+          "type": "string",
+          "description": "Firmware method name"
+        },
+        "args": {
+          "type": "object",
+          "description": "Command arguments",
+          "additionalProperties": {
+            "$ref": "#/$defs/arg_spec"
+          }
+        },
+        "static_args": {
+          "type": "object",
+          "description": "Fixed arguments (no user input)",
+          "additionalProperties": true
+        },
+        "ui": {
+          "$ref": "#/$defs/command_ui"
+        }
+      }
+    },
+    "ui_group": {
+      "type": "object",
+      "required": [
+        "id",
+        "label",
+        "order"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Group identifier"
+        },
+        "label": {
+          "type": "string",
+          "description": "Group display label"
+        },
+        "order": {
+          "type": "integer",
+          "description": "Display order"
+        },
+        "layout": {
+          "type": "string",
+          "description": "Group layout style",
+          "enum": [
+            "sliders",
+            "buttons",
+            "grid",
+            "form",
+            "rows",
+            "readouts"
+          ]
+        },
+        "bind": {
+          "type": "array",
+          "description": "Channel names to bind (for readout groups)",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "ui_block": {
+      "type": "object",
+      "properties": {
+        "groups": {
+          "type": "array",
+          "description": "UI group definitions",
+          "items": {
+            "$ref": "#/$defs/ui_group"
+          }
+        }
+      }
+    },
+    "mode": {
+      "type": "object",
+      "required": [
+        "id",
+        "label",
+        "type"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Mode identifier"
+        },
+        "label": {
+          "type": "string",
+          "description": "Mode display label"
+        },
+        "type": {
+          "type": "string",
+          "description": "Mode type",
+          "enum": [
+            "runtime",
+            "ui-only"
+          ]
+        },
+        "default": {
+          "type": "boolean",
+          "description": "Whether this is the default mode (exactly one must be true)"
+        },
+        "enter_command": {
+          "type": "string",
+          "description": "Command to execute when entering this mode (runtime only)"
+        },
+        "exit_command": {
+          "type": "string",
+          "description": "Command to execute when exiting this mode (runtime only)"
+        },
+        "commands": {
+          "type": "array",
+          "description": "Commands available in this mode",
+          "items": {
+            "type": "string"
+          }
+        },
+        "requires": {
+          "type": "object",
+          "description": "Mode-specific requirements",
+          "properties": {
+            "pins": {
+              "type": "array",
+              "description": "Pin requirements for this mode",
+              "items": {
+                "$ref": "#/$defs/pin_requirement"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

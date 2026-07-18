@@ -1,0 +1,217 @@
+{
+  "board": "pico",
+  "display_name": "Raspberry Pi Pico",
+  "mcu": "rp2040",
+  "backend": "arduino",
+  "pio_env": "pico_arduino",
+  "core_count": 2,
+  "isr_serial_strategy": "uart_rx_isr",
+  "ram_size_bytes": 264000,
+  "flash_size_bytes": 2097152,
+  "sys_clock_hz": 125000000,
+  "multicore": false,
+  "max_gpio": 29,
+  "led_pin": 25,
+  "reserved_pins": [
+    23,
+    24
+  ],
+  "adc": {
+    "pins": [
+      26,
+      27,
+      28
+    ],
+    "resolution_bits": 12,
+    "vref_mv": 3300
+  },
+  "pwm": {
+    "pins": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23,
+      24,
+      25,
+      26,
+      27,
+      28
+    ]
+  },
+  "spi": [
+    {
+      "instance": 0,
+      "sck": [
+        2,
+        6,
+        10,
+        14,
+        18
+      ],
+      "mosi": [
+        3,
+        7,
+        11,
+        15,
+        19
+      ],
+      "miso": [
+        0,
+        4,
+        8,
+        12,
+        16
+      ],
+      "cs": [
+        1,
+        5,
+        9,
+        13,
+        17
+      ]
+    },
+    {
+      "instance": 1,
+      "sck": [
+        10,
+        14,
+        18,
+        22,
+        26
+      ],
+      "mosi": [
+        11,
+        15,
+        19,
+        23,
+        27
+      ],
+      "miso": [
+        12,
+        16,
+        20,
+        24,
+        28
+      ],
+      "cs": [
+        13,
+        17,
+        21,
+        25,
+        29
+      ]
+    }
+  ],
+  "i2c": [
+    {
+      "instance": 0,
+      "sda": [
+        0,
+        4,
+        8,
+        12,
+        16,
+        20
+      ],
+      "scl": [
+        1,
+        5,
+        9,
+        13,
+        17,
+        21
+      ]
+    },
+    {
+      "instance": 1,
+      "sda": [
+        2,
+        6,
+        10,
+        14,
+        18,
+        22,
+        26
+      ],
+      "scl": [
+        3,
+        7,
+        11,
+        15,
+        19,
+        23,
+        27
+      ]
+    }
+  ],
+  "uart": [
+    {
+      "instance": 0,
+      "tx": [
+        0,
+        12,
+        16
+      ],
+      "rx": [
+        1,
+        13,
+        17
+      ]
+    },
+    {
+      "instance": 1,
+      "tx": [
+        4,
+        8,
+        20,
+        24,
+        28
+      ],
+      "rx": [
+        5,
+        9,
+        21,
+        25,
+        29
+      ]
+    }
+  ],
+  "pio_blocks": 2,
+  "pio_sm_per_block": 4,
+  "dma_channels": 12,
+  "network": {
+    "link": [],
+    "transport": [
+      "serial"
+    ],
+    "ota": false,
+    "provision": []
+  },
+  "device_type": "pico-rp2040",
+  "protocol_version": "1.1.0",
+  "capability_version": "1.0",
+  "firmware_version": "1.1.0",
+  "notes": "Pins 23 and 24 are not broken out on the standard Pico board.\nPin 25 drives the onboard LED.\n",
+  "_license": "Apache-2.0",
+  "_copyright": "SPDX-FileCopyrightText: Copyright (c) 2026 Revyr Labs"
+}

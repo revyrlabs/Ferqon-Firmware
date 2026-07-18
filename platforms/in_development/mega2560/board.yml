@@ -1,0 +1,73 @@
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: Copyright (c) 2026 Revyr Labs
+# Ferqon board definition — Arduino Mega 2560 (ATmega2560)
+board: mega2560
+display_name: "Arduino Mega 2560"
+mcu: atmega2560
+backend: arduino
+pio_env: mega2560
+
+# Core & memory topology
+core_count: 1
+isr_serial_strategy: uart_rx_isr
+ram_size_bytes: 8192
+flash_size_bytes: 253952
+sys_clock_hz: 16000000
+multicore: false
+
+# GPIO
+max_gpio: 69
+led_pin: 13
+reserved_pins: [0, 1]
+
+# ADC
+adc:
+  pins: [54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69]
+  resolution_bits: 10
+  vref_mv: 5000
+
+# PWM
+pwm:
+  pins: [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 44, 45, 46]
+
+# Peripherals
+spi:
+  - instance: 0
+    sck: [52]
+    mosi: [51]
+    miso: [50]
+    cs: [53]
+
+i2c:
+  - {instance: 0, sda: [20], scl: [21]}
+
+uart:
+  - {instance: 0, tx: [1], rx: [0]}
+  - {instance: 1, tx: [18], rx: [19]}
+  - {instance: 2, tx: [16], rx: [17]}
+  - {instance: 3, tx: [14], rx: [15]}
+
+# Advanced / optional
+pio_blocks: 0
+pio_sm_per_block: 0
+dma_channels: 0
+
+# Network capabilities
+network:
+  link: []
+  transport: [serial]
+  ota: false
+  provision: []
+
+# Versioning
+device_type: "arduino-mega2560"
+protocol_version: "1.1.0"
+capability_version: "1.0"
+firmware_version: "1.1.0"
+
+notes: |
+  Arduino Mega 2560 with ATmega2560.
+  Has 4 hardware UARTs (Serial, Serial1, Serial2, Serial3).
+  Pins 0-1 reserved (Serial0 RX/TX).
+  ADC pins are A0-A15 (digital 54-69).
+  54 digital pins + 16 analog pins.

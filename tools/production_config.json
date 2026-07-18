@@ -1,0 +1,21 @@
+{
+  "_license": "Apache-2.0",
+  "_copyright": "SPDX-FileCopyrightText: Copyright (c) 2026 Revyr Labs",
+  "_description": "Centralized production configuration for Ferqon firmware. Values here are the single source of truth for runtime defaults. The pre-build hook emits production_config.h from this file. Build-time overrides via FERQON_* environment variables are validated against the constraints below. CLI timing values (cli_timeout_s, cli_connect_delay_ms) are used by the production CLI's SerialTransport class.",
+  "serial_baud": 115200,
+  "log_level_default": "INFO",
+  "heartbeat_interval_ms": 5000,
+  "cli_timeout_s": 2,
+  "cli_connect_delay_ms": 500,
+  "constraints": {
+    "serial_baud": {"min": 1200, "max": 921600},
+    "heartbeat_interval_ms": {"min": 1000, "max": 60000},
+    "cli_timeout_s": {"min": 1, "max": 30},
+    "cli_connect_delay_ms": {"min": 0, "max": 5000}
+  },
+  "log_levels": {
+    "OFF": 0,
+    "INFO": 1,
+    "VERBOSE": 2
+  }
+}

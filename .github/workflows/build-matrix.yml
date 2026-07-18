@@ -1,0 +1,111 @@
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: Copyright (c) 2026 Revyr Labs
+name: Build Matrix
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+permissions:
+  contents: read
+  artifact-metadata: write
+
+jobs:
+  # ─────────────────────────────────────────────────────────────────────────
+  # Production build matrix — all five production environments.
+  # Uses only production dependencies (requirements-prod.txt).
+  # ─────────────────────────────────────────────────────────────────────────
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - board: pico
+            env: pico_arduino
+          - board: esp32
+            env: esp32
+          - board: esp32s3
+            env: esp32s3
+          - board: teensy40
+            env: teensy40
+          - board: teensy41
+            env: teensy41
+
+    steps:
+    - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+
+    - name: Set up Python
+      uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f392efede  # v5.0.0
+      with:
+        python-version: '3.10'
+
+    - name: Install production dependencies
+      run: |
+        pip install .
+
+    - name: Build ${{ matrix.env }}
+      run: |
+        ferqonfw build ${{ matrix.board }}
+
+    - name: Verify artifact exists
+      run: |
+        ARTIFACT=".pio/build/${{ matrix.env }}/firmware.*"
+        if ! ls $ARTIFACT 1> /dev/null 2>&1; then
+          echo "ERROR: No build artifact found at $ARTIFACT"
+          exit 1
+        fi
+        echo "Artifact found:"
+        ls -la $ARTIFACT
+
+    - name: Upload firmware
+      uses: actions/upload-artifact@65c4c7a0d31560bc3e2054bb0174ac91bc7f71  # v4.6.0
+      with:
+        name: firmware-${{ matrix.env }}
+        path: .pio/build/${{ matrix.env }}/firmware.*
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # Clean-room verification — bundle + build all envs from isolated cache.
+  # ─────────────────────────────────────────────────────────────────────────
+  cleanroom:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+    - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+
+    - name: Set up Python
+      uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f392efede  # v5.0.0
+      with:
+        python-version: '3.10'
+
+    - name: Install production dependencies
+      run: |
+        pip install -r tools/requirements-prod.txt
+
+    - name: Run clean-room verification
+      run: |
+        python3 tools/cleanroom_verify.py --skip-install
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # PTY smoke test — verify production CLI communicates with a device.
+  # ─────────────────────────────────────────────────────────────────────────
+  pty-smoke:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+    - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v7.0.0
+
+    - name: Set up Python
+      uses: actions/setup-python@0a5c61591373683505ea898e09a3ea4f392efede  # v5.0.0
+      with:
+        python-version: '3.10'
+
+    - name: Install production dependencies
+      run: |
+        pip install -r tools/requirements-prod.txt
+
+    - name: Run production CLI tests
+      run: |
+        python3 -m pytest tests/test_production/ -v
