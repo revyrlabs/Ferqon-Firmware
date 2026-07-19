@@ -70,7 +70,10 @@ int driver_call_parse_args(const char *args, dc_arg_t *out, uint8_t max_args) {
         out[count].value = val_start;
         count++;
 
-        /* Move to next segment */
+        /* Move to next segment — don't advance past the null terminator */
+        if (*end == '\0') {
+            break;
+        }
         start = ++end;
     }
 
@@ -82,8 +85,10 @@ const char *driver_call_get_arg(const dc_arg_t *args, int count, const char *key
         return NULL;
     }
 
+    size_t key_len = strlen(key);
     for (int i = 0; i < count; i++) {
-        if (strcmp(args[i].key, key) == 0) {
+        /* Use strncmp + check that the next char is '=' (key boundary) */
+        if (strncmp(args[i].key, key, key_len) == 0 && args[i].key[key_len] == '=') {
             return args[i].value;
         }
     }
@@ -101,33 +106,63 @@ static bool driver_call_handler(uint8_t seq, uint8_t cmd_id,
         return false;
     }
     
-    /* Payload format: driver_name\x00 method\x00 args */
-    /* Note: PKT_REQUEST byte is already stripped by dispatcher */
-    const char *payload = (const char *)params;
-    const char *driver_name = payload;
-    const char *method = NULL;
-    const char *args = NULL;
-
-    /* Find driver_name\x00 */
-    const char *null1 = strchr(driver_name, '\x00');
-    if (!null1) {
+    /* Payload format (length-prefixed, matches ferqon_hw SDK):          */
+    /*   [driver_len][driver...][method_len][method...][args...]           */
+    /* Note: PKT_REQUEST byte is already stripped by dispatcher            */
+    if (param_len < 2) {
         ferqon_send_error(seq, cmd_id, FERQON_ERR_INVALID_PARAMS, FERQON_ECAT_PROTOCOL,
-                        false, 0, (const uint8_t *)"missing method separator", 22);
+                        false, 0, (const uint8_t *)"payload too short", 17);
         *already_responded = true;
         return true;
     }
 
-    /* Find method\x00 */
-    method = null1 + 1;
-    const char *null2 = strchr(method, '\x00');
-    if (!null2) {
+    const uint8_t *p = params;
+    const uint8_t *end = params + param_len;
+
+    /* Read driver name (length-prefixed) */
+    uint8_t driver_len = p[0];
+    p += 1;
+    if (p + driver_len > end) {
         ferqon_send_error(seq, cmd_id, FERQON_ERR_INVALID_PARAMS, FERQON_ECAT_PROTOCOL,
-                        false, 0, (const uint8_t *)"missing args separator", 20);
+                        false, 0, (const uint8_t *)"driver name truncated", 21);
         *already_responded = true;
         return true;
     }
+    char driver_name[32];
+    if (driver_len >= sizeof(driver_name)) driver_len = sizeof(driver_name) - 1;
+    memcpy(driver_name, p, driver_len);
+    driver_name[driver_len] = '\0';
+    p += driver_len;
 
-    args = null2 + 1;
+    /* Read method name (length-prefixed) */
+    if (p >= end) {
+        ferqon_send_error(seq, cmd_id, FERQON_ERR_INVALID_PARAMS, FERQON_ECAT_PROTOCOL,
+                        false, 0, (const uint8_t *)"missing method", 14);
+        *already_responded = true;
+        return true;
+    }
+    uint8_t method_len = p[0];
+    p += 1;
+    if (p + method_len > end) {
+        ferqon_send_error(seq, cmd_id, FERQON_ERR_INVALID_PARAMS, FERQON_ECAT_PROTOCOL,
+                        false, 0, (const uint8_t *)"method name truncated", 21);
+        *already_responded = true;
+        return true;
+    }
+    char method_name[32];
+    if (method_len >= sizeof(method_name)) method_len = sizeof(method_name) - 1;
+    memcpy(method_name, p, method_len);
+    method_name[method_len] = '\0';
+    p += method_len;
+
+    /* Remaining bytes are the args string (key=value;key=value;...) */
+    /* The SDK does NOT null-terminate the args, so copy into a local buffer */
+    size_t args_len = end - p;
+    char args_buf[128];
+    if (args_len >= sizeof(args_buf)) args_len = sizeof(args_buf) - 1;
+    memcpy(args_buf, p, args_len);
+    args_buf[args_len] = '\0';
+    const char *args = args_buf;
 
     /* For now, only handle "hil" driver */
     if (strcmp(driver_name, "hil") != 0) {
@@ -160,8 +195,11 @@ static bool driver_call_handler(uint8_t seq, uint8_t cmd_id,
     dc_arg_t parsed_args[MAX_ARGS];
     int arg_count = driver_call_parse_args(args, parsed_args, MAX_ARGS);
     if (arg_count < 0) {
+        /* Include the args string in the error for debugging */
+        char err_detail[64];
+        snprintf(err_detail, sizeof(err_detail), "malformed: %.40s", args);
         ferqon_send_error(seq, cmd_id, FERQON_ERR_INVALID_PARAMS, FERQON_ECAT_COMMAND,
-                        false, 0, (const uint8_t *)"malformed args", 13);
+                        false, 0, (const uint8_t *)err_detail, strlen(err_detail));
         *already_responded = true;
         return true;
     }
@@ -176,7 +214,7 @@ static bool driver_call_handler(uint8_t seq, uint8_t cmd_id,
      * adc_expect, pulse_measure. Use the direct command interface
      * (FERQON_CMD_UART_SEND, FERQON_CMD_ADC_READ, etc.) instead.
      */
-    if (strcmp(method, "io_set") == 0) {
+    if (strcmp(method_name, "io_set") == 0) {
         /* Map to gpio_write */
         const char *pin_str = driver_call_get_arg(parsed_args, arg_count, "pin");
         const char *level_str = driver_call_get_arg(parsed_args, arg_count, "level");
@@ -201,7 +239,7 @@ static bool driver_call_handler(uint8_t seq, uint8_t cmd_id,
         digitalWrite(pin, value ? HIGH : LOW);
         return true;
     }
-    else if (strcmp(method, "io_get") == 0) {
+    else if (strcmp(method_name, "io_get") == 0) {
         /* Map to gpio_read */
         const char *pin_str = driver_call_get_arg(parsed_args, arg_count, "pin");
         if (!pin_str) {
@@ -223,7 +261,7 @@ static bool driver_call_handler(uint8_t seq, uint8_t cmd_id,
         *response_len = 1;
         return true;
     }
-    else if (strcmp(method, "io_configure") == 0) {
+    else if (strcmp(method_name, "io_configure") == 0) {
         /* Map to pin_mode */
         const char *pin_str = driver_call_get_arg(parsed_args, arg_count, "pin");
         const char *mode_str = driver_call_get_arg(parsed_args, arg_count, "mode");
@@ -262,7 +300,7 @@ static bool driver_call_handler(uint8_t seq, uint8_t cmd_id,
         pinMode(pin, arduino_mode);
         return true;
     }
-    else if (strcmp(method, "io_expect") == 0) {
+    else if (strcmp(method_name, "io_expect") == 0) {
         /* Wait for pin to reach level within timeout */
         const char *timeout_str = driver_call_get_arg(parsed_args, arg_count, "timeout_ms");
         const char *pin_str = driver_call_get_arg(parsed_args, arg_count, "pin");
@@ -301,7 +339,7 @@ static bool driver_call_handler(uint8_t seq, uint8_t cmd_id,
         *response_len = 1;
         return true;
     }
-    else if (strcmp(method, "uart_send") == 0) {
+    else if (strcmp(method_name, "uart_send") == 0) {
         /* Send data via UART - stub for now, delegates to uart driver */
         const char *data_str = driver_call_get_arg(parsed_args, arg_count, "data");
         if (!data_str) {
@@ -317,7 +355,7 @@ static bool driver_call_handler(uint8_t seq, uint8_t cmd_id,
         *already_responded = true;
         return true;
     }
-    else if (strcmp(method, "uart_expect") == 0) {
+    else if (strcmp(method_name, "uart_expect") == 0) {
         /* Wait for pattern in UART RX - stub for now, delegates to uart driver */
         const char *timeout_str = driver_call_get_arg(parsed_args, arg_count, "timeout_ms");
         const char *pattern_str = driver_call_get_arg(parsed_args, arg_count, "pattern");
@@ -334,7 +372,7 @@ static bool driver_call_handler(uint8_t seq, uint8_t cmd_id,
         *already_responded = true;
         return true;
     }
-    else if (strcmp(method, "adc_read") == 0) {
+    else if (strcmp(method_name, "adc_read") == 0) {
         /* Read ADC channel - stub for now, delegates to adc driver */
         const char *channel_str = driver_call_get_arg(parsed_args, arg_count, "channel");
         if (!channel_str) {
@@ -350,7 +388,7 @@ static bool driver_call_handler(uint8_t seq, uint8_t cmd_id,
         *already_responded = true;
         return true;
     }
-    else if (strcmp(method, "adc_expect") == 0) {
+    else if (strcmp(method_name, "adc_expect") == 0) {
         /* Wait for ADC to be within range - stub for now, delegates to adc driver */
         const char *timeout_str = driver_call_get_arg(parsed_args, arg_count, "timeout_ms");
         const char *channel_str = driver_call_get_arg(parsed_args, arg_count, "channel");
@@ -369,7 +407,7 @@ static bool driver_call_handler(uint8_t seq, uint8_t cmd_id,
         *already_responded = true;
         return true;
     }
-    else if (strcmp(method, "pulse_measure") == 0) {
+    else if (strcmp(method_name, "pulse_measure") == 0) {
         /* Measure pulse width - stub for now, delegates to pulse driver */
         const char *timeout_str = driver_call_get_arg(parsed_args, arg_count, "timeout_ms");
         const char *pin_str = driver_call_get_arg(parsed_args, arg_count, "pin");
@@ -391,10 +429,10 @@ static bool driver_call_handler(uint8_t seq, uint8_t cmd_id,
     else {
         /* Unknown method */
         char log_buf[64];
-        snprintf(log_buf, sizeof(log_buf), "DRIVER_CALL unknown method: %s.%s", driver_name, method);
+        snprintf(log_buf, sizeof(log_buf), "DRIVER_CALL unknown method: %s.%s", driver_name, method_name);
         FERQON_LOG_DEBUG(log_buf);
         ferqon_send_error(seq, cmd_id, FERQON_ERR_INVALID_METHOD, FERQON_ECAT_COMMAND,
-                        false, 0, (const uint8_t *)method, strlen(method));
+                        false, 0, (const uint8_t *)method_name, strlen(method_name));
         *already_responded = true;
         return true;
     }
