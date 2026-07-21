@@ -2,7 +2,7 @@
 /* SPDX-FileCopyrightText: Copyright (c) 2026 Revyr Labs */
 /* Ferqon serial protocol constants.
  *
- * Auto-generated from protocol/ssot/commands.json (v1.1.0).
+ * Auto-generated from protocol/ssot/commands.json (v0.1.0).
  * DO NOT EDIT — regenerate with: python3 tools/gen_protocol.py
  */
 
@@ -27,7 +27,7 @@
 #define FERQON_SEQ_UNSOLICITED          0
 
 /* Protocol version (from SSOT) */
-#define FERQON_PROTOCOL_VERSION         "1.1.0"
+#define FERQON_PROTOCOL_VERSION         "0.1.0"
 
 /* --------------------------------------------------------- Packet types */
 

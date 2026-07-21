@@ -7,12 +7,18 @@
 #include "dispatcher.h"
 #include "board_config.h"
 #include "pin_macros.h"
+#include "uart.h"
+#include "production_config.h"
 #include <string.h>
 #include <stdlib.h>
 #include <Arduino.h>
 
 #define MAX_KEY_LEN 31
 #define MAX_ARGS 8
+
+/* HIL session state — set by hil.enter, cleared by hil.exit.
+ * DUT-optional: enter always succeeds even with no DUT connected. */
+static bool g_hil_session_active = false;
 
 /* Forward declaration of the global driver array from dispatcher.cpp */
 extern ferqon_driver_t g_drivers[];
@@ -424,6 +430,38 @@ static bool driver_call_handler(uint8_t seq, uint8_t cmd_id,
         ferqon_send_error(seq, cmd_id, FERQON_ERR_NOT_IMPLEMENTED, FERQON_ECAT_COMMAND,
                         false, 0, (const uint8_t *)"pulse_measure delegated to pulse driver", 39);
         *already_responded = true;
+        return true;
+    }
+    else if (strcmp(method_name, "enter") == 0) {
+        /* HIL session handshake — DUT-optional.
+         * Optional args: uart_tx, uart_rx, uart_baud.
+         * Always succeeds (even with no DUT connected). */
+        const char *uart_baud_str = driver_call_get_arg(parsed_args, arg_count, "uart_baud");
+        uint32_t baud = 0;
+        if (uart_baud_str) {
+            baud = (uint32_t)strtoul(uart_baud_str, NULL, 10);
+        }
+
+        /* Arm Serial1 if a baud was provided; otherwise defer to first use. */
+        if (baud != 0) {
+            ferqon_uart1_init(baud);
+        }
+
+        g_hil_session_active = true;
+        FERQON_LOG_DEBUG("hil.enter: session active");
+
+        response[0] = 1; /* Success */
+        *response_len = 1;
+        return true;
+    }
+    else if (strcmp(method_name, "exit") == 0) {
+        /* HIL session handshake — clears session flag.
+         * No args required. Always succeeds. */
+        g_hil_session_active = false;
+        FERQON_LOG_DEBUG("hil.exit: session cleared");
+
+        response[0] = 1; /* Success */
+        *response_len = 1;
         return true;
     }
     else {

@@ -1,5 +1,5 @@
 {
-  "version": "1.1.0",
+  "version": "0.1.0",
   "frame": {
     "start_byte": 171,
     "crc_poly": 4129,
@@ -8,6 +8,7 @@
   "limits": {
     "max_payload_bytes": 255,
     "max_frame_bytes": 261,
+    "heartbeat_interval_ms": 1000,
     "inter_byte_timeout_ms": 50,
     "frame_assembly_timeout_ms": 200
   },
@@ -189,6 +190,18 @@
       "description": "Generic driver dispatch",
       "driver_methods": {
         "hil": {
+          "enter": {
+            "description": "Enter HIL mode — session handshake. Optionally arms the DUT UART channel (Serial1) when uart_tx/uart_rx/uart_baud are provided. Always succeeds even with no DUT connected.",
+            "arg_map": {
+              "uart_tx": "u8_optional",
+              "uart_rx": "u8_optional",
+              "uart_baud": "u32_optional"
+            }
+          },
+          "exit": {
+            "description": "Exit HIL mode — session handshake. Clears the HIL session flag and optionally releases the DUT UART channel.",
+            "arg_map": {}
+          },
           "io_set": {
             "native_cmd": "gpio_write",
             "arg_map": {

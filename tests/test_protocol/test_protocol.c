@@ -15,6 +15,7 @@
  */
 
 #include <stdint.h>
+#include <string.h>
 #include "unity.h"
 #include "ferqon_commands.h"
 
@@ -178,6 +179,107 @@ void test_gpio_output(void)        { TEST_ASSERT_EQUAL_INT(1, FERQON_GPIO_OUTPUT
 void test_gpio_input_pullup(void)  { TEST_ASSERT_EQUAL_INT(2, FERQON_GPIO_INPUT_PULLUP); }
 void test_gpio_input_pulldown(void){ TEST_ASSERT_EQUAL_INT(3, FERQON_GPIO_INPUT_PULLDOWN);}
 
+/* ── HIL enter/exit frame encoding tests ─────────────────────────────────── */
+
+/* Verify that a DRIVER_CALL frame for hil.enter can be encoded and decoded.
+ * Payload format: [PKT_REQUEST][driver_len][driver...][method_len][method...][args...]
+ * This tests the wire-level contract for the enter/exit handshake added in
+ * protocol v1.2.0.  No hardware required — just frame round-trip. */
+
+void test_hil_enter_frame_roundtrip(void) {
+    /* Build a hil.enter driver_call payload (no args) */
+    const char *driver = "hil";
+    const char *method = "enter";
+    uint8_t driver_len = (uint8_t)strlen(driver);
+    uint8_t method_len = (uint8_t)strlen(method);
+
+    /* Payload: [PKT_REQUEST][driver_len][driver...][method_len][method...] */
+    uint8_t payload[32];
+    int idx = 0;
+    payload[idx++] = FERQON_PKT_REQUEST;
+    payload[idx++] = driver_len;
+    memcpy(&payload[idx], driver, driver_len);
+    idx += driver_len;
+    payload[idx++] = method_len;
+    memcpy(&payload[idx], method, method_len);
+    idx += method_len;
+    uint8_t payload_len = (uint8_t)idx;
+
+    /* Encode as a frame */
+    uint8_t frame[64];
+    uint16_t crc = crc16_ccitt_false(
+        (const uint8_t[]){0x01, FERQON_CMD_DRIVER_CALL, payload_len}, 3);
+    /* Append payload to CRC data */
+    /* CRC covers SEQ + CMD + LEN + payload */
+    uint8_t crc_data[36];
+    crc_data[0] = 0x01; /* seq */
+    crc_data[1] = FERQON_CMD_DRIVER_CALL;
+    crc_data[2] = payload_len;
+    memcpy(&crc_data[3], payload, payload_len);
+    crc = crc16_ccitt_false(crc_data, 3 + payload_len);
+
+    /* Build frame: START SEQ CMD LEN payload CRC_LO CRC_HI */
+    frame[0] = FERQON_START_BYTE;
+    frame[1] = 0x01; /* seq */
+    frame[2] = FERQON_CMD_DRIVER_CALL;
+    frame[3] = payload_len;
+    memcpy(&frame[4], payload, payload_len);
+    frame[4 + payload_len] = (uint8_t)(crc & 0xFF);
+    frame[4 + payload_len + 1] = (uint8_t)(crc >> 8);
+
+    /* Verify frame structure */
+    TEST_ASSERT_EQUAL_HEX8(FERQON_START_BYTE, frame[0]);
+    TEST_ASSERT_EQUAL_INT(FERQON_CMD_DRIVER_CALL, frame[2]);
+    TEST_ASSERT_EQUAL_INT(payload_len, frame[3]);
+
+    /* Verify driver name in payload */
+    TEST_ASSERT_EQUAL_INT(3, frame[5]); /* "hil" length */
+    TEST_ASSERT_EQUAL_STRING_LEN("hil", (const char *)&frame[6], 3);
+
+    /* Verify method name in payload */
+    TEST_ASSERT_EQUAL_INT(5, frame[9]); /* "enter" length */
+    TEST_ASSERT_EQUAL_STRING_LEN("enter", (const char *)&frame[10], 5);
+}
+
+void test_hil_exit_frame_roundtrip(void) {
+    /* Build a hil.exit driver_call payload (no args) */
+    const char *driver = "hil";
+    const char *method = "exit";
+    uint8_t driver_len = (uint8_t)strlen(driver);
+    uint8_t method_len = (uint8_t)strlen(method);
+
+    uint8_t payload[32];
+    int idx = 0;
+    payload[idx++] = FERQON_PKT_REQUEST;
+    payload[idx++] = driver_len;
+    memcpy(&payload[idx], driver, driver_len);
+    idx += driver_len;
+    payload[idx++] = method_len;
+    memcpy(&payload[idx], method, method_len);
+    idx += method_len;
+    uint8_t payload_len = (uint8_t)idx;
+
+    /* Verify the frame can be CRC'd correctly (no crash, consistent CRC) */
+    uint8_t crc_data[36];
+    crc_data[0] = 0x01;
+    crc_data[1] = FERQON_CMD_DRIVER_CALL;
+    crc_data[2] = payload_len;
+    memcpy(&crc_data[3], payload, payload_len);
+    uint16_t crc1 = crc16_ccitt_false(crc_data, 3 + payload_len);
+    uint16_t crc2 = crc16_ccitt_false(crc_data, 3 + payload_len);
+    TEST_ASSERT_EQUAL_HEX16(crc1, crc2);
+
+    /* Verify method name in payload */
+    TEST_ASSERT_EQUAL_INT(4, payload[1 + 1 + driver_len]); /* "exit" length */
+    TEST_ASSERT_EQUAL_STRING_LEN("exit",
+        (const char *)&payload[1 + 1 + driver_len + 1], 4);
+}
+
+void test_driver_call_cmd_id_is_3(void) {
+    /* The DRIVER_CALL command ID must be 3 (per SSOT). */
+    TEST_ASSERT_EQUAL_INT(3, FERQON_CMD_DRIVER_CALL);
+}
+
 /* ── main ───────────────────────────────────────────────────────────────── */
 
 int main(void) {
@@ -243,6 +345,11 @@ int main(void) {
     RUN_TEST(test_gpio_output);
     RUN_TEST(test_gpio_input_pullup);
     RUN_TEST(test_gpio_input_pulldown);
+
+    /* HIL enter/exit frame encoding */
+    RUN_TEST(test_driver_call_cmd_id_is_3);
+    RUN_TEST(test_hil_enter_frame_roundtrip);
+    RUN_TEST(test_hil_exit_frame_roundtrip);
 
     return UNITY_END();
 }

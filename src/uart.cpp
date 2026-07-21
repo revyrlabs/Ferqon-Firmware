@@ -17,6 +17,7 @@
 #include "ferqon_commands.h"
 #include "protocol.h"
 #include "ferqon_log.h"
+#include "uart.h"
 #include "production_config.h"
 #include <Arduino.h>
 
@@ -24,12 +25,33 @@
 static char uart_rx_buffer[UART_RX_BUFFER_SIZE];
 static size_t uart_rx_len = 0;
 static bool uart1_initialized = false;
+static uint32_t uart1_current_baud = 0;
+
+void ferqon_uart1_init(uint32_t baud) {
+    if (uart1_initialized && baud != 0 && baud == uart1_current_baud) {
+        return;
+    }
+    uint32_t effective_baud = (baud != 0) ? baud : FERQON_SERIAL_BAUD;
+    Serial1.begin(effective_baud);
+    uart1_initialized = true;
+    uart1_current_baud = effective_baud;
+}
+
+void ferqon_uart1_release(void) {
+    if (uart1_initialized) {
+        Serial1.end();
+        uart1_initialized = false;
+        uart1_current_baud = 0;
+        uart_rx_len = 0;
+    }
+}
+
+bool ferqon_uart1_is_ready(void) {
+    return uart1_initialized;
+}
 
 static void uart1_ensure_init(void) {
-    if (!uart1_initialized) {
-        Serial1.begin(FERQON_SERIAL_BAUD);
-        uart1_initialized = true;
-    }
+    ferqon_uart1_init(0);
 }
 
 static bool uart_send_handler(uint8_t seq, uint8_t cmd_id,
