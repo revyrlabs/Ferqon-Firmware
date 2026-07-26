@@ -102,6 +102,43 @@ const char *driver_call_get_arg(const dc_arg_t *args, int count, const char *key
     return NULL;
 }
 
+/* Compute the safe length of a parsed arg value. The parser does not
+ * null-terminate individual values, so scan up to the next ';' or '\0'.
+ */
+static size_t driver_call_value_len(const char *value) {
+    if (!value) return 0;
+    const char *p = value;
+    while (*p != '\0' && *p != ';') {
+        p++;
+    }
+    return (size_t)(p - value);
+}
+
+/* Parse an unsigned 16-bit value from a parsed arg string. The value is
+ * bounded by the next ';' or null terminator. Returns true on success,
+ * false if the value is empty, non-numeric, or out of uint16_t range.
+ */
+static bool driver_call_parse_u16(const char *value, uint16_t *out) {
+    if (!value || !out) return false;
+    uint32_t result = 0;
+    const char *p = value;
+    while (*p != '\0' && *p != ';') {
+        if (*p < '0' || *p > '9') {
+            return false;
+        }
+        result = result * 10 + (uint32_t)(*p - '0');
+        if (result > 65535) {
+            return false;
+        }
+        p++;
+    }
+    if (p == value) {
+        return false;
+    }
+    *out = (uint16_t)result;
+    return true;
+}
+
 /* Driver call handler for cmd_id=3 */
 static bool driver_call_handler(uint8_t seq, uint8_t cmd_id,
                                const uint8_t *params, uint8_t param_len,
@@ -213,12 +250,11 @@ static bool driver_call_handler(uint8_t seq, uint8_t cmd_id,
     /* Dispatch to sub-handlers for "hil" driver.
      *
      * The following methods are fully implemented: io_set, io_get,
-     * io_configure, io_expect.
+     * io_configure, io_expect, uart_send, uart_expect.
      *
      * The following methods are NOT YET IMPLEMENTED and return
-     * FERQON_ERR_NOT_IMPLEMENTED: uart_send, uart_expect, adc_read,
-     * adc_expect, pulse_measure. Use the direct command interface
-     * (FERQON_CMD_UART_SEND, FERQON_CMD_ADC_READ, etc.) instead.
+     * FERQON_ERR_NOT_IMPLEMENTED: adc_read, adc_expect, pulse_measure.
+     * Use the direct command interface (FERQON_CMD_ADC_READ, etc.) instead.
      */
     if (strcmp(method_name, "io_set") == 0) {
         /* Map to gpio_write */
@@ -226,7 +262,7 @@ static bool driver_call_handler(uint8_t seq, uint8_t cmd_id,
         const char *level_str = driver_call_get_arg(parsed_args, arg_count, "level");
         if (!pin_str || !level_str) {
             ferqon_send_error(seq, cmd_id, FERQON_ERR_INVALID_PARAMS, FERQON_ECAT_COMMAND,
-                            false, 0, (const uint8_t *)"missing: pin or level", 20);
+                            false, 0, (const uint8_t *)"missing: pin or level", 21);
             *already_responded = true;
             return true;
         }
@@ -250,7 +286,7 @@ static bool driver_call_handler(uint8_t seq, uint8_t cmd_id,
         const char *pin_str = driver_call_get_arg(parsed_args, arg_count, "pin");
         if (!pin_str) {
             ferqon_send_error(seq, cmd_id, FERQON_ERR_INVALID_PARAMS, FERQON_ECAT_COMMAND,
-                            false, 0, (const uint8_t *)"missing: pin", 11);
+                            false, 0, (const uint8_t *)"missing: pin", 12);
             *already_responded = true;
             return true;
         }
@@ -313,7 +349,7 @@ static bool driver_call_handler(uint8_t seq, uint8_t cmd_id,
         const char *level_str = driver_call_get_arg(parsed_args, arg_count, "level");
         if (!timeout_str || !pin_str || !level_str) {
             ferqon_send_error(seq, cmd_id, FERQON_ERR_INVALID_PARAMS, FERQON_ECAT_COMMAND,
-                            false, 0, (const uint8_t *)"missing: timeout_ms, pin, or level", 30);
+                            false, 0, (const uint8_t *)"missing: timeout_ms, pin, or level", 34);
             *already_responded = true;
             return true;
         }
@@ -346,36 +382,69 @@ static bool driver_call_handler(uint8_t seq, uint8_t cmd_id,
         return true;
     }
     else if (strcmp(method_name, "uart_send") == 0) {
-        /* Send data via UART - stub for now, delegates to uart driver */
+        /* Send data via UART to the DUT over Serial1.
+         * Args: data=<UTF-8 text> (value is always last, may contain ';'). */
         const char *data_str = driver_call_get_arg(parsed_args, arg_count, "data");
         if (!data_str) {
             ferqon_send_error(seq, cmd_id, FERQON_ERR_INVALID_PARAMS, FERQON_ECAT_COMMAND,
-                            false, 0, (const uint8_t *)"missing: data", 12);
+                            false, 0, (const uint8_t *)"missing: data", 13);
             *already_responded = true;
             return true;
         }
 
-        /* Delegate to uart driver */
-        ferqon_send_error(seq, cmd_id, FERQON_ERR_NOT_IMPLEMENTED, FERQON_ECAT_COMMAND,
-                        false, 0, (const uint8_t *)"uart_send delegated to uart driver", 35);
-        *already_responded = true;
+        size_t data_len = driver_call_value_len(data_str);
+        if (data_len == 0) {
+            const char *detail = "empty data";
+            ferqon_send_error(seq, cmd_id, FERQON_ERR_INVALID_PARAMS, FERQON_ECAT_COMMAND,
+                            false, 0, (const uint8_t *)detail, strlen(detail));
+            *already_responded = true;
+            return true;
+        }
+
+        ferqon_uart1_send((const uint8_t *)data_str, data_len);
+        *response_len = 0;
         return true;
     }
     else if (strcmp(method_name, "uart_expect") == 0) {
-        /* Wait for pattern in UART RX - stub for now, delegates to uart driver */
+        /* Wait for pattern to appear in DUT UART RX data.
+         * Args: timeout_ms=<u16>;pattern=<UTF-8 text> (pattern is always last). */
         const char *timeout_str = driver_call_get_arg(parsed_args, arg_count, "timeout_ms");
         const char *pattern_str = driver_call_get_arg(parsed_args, arg_count, "pattern");
         if (!timeout_str || !pattern_str) {
             ferqon_send_error(seq, cmd_id, FERQON_ERR_INVALID_PARAMS, FERQON_ECAT_COMMAND,
-                            false, 0, (const uint8_t *)"missing: timeout_ms or pattern", 28);
+                            false, 0, (const uint8_t *)"missing: timeout_ms or pattern", 30);
             *already_responded = true;
             return true;
         }
 
-        /* Delegate to uart driver */
-        ferqon_send_error(seq, cmd_id, FERQON_ERR_NOT_IMPLEMENTED, FERQON_ECAT_COMMAND,
-                        false, 0, (const uint8_t *)"uart_expect delegated to uart driver", 37);
-        *already_responded = true;
+        uint16_t timeout_ms;
+        if (!driver_call_parse_u16(timeout_str, &timeout_ms) || timeout_ms == 0) {
+            const char *detail = "invalid timeout_ms";
+            ferqon_send_error(seq, cmd_id, FERQON_ERR_INVALID_PARAMS, FERQON_ECAT_COMMAND,
+                            false, 0, (const uint8_t *)detail, strlen(detail));
+            *already_responded = true;
+            return true;
+        }
+
+        size_t pattern_len = driver_call_value_len(pattern_str);
+        if (pattern_len == 0) {
+            ferqon_send_error(seq, cmd_id, FERQON_ERR_INVALID_PARAMS, FERQON_ECAT_COMMAND,
+                            false, 0, (const uint8_t *)"empty pattern", 13);
+            *already_responded = true;
+            return true;
+        }
+
+        bool found = ferqon_uart1_expect(pattern_str, pattern_len, timeout_ms);
+        if (!found) {
+            const char *detail = "uart expect timeout";
+            ferqon_send_error(seq, cmd_id, FERQON_ERR_TIMEOUT, FERQON_ECAT_TIMEOUT,
+                            false, 0, (const uint8_t *)detail, strlen(detail));
+            *already_responded = true;
+            return true;
+        }
+
+        response[0] = 1; /* Success */
+        *response_len = 1;
         return true;
     }
     else if (strcmp(method_name, "adc_read") == 0) {
@@ -383,14 +452,14 @@ static bool driver_call_handler(uint8_t seq, uint8_t cmd_id,
         const char *channel_str = driver_call_get_arg(parsed_args, arg_count, "channel");
         if (!channel_str) {
             ferqon_send_error(seq, cmd_id, FERQON_ERR_INVALID_PARAMS, FERQON_ECAT_COMMAND,
-                            false, 0, (const uint8_t *)"missing: channel", 15);
+                            false, 0, (const uint8_t *)"missing: channel", 16);
             *already_responded = true;
             return true;
         }
 
         /* Delegate to adc driver */
         ferqon_send_error(seq, cmd_id, FERQON_ERR_NOT_IMPLEMENTED, FERQON_ECAT_COMMAND,
-                        false, 0, (const uint8_t *)"adc_read delegated to adc driver", 33);
+                        false, 0, (const uint8_t *)"adc_read delegated to adc driver", 32);
         *already_responded = true;
         return true;
     }
@@ -402,14 +471,14 @@ static bool driver_call_handler(uint8_t seq, uint8_t cmd_id,
         const char *max_str = driver_call_get_arg(parsed_args, arg_count, "max_mv");
         if (!timeout_str || !channel_str || !min_str || !max_str) {
             ferqon_send_error(seq, cmd_id, FERQON_ERR_INVALID_PARAMS, FERQON_ECAT_COMMAND,
-                            false, 0, (const uint8_t *)"missing: timeout_ms, channel, min_mv, or max_mv", 48);
+                            false, 0, (const uint8_t *)"missing: timeout_ms, channel, min_mv, or max_mv", 47);
             *already_responded = true;
             return true;
         }
 
         /* Delegate to adc driver */
         ferqon_send_error(seq, cmd_id, FERQON_ERR_NOT_IMPLEMENTED, FERQON_ECAT_COMMAND,
-                        false, 0, (const uint8_t *)"adc_expect delegated to adc driver", 35);
+                        false, 0, (const uint8_t *)"adc_expect delegated to adc driver", 34);
         *already_responded = true;
         return true;
     }
@@ -421,7 +490,7 @@ static bool driver_call_handler(uint8_t seq, uint8_t cmd_id,
         const char *max_str = driver_call_get_arg(parsed_args, arg_count, "max_us");
         if (!timeout_str || !pin_str || !min_str || !max_str) {
             ferqon_send_error(seq, cmd_id, FERQON_ERR_INVALID_PARAMS, FERQON_ECAT_COMMAND,
-                            false, 0, (const uint8_t *)"missing: timeout_ms, pin, min_us, or max_us", 42);
+                            false, 0, (const uint8_t *)"missing: timeout_ms, pin, min_us, or max_us", 43);
             *already_responded = true;
             return true;
         }

@@ -54,6 +54,58 @@ static void uart1_ensure_init(void) {
     ferqon_uart1_init(0);
 }
 
+void ferqon_uart1_send(const uint8_t *data, size_t len) {
+#ifndef FERQON_HAS_SERIAL1
+#error "FERQON_HAS_SERIAL1 must be defined for UART driver — all supported boards have a secondary UART"
+#else
+    if (len == 0) {
+        return;
+    }
+    uart1_ensure_init();
+    Serial1.write(data, len);
+    Serial1.flush();
+#endif
+}
+
+bool ferqon_uart1_expect(const char *pattern, size_t pattern_len, uint16_t timeout_ms) {
+#ifndef FERQON_HAS_SERIAL1
+#error "FERQON_HAS_SERIAL1 must be defined for UART driver — all supported boards have a secondary UART"
+#else
+    if (pattern_len == 0 || timeout_ms == 0) {
+        return false;
+    }
+
+    /* Clear stale data from previous calls before starting a new expect. */
+    uart1_ensure_init();
+    uart_rx_len = 0;
+
+    /* Wait for pattern in Serial1 RX buffer with timeout.
+     * BLOCKING: no other commands or heartbeats are processed during this. */
+    unsigned long start = millis();
+    while ((millis() - start) < timeout_ms) {
+        /* Read available data into buffer */
+        while (Serial1.available() > 0 && uart_rx_len < UART_RX_BUFFER_SIZE - 1) {
+            uart_rx_buffer[uart_rx_len++] = (char)Serial1.read();
+        }
+
+        /* Check if pattern is in buffer */
+        if (uart_rx_len >= pattern_len) {
+            for (size_t i = 0; i <= uart_rx_len - pattern_len; i++) {
+                if (memcmp(uart_rx_buffer + i, pattern, pattern_len) == 0) {
+                    /* Pattern found */
+                    return true;
+                }
+            }
+        }
+
+        delay(1);
+    }
+
+    /* Timeout - pattern not found */
+    return false;
+#endif
+}
+
 static bool uart_send_handler(uint8_t seq, uint8_t cmd_id,
                              const uint8_t *params, uint8_t param_len,
                              uint8_t *response, uint8_t *response_len,
@@ -66,15 +118,9 @@ static bool uart_send_handler(uint8_t seq, uint8_t cmd_id,
         return true;
     }
 
-#ifndef FERQON_HAS_SERIAL1
-#error "FERQON_HAS_SERIAL1 must be defined for UART driver — all supported boards have a secondary UART"
-#else
-    uart1_ensure_init();
-    Serial1.write(params, param_len);
-    Serial1.flush();
+    ferqon_uart1_send(params, param_len);
     *response_len = 0;
     return true;
-#endif
 }
 
 static bool uart_expect_handler(uint8_t seq, uint8_t cmd_id,
@@ -100,42 +146,10 @@ static bool uart_expect_handler(uint8_t seq, uint8_t cmd_id,
         return true;
     }
 
-#ifndef FERQON_HAS_SERIAL1
-#error "FERQON_HAS_SERIAL1 must be defined for UART driver — all supported boards have a secondary UART"
-#else
-    /* Clear stale data from previous calls before starting a new expect. */
-    uart1_ensure_init();
-    uart_rx_len = 0;
-
-    /* Wait for pattern in Serial1 RX buffer with timeout.
-     * BLOCKING: no other commands or heartbeats are processed during this. */
-    unsigned long start = millis();
-    while ((millis() - start) < timeout_ms) {
-        /* Read available data into buffer */
-        while (Serial1.available() > 0 && uart_rx_len < UART_RX_BUFFER_SIZE - 1) {
-            uart_rx_buffer[uart_rx_len++] = (char)Serial1.read();
-        }
-
-        /* Check if pattern is in buffer */
-        if (uart_rx_len >= pattern_len) {
-            for (size_t i = 0; i <= uart_rx_len - pattern_len; i++) {
-                if (memcmp(uart_rx_buffer + i, pattern, pattern_len) == 0) {
-                    /* Pattern found */
-                    response[0] = 1; /* Success */
-                    *response_len = 1;
-                    return true;
-                }
-            }
-        }
-
-        delay(1);
-    }
-
-    /* Timeout - pattern not found */
-    response[0] = 0; /* Failed */
+    bool found = ferqon_uart1_expect(pattern, pattern_len, timeout_ms);
+    response[0] = found ? 1 : 0; /* 1 = success, 0 = fail */
     *response_len = 1;
     return true;
-#endif
 }
 
 static bool uart_handler(uint8_t seq, uint8_t cmd_id,
