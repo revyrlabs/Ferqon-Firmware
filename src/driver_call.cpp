@@ -322,22 +322,57 @@ static bool hil_exit(uint8_t seq, uint8_t cmd_id,
     return true;
 }
 
-/* Table of implemented HIL methods. adc_read / adc_expect / pulse_measure
- * are intentionally absent: the direct commands (FERQON_CMD_ADC_READ,
- * FERQON_CMD_ADC_EXPECT, FERQON_CMD_PULSE_MEASURE) are the supported path.
- * Adding a method here is now a one-line table entry. */
+/* Stubs for HIL methods that are delegated to direct commands.
+ * The SSOT and backend expect these to exist in the hil driver method
+ * list, but the actual functionality is via FERQON_CMD_ADC_READ,
+ * FERQON_CMD_ADC_EXPECT, and FERQON_CMD_PULSE_MEASURE. These stubs
+ * return NOT_IMPLEMENTED with a descriptive detail so callers know
+ * to use the direct command path. */
+static bool hil_adc_read(uint8_t seq, uint8_t cmd_id,
+                         const dc_arg_t *args, int arg_count,
+                         uint8_t *response, uint8_t *response_len,
+                         bool *already_responded) {
+    (void)args; (void)arg_count; (void)response; (void)response_len;
+    REPLY_ERROR_STR(seq, cmd_id, FERQON_ERR_NOT_IMPLEMENTED, FERQON_ECAT_COMMAND,
+                    false, 0, "adc_read delegated to adc driver");
+}
+
+static bool hil_adc_expect(uint8_t seq, uint8_t cmd_id,
+                           const dc_arg_t *args, int arg_count,
+                           uint8_t *response, uint8_t *response_len,
+                           bool *already_responded) {
+    (void)args; (void)arg_count; (void)response; (void)response_len;
+    REPLY_ERROR_STR(seq, cmd_id, FERQON_ERR_NOT_IMPLEMENTED, FERQON_ECAT_COMMAND,
+                    false, 0, "adc_expect delegated to adc driver");
+}
+
+static bool hil_pulse_measure(uint8_t seq, uint8_t cmd_id,
+                              const dc_arg_t *args, int arg_count,
+                              uint8_t *response, uint8_t *response_len,
+                              bool *already_responded) {
+    (void)args; (void)arg_count; (void)response; (void)response_len;
+    REPLY_ERROR_STR(seq, cmd_id, FERQON_ERR_NOT_IMPLEMENTED, FERQON_ECAT_COMMAND,
+                    false, 0, "pulse_measure delegated to pulse driver");
+}
+
+/* Table of all HIL methods (must match SSOT driver_methods.hil).
+ * adc_read / adc_expect / pulse_measure are stubs that return
+ * NOT_IMPLEMENTED — use the direct commands instead. */
 static const struct {
     const char *name;
     hil_method_fn fn;
 } hil_methods[] = {
-    {"io_set",        hil_io_set},
-    {"io_get",        hil_io_get},
-    {"io_configure",  hil_io_configure},
-    {"io_expect",     hil_io_expect},
-    {"uart_send",     hil_uart_send},
-    {"uart_expect",   hil_uart_expect},
-    {"enter",         hil_enter},
-    {"exit",          hil_exit},
+    {"io_set",          hil_io_set},
+    {"io_get",          hil_io_get},
+    {"io_configure",    hil_io_configure},
+    {"io_expect",       hil_io_expect},
+    {"uart_send",       hil_uart_send},
+    {"uart_expect",     hil_uart_expect},
+    {"enter",           hil_enter},
+    {"exit",            hil_exit},
+    {"adc_read",        hil_adc_read},
+    {"adc_expect",      hil_adc_expect},
+    {"pulse_measure",   hil_pulse_measure},
 };
 static const uint8_t hil_method_count =
     (uint8_t)(sizeof(hil_methods) / sizeof(hil_methods[0]));
@@ -401,8 +436,10 @@ static bool driver_call_handler(uint8_t seq, uint8_t cmd_id,
     args_buf[args_len] = '\0';
     const char *args = args_buf;
 
-    /* Shared log buffer for the two "not found" paths below. */
-    char log_buf[64];
+    /* Shared log buffer for the two "not found" paths below.
+     * Sized to fit "DRIVER_CALL unknown method: <driver>.<method>" with
+     * both names at their max (DC_MAX_DRIVER_NAME + DC_MAX_METHOD_NAME). */
+    char log_buf[DC_MAX_DRIVER_NAME + DC_MAX_METHOD_NAME + 32];
 
     /* For now, only handle "hil" driver */
     if (strcmp(driver_name, "hil") != 0) {

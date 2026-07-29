@@ -28,7 +28,7 @@ static bool adc_check_channel(uint8_t seq, uint8_t cmd_id, uint8_t channel,
                     false, adc_pin, NULL, 0);
     }
     *out_pin = adc_pin;
-    return false;
+    return false;  /* channel OK — caller proceeds */
 }
 
 static bool adc_read_handler(uint8_t seq, uint8_t cmd_id,

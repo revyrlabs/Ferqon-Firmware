@@ -22,6 +22,16 @@
 
 /* --------------------------------------------------------------- Errors */
 
+/* IMPORTANT: All REPLY_* macros below expand to `return true;` from the
+ * calling handler. Any code immediately following a REPLY_* call is
+ * unreachable when the macro fires. This is intentional — the macros
+ * collapse a 3-line error-reply-and-return idiom into one line. Do NOT
+ * add a redundant `return true;` after a REPLY_* call; the macro already
+ * returns. Callers that need to act on the same condition must check
+ * the predicate before the REPLY_* call (see ferqon_check_pin, which
+ * returns true on rejection and false on success, using REPLY_ERROR
+ * only on the rejection path). */
+
 /* Reply with a structured error frame, mark the request as already
  * responded, and return true from the current handler.
  *
@@ -80,7 +90,7 @@ static inline bool ferqon_check_pin(uint8_t seq, uint8_t cmd_id, uint8_t pin,
         REPLY_ERROR(seq, cmd_id, FERQON_ERR_UNSUPPORTED_PIN, FERQON_ECAT_COMMAND,
                     false, pin, NULL, 0);
     }
-    return false;
+    return false;  /* pin OK — caller proceeds */
 }
 
 /* ------------------------------------------------ Little-endian primitives */
