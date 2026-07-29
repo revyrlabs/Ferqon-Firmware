@@ -3,6 +3,7 @@
 #include "dispatcher.h"
 #include "ferqon_commands.h"
 #include "protocol.h"
+#include "ferqon_helpers.h"
 #include "ferqon_log.h"
 #include "platform_caps.h"
 #include "build_timestamp.h"
@@ -35,10 +36,7 @@ static uint16_t append_u32_tlv(uint8_t *buf, uint8_t type, uint32_t v, uint16_t 
     if (max_len < 6) return 0;
     buf[0] = type;
     buf[1] = 4;
-    buf[2] = (uint8_t)(v & 0xFF);
-    buf[3] = (uint8_t)((v >> 8) & 0xFF);
-    buf[4] = (uint8_t)((v >> 16) & 0xFF);
-    buf[5] = (uint8_t)((v >> 24) & 0xFF);
+    wr_u32_le(&buf[2], v);
     return 6;
 }
 

@@ -35,42 +35,23 @@ void ferqon_send_log(const char *msg);
 #define FERQON_LOG_RAW(msg) \
     Serial.print("[RAW] "); Serial.println(msg)
 
+/* Internal generator macro — do not use directly. All four public
+ * log macros below share the same body; only the threshold differs.
+ * ERROR uses FERQON_LOG_LEVEL_OFF so it always fires. */
+#define FERQON_LOG_IMPL(level, fmt, ...) \
+    do { \
+        if (g_debug_level >= (level)) { \
+            char _ferqon_log_buf[128]; \
+            snprintf(_ferqon_log_buf, sizeof(_ferqon_log_buf), fmt, ##__VA_ARGS__); \
+            ferqon_send_log(_ferqon_log_buf); \
+        } \
+    } while (0)
+
 /* Log macros - route through protocol framing when debug is enabled.
  * They support printf-style formatting: FERQON_LOG_INFO("x=%d", x). */
-#define FERQON_LOG_DEBUG(fmt, ...) \
-    do { \
-        if (g_debug_level >= FERQON_LOG_LEVEL_DEBUG) { \
-            char _ferqon_log_buf[128]; \
-            snprintf(_ferqon_log_buf, sizeof(_ferqon_log_buf), fmt, ##__VA_ARGS__); \
-            ferqon_send_log(_ferqon_log_buf); \
-        } \
-    } while (0)
-
-#define FERQON_LOG_INFO(fmt, ...) \
-    do { \
-        if (g_debug_level >= FERQON_LOG_LEVEL_INFO) { \
-            char _ferqon_log_buf[128]; \
-            snprintf(_ferqon_log_buf, sizeof(_ferqon_log_buf), fmt, ##__VA_ARGS__); \
-            ferqon_send_log(_ferqon_log_buf); \
-        } \
-    } while (0)
-
-#define FERQON_LOG_WARN(fmt, ...) \
-    do { \
-        if (g_debug_level >= FERQON_LOG_LEVEL_INFO) { \
-            char _ferqon_log_buf[128]; \
-            snprintf(_ferqon_log_buf, sizeof(_ferqon_log_buf), fmt, ##__VA_ARGS__); \
-            ferqon_send_log(_ferqon_log_buf); \
-        } \
-    } while (0)
-
-#define FERQON_LOG_ERROR(fmt, ...) \
-    do { \
-        if (g_debug_level >= FERQON_LOG_LEVEL_OFF) { \
-            char _ferqon_log_buf[128]; \
-            snprintf(_ferqon_log_buf, sizeof(_ferqon_log_buf), fmt, ##__VA_ARGS__); \
-            ferqon_send_log(_ferqon_log_buf); \
-        } \
-    } while (0)
+#define FERQON_LOG_DEBUG(fmt, ...) FERQON_LOG_IMPL(FERQON_LOG_LEVEL_DEBUG, fmt, ##__VA_ARGS__)
+#define FERQON_LOG_INFO(fmt, ...)  FERQON_LOG_IMPL(FERQON_LOG_LEVEL_INFO,  fmt, ##__VA_ARGS__)
+#define FERQON_LOG_WARN(fmt, ...)  FERQON_LOG_IMPL(FERQON_LOG_LEVEL_INFO,  fmt, ##__VA_ARGS__)
+#define FERQON_LOG_ERROR(fmt, ...) FERQON_LOG_IMPL(FERQON_LOG_LEVEL_OFF,   fmt, ##__VA_ARGS__)
 
 #endif /* FERQON_LOG_H */

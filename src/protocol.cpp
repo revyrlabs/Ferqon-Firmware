@@ -2,6 +2,7 @@
 /* SPDX-FileCopyrightText: Copyright (c) 2026 Revyr Labs */
 /* Wire protocol framing, CRC, parsing, and response emission. */
 #include "protocol.h"
+#include "ferqon_helpers.h"
 #include "ferqon_log.h"
 #include <Arduino.h>
 #include <string.h>
@@ -63,7 +64,6 @@ static void ferqon_send_frame(uint8_t seq, uint8_t cmd_id,
 void ferqon_send_done(uint8_t seq, uint8_t cmd_id,
                     const uint8_t *body, uint8_t body_len) {
     uint8_t scratch[FERQON_MAX_PAYLOAD_BYTES];
-    memset(scratch, 0, sizeof(scratch));  // Initialize to prevent garbage data
     if ((size_t)body_len + 1 > sizeof(scratch)) {
         /* Caller asked to return more than the wire can hold — truncate safely. */
         body_len = (uint8_t)(sizeof(scratch) - 1);
@@ -104,10 +104,7 @@ void ferqon_send_heartbeat(uint8_t state, uint32_t uptime_ms, uint8_t flags) {
     uint8_t body[7];
     body[0] = FERQON_PKT_HEARTBEAT;
     body[1] = state;
-    body[2] = (uint8_t)(uptime_ms & 0xFF);
-    body[3] = (uint8_t)((uptime_ms >> 8) & 0xFF);
-    body[4] = (uint8_t)((uptime_ms >> 16) & 0xFF);
-    body[5] = (uint8_t)((uptime_ms >> 24) & 0xFF);
+    wr_u32_le(&body[2], uptime_ms);
     body[6] = flags;
     /* Heartbeats are unsolicited: seq=0, cmd_id mirrors heartbeat id space.
      * We use cmd_id=0 for "no command" on unsolicited frames. */

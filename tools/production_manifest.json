@@ -30,6 +30,7 @@
     "src/driver_call.h",
     "src/echo.cpp",
     "src/ferqon_commands.h",
+    "src/ferqon_helpers.h",
     "src/ferqon_log.cpp",
     "src/ferqon_log.h",
     "src/gpio.cpp",

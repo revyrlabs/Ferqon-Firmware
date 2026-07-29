@@ -27,6 +27,13 @@ ARDUINO_APIS = {
     "pinMode": "ferqon_cap_pin_is_valid",
 }
 
+# Wrapper functions that internally call ferqon_cap_* guards. The lint
+# tool recognises these as valid guards so that driver code using the
+# shared ferqon_check_pin() helper (in ferqon_helpers.h) or local
+# adc_check_channel() wrapper passes without needing to inline the
+# ferqon_cap_ call in every .cpp file.
+GUARD_WRAPPERS = {"ferqon_check_pin", "adc_check_channel"}
+
 # Peripheral APIs that require instance validation
 PERIPHERAL_APIS = {
     "SPI.begin": "ferqon_cap_spi_instance_is_valid",
@@ -71,10 +78,15 @@ def check_file_for_guards(file_path: Path) -> List[Tuple[int, str, str]]:
                 # Check if the line has the corresponding guard
                 if guard in line or "ferqon_cap_" in line:
                     continue
-                # Look backwards for a ferqon_cap_ call in recent lines
+                # Check if the line calls a recognised guard wrapper
+                if any(w in line for w in GUARD_WRAPPERS):
+                    continue
+                # Look backwards for a ferqon_cap_ call or guard wrapper
                 found_guard = False
                 for j in range(max(0, i - GUARD_LOOKBACK - 1), i - 1):
-                    if "ferqon_cap_" in lines[j]:
+                    if "ferqon_cap_" in lines[j] or any(
+                        w in lines[j] for w in GUARD_WRAPPERS
+                    ):
                         found_guard = True
                         break
                 if not found_guard:
@@ -85,9 +97,13 @@ def check_file_for_guards(file_path: Path) -> List[Tuple[int, str, str]]:
             if api in line:
                 if guard in line or "ferqon_cap_" in line:
                     continue
+                if any(w in line for w in GUARD_WRAPPERS):
+                    continue
                 found_guard = False
                 for j in range(max(0, i - GUARD_LOOKBACK - 1), i - 1):
-                    if "ferqon_cap_" in lines[j]:
+                    if "ferqon_cap_" in lines[j] or any(
+                        w in lines[j] for w in GUARD_WRAPPERS
+                    ):
                         found_guard = True
                         break
                 if not found_guard:

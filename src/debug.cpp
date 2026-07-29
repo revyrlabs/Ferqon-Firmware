@@ -1,6 +1,7 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 /* SPDX-FileCopyrightText: Copyright (c) 2026 Revyr Labs */
 #include "dispatcher.h"
+#include "ferqon_helpers.h"
 #include "ferqon_log.h"
 
 static bool debug_handler(uint8_t seq, uint8_t cmd_id,
@@ -10,10 +11,7 @@ static bool debug_handler(uint8_t seq, uint8_t cmd_id,
     if (cmd_id != FERQON_CMD_SET_DEBUG_LEVEL) return false;
 
     if (param_len < 1) {
-        ferqon_send_error(seq, cmd_id, FERQON_ERR_INVALID_PARAMS, FERQON_ECAT_COMMAND,
-                        false, 0, NULL, 0);
-        *already_responded = true;
-        return true;
+        REPLY_INVALID_PARAMS(seq, cmd_id);
     }
 
     uint8_t level = params[0];

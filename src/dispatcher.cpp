@@ -2,8 +2,8 @@
 /* SPDX-FileCopyrightText: Copyright (c) 2026 Revyr Labs */
 /* Command dispatcher: route parsed requests to the registered driver. */
 #include "dispatcher.h"
+#include "ferqon_helpers.h"
 #include "ferqon_log.h"
-#include "protocol.h"
 #include <string.h>
 
 #define FERQON_MAX_DRIVERS 16
@@ -25,11 +25,12 @@ void ferqon_register_driver(const ferqon_driver_t *driver) {
 }
 
 bool ferqon_dispatch_request(const ferqon_request_t *req) {
-    /* Every inbound frame must carry a REQUEST packet-type byte; strip it. */
-    /* Allow zero-length payloads for info commands */
-    bool needs_pkt_request = (req->cmd_id != FERQON_CMD_DRIVER_INFO && 
+    /* Every inbound frame must carry a REQUEST packet-type byte; strip it.
+     * The two info commands (DRIVER_INFO, DEVICE_INFO) are exempt: they
+     * take no arguments and may arrive with a zero-length payload. */
+    bool needs_pkt_request = (req->cmd_id != FERQON_CMD_DRIVER_INFO &&
                               req->cmd_id != FERQON_CMD_DEVICE_INFO);
-    
+
     if (needs_pkt_request && (req->param_len < 1 || req->params[0] != FERQON_PKT_REQUEST)) {
         ferqon_send_error(req->seq, req->cmd_id,
                         FERQON_ERR_INVALID_PARAMS, FERQON_ECAT_PROTOCOL,
@@ -37,25 +38,26 @@ bool ferqon_dispatch_request(const ferqon_request_t *req) {
         return false;
     }
 
-    const uint8_t *args = req->params + 1;
-    uint8_t args_len = (uint8_t)(req->param_len - 1);
-    
-    /* For info commands with no PKT_REQUEST, use params directly as args */
+    /* For info commands, args is the raw params (no PKT_REQUEST to strip)
+     * and must be empty. For all other commands, args starts after the
+     * PKT_REQUEST byte. */
+    const uint8_t *args;
+    uint8_t args_len;
     if (!needs_pkt_request) {
         args = req->params;
         args_len = req->param_len;
-    }
-    
-    /* For info commands, ensure args_len is 0 (they don't take parameters) */
-    if (!needs_pkt_request && args_len > 0) {
-        ferqon_send_error(req->seq, req->cmd_id,
-                        FERQON_ERR_INVALID_PARAMS, FERQON_ECAT_PROTOCOL,
-                        /*retryable=*/false, /*ctx=*/0, NULL, 0);
-        return false;
+        if (args_len > 0) {
+            ferqon_send_error(req->seq, req->cmd_id,
+                            FERQON_ERR_INVALID_PARAMS, FERQON_ECAT_PROTOCOL,
+                            /*retryable=*/false, /*ctx=*/0, NULL, 0);
+            return false;
+        }
+    } else {
+        args = req->params + 1;
+        args_len = (uint8_t)(req->param_len - 1);
     }
 
     uint8_t response[FERQON_MAX_PAYLOAD_BYTES];
-    memset(response, 0, sizeof(response));  // Initialize to prevent garbage data
     uint8_t response_len = 0;
     bool already_responded = false;
 

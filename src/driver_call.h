@@ -6,6 +6,14 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+/* Buffer-size limits for driver_call parsing. Centralised here so the
+ * handler and any future callers share one source of truth. */
+#define DC_MAX_KEY_LEN        31
+#define DC_MAX_ARGS           8
+#define DC_MAX_DRIVER_NAME    32
+#define DC_MAX_METHOD_NAME    32
+#define DC_MAX_ARGS_BUF       128
+
 /* Argument pair for driver_call args parser */
 typedef struct {
     const char *key;

@@ -14,9 +14,7 @@
  * sent.  Keep timeouts short or implement an async variant if needed.
  */
 #include "dispatcher.h"
-#include "ferqon_commands.h"
-#include "protocol.h"
-#include "ferqon_log.h"
+#include "ferqon_helpers.h"
 #include "uart.h"
 #include "production_config.h"
 #include <Arduino.h>
@@ -112,10 +110,7 @@ static bool uart_send_handler(uint8_t seq, uint8_t cmd_id,
                              bool *already_responded) {
     /* Payload: UTF-8 string to send */
     if (param_len == 0) {
-        ferqon_send_error(seq, cmd_id, FERQON_ERR_INVALID_PARAMS, FERQON_ECAT_COMMAND,
-                        false, 0, (const uint8_t *)"empty payload", 12);
-        *already_responded = true;
-        return true;
+        REPLY_INVALID_PARAMS_STR(seq, cmd_id, "empty payload");
     }
 
     ferqon_uart1_send(params, param_len);
@@ -129,21 +124,15 @@ static bool uart_expect_handler(uint8_t seq, uint8_t cmd_id,
                                bool *already_responded) {
     /* Payload format: timeout_ms (u16 LE) + pattern (UTF-8 string) */
     if (param_len < 2) {
-        ferqon_send_error(seq, cmd_id, FERQON_ERR_INVALID_PARAMS, FERQON_ECAT_COMMAND,
-                        false, 0, (const uint8_t *)"missing timeout", 14);
-        *already_responded = true;
-        return true;
+        REPLY_INVALID_PARAMS_STR(seq, cmd_id, "missing timeout");
     }
 
-    uint16_t timeout_ms = (uint16_t)(params[0] | (params[1] << 8));
+    uint16_t timeout_ms = rd_u16_le(params);
     const char *pattern = (const char *)(params + 2);
     size_t pattern_len = param_len - 2;
 
     if (pattern_len == 0) {
-        ferqon_send_error(seq, cmd_id, FERQON_ERR_INVALID_PARAMS, FERQON_ECAT_COMMAND,
-                        false, 0, (const uint8_t *)"empty pattern", 12);
-        *already_responded = true;
-        return true;
+        REPLY_INVALID_PARAMS_STR(seq, cmd_id, "empty pattern");
     }
 
     bool found = ferqon_uart1_expect(pattern, pattern_len, timeout_ms);

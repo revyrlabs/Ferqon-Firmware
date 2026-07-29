@@ -20,7 +20,9 @@
 #endif
 #endif
 
-/* Driver extern declarations (defined in their .cpp files). */
+/* Driver extern declarations (defined in their .cpp files). Adding a new
+ * driver is a single entry in this array — no separate extern + register
+ * call needed. */
 extern "C" const ferqon_driver_t ping_driver;
 extern "C" const ferqon_driver_t echo_driver;
 extern "C" const ferqon_driver_t gpio_driver;
@@ -33,6 +35,23 @@ extern "C" const ferqon_driver_t device_info_driver;
 extern "C" const ferqon_driver_t driver_info_driver;
 extern "C" const ferqon_driver_t debug_driver;
 extern "C" const ferqon_driver_t capabilities_driver;
+
+static const ferqon_driver_t *const g_all_drivers[] = {
+    &ping_driver,
+    &echo_driver,
+    &gpio_driver,
+    &reset_driver,
+    &driver_call_driver,
+    &uart_driver,
+    &adc_driver,
+    &pulse_driver,
+    &device_info_driver,
+    &driver_info_driver,
+    &capabilities_driver,
+    &debug_driver,
+};
+static const uint8_t g_driver_count =
+    (uint8_t)(sizeof(g_all_drivers) / sizeof(g_all_drivers[0]));
 
 static void serial_write(const uint8_t *data, size_t len) {
     Serial.write(data, len);
@@ -47,7 +66,7 @@ void setup() {
     pinMode(LED_BUILTIN, OUTPUT);
 
     FERQON_LOG_INFO("Ferqon %s firmware starting", FERQON_FW_VERSION);
-    
+
     ferqon_dispatcher_init();
 
     ferqon_set_write_func(serial_write);
@@ -57,18 +76,9 @@ void setup() {
     app_state_init();
     FERQON_LOG_INFO("App state initialized");
 
-    ferqon_register_driver(&ping_driver);
-    ferqon_register_driver(&echo_driver);
-    ferqon_register_driver(&gpio_driver);
-    ferqon_register_driver(&reset_driver);
-    ferqon_register_driver(&driver_call_driver);
-    ferqon_register_driver(&uart_driver);
-    ferqon_register_driver(&adc_driver);
-    ferqon_register_driver(&pulse_driver);
-    ferqon_register_driver(&device_info_driver);
-    ferqon_register_driver(&driver_info_driver);
-    ferqon_register_driver(&capabilities_driver);
-    ferqon_register_driver(&debug_driver);
+    for (uint8_t i = 0; i < g_driver_count; i++) {
+        ferqon_register_driver(g_all_drivers[i]);
+    }
     FERQON_LOG_INFO("Drivers registered");
 
     // Ready
@@ -86,7 +96,7 @@ void loop() {
             ferqon_dispatch_request(&req);
         }
     }
-    
+
     // Send periodic heartbeat
     unsigned long now = millis();
     if (now - last_heartbeat_ms >= HEARTBEAT_INTERVAL_MS) {

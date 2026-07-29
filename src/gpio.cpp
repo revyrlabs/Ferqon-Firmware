@@ -1,26 +1,18 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 /* SPDX-FileCopyrightText: Copyright (c) 2026 Revyr Labs */
 #include "dispatcher.h"
+#include "ferqon_helpers.h"
 #include "board_config.h"
-#include "pin_macros.h"
 #include <Arduino.h>
 
 static bool pin_mode_call(uint8_t seq, const uint8_t *params, uint8_t param_len,
                           bool *already_responded) {
     if (param_len != 2) {
-        ferqon_send_error(seq, FERQON_CMD_PIN_MODE,
-                        FERQON_ERR_INVALID_PARAMS, FERQON_ECAT_COMMAND, false, 0, NULL, 0);
-        *already_responded = true;
-        return true;
+        REPLY_INVALID_PARAMS(seq, FERQON_CMD_PIN_MODE);
     }
     uint8_t pin = params[0], mode = params[1];
 
-    if (!ferqon_cap_pin_is_valid(pin) || ferqon_cap_pin_is_reserved(pin)) {
-        uint8_t detail[1] = { pin };
-        ferqon_send_error(seq, FERQON_CMD_PIN_MODE,
-                        FERQON_ERR_UNSUPPORTED_PIN, FERQON_ECAT_COMMAND, false,
-                        /*ctx=*/pin, detail, 1);
-        *already_responded = true;
+    if (ferqon_check_pin(seq, FERQON_CMD_PIN_MODE, pin, already_responded)) {
         return true;
     }
 
@@ -32,11 +24,8 @@ static bool pin_mode_call(uint8_t seq, const uint8_t *params, uint8_t param_len,
         case FERQON_GPIO_INPUT_PULLDOWN: arduino_mode = INPUT_PULLDOWN; break;
         default: {
             uint8_t detail[2] = { pin, mode };
-            ferqon_send_error(seq, FERQON_CMD_PIN_MODE,
-                            FERQON_ERR_UNSUPPORTED_MODE, FERQON_ECAT_COMMAND, false,
-                            /*ctx=*/mode, detail, 2);
-            *already_responded = true;
-            return true;
+            REPLY_ERROR(seq, FERQON_CMD_PIN_MODE, FERQON_ERR_UNSUPPORTED_MODE,
+                        FERQON_ECAT_COMMAND, false, mode, detail, 2);
         }
     }
 
@@ -48,17 +37,10 @@ static bool gpio_read_call(uint8_t seq, const uint8_t *params, uint8_t param_len
                            uint8_t *response, uint8_t *response_len,
                            bool *already_responded) {
     if (param_len != 1) {
-        ferqon_send_error(seq, FERQON_CMD_GPIO_READ,
-                        FERQON_ERR_INVALID_PARAMS, FERQON_ECAT_COMMAND, false, 0, NULL, 0);
-        *already_responded = true;
-        return true;
+        REPLY_INVALID_PARAMS(seq, FERQON_CMD_GPIO_READ);
     }
     uint8_t pin = params[0];
-    if (!ferqon_cap_pin_is_valid(pin) || ferqon_cap_pin_is_reserved(pin)) {
-        uint8_t detail[1] = { pin };
-        ferqon_send_error(seq, FERQON_CMD_GPIO_READ,
-                        FERQON_ERR_UNSUPPORTED_PIN, FERQON_ECAT_COMMAND, false, pin, detail, 1);
-        *already_responded = true;
+    if (ferqon_check_pin(seq, FERQON_CMD_GPIO_READ, pin, already_responded)) {
         return true;
     }
     response[0] = (uint8_t)digitalRead(pin);
@@ -69,17 +51,10 @@ static bool gpio_read_call(uint8_t seq, const uint8_t *params, uint8_t param_len
 static bool gpio_write_call(uint8_t seq, const uint8_t *params, uint8_t param_len,
                             bool *already_responded) {
     if (param_len != 2) {
-        ferqon_send_error(seq, FERQON_CMD_GPIO_WRITE,
-                        FERQON_ERR_INVALID_PARAMS, FERQON_ECAT_COMMAND, false, 0, NULL, 0);
-        *already_responded = true;
-        return true;
+        REPLY_INVALID_PARAMS(seq, FERQON_CMD_GPIO_WRITE);
     }
     uint8_t pin = params[0], value = params[1];
-    if (!ferqon_cap_pin_is_valid(pin) || ferqon_cap_pin_is_reserved(pin)) {
-        uint8_t detail[1] = { pin };
-        ferqon_send_error(seq, FERQON_CMD_GPIO_WRITE,
-                        FERQON_ERR_UNSUPPORTED_PIN, FERQON_ECAT_COMMAND, false, pin, detail, 1);
-        *already_responded = true;
+    if (ferqon_check_pin(seq, FERQON_CMD_GPIO_WRITE, pin, already_responded)) {
         return true;
     }
     digitalWrite(pin, value ? HIGH : LOW);
