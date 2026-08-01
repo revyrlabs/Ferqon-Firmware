@@ -4,20 +4,21 @@
 """
 gen_protocol.py
 ---------------
-Single-entry codegen: generates ALL protocol artifacts from the SSOT
-firmware/protocol/ssot/commands.json in one run.
+Single-entry codegen: generates ALL firmware-side protocol artifacts from the
+SSOT firmware/protocol/ssot/commands.json in one run.
 
 This is a **development-time** tool. It is NOT invoked by the production
-build hook (pio_pre_build.py). Its output (src/ferqon_commands.h) is
-committed to the repository and verified by CI drift checks.
+build hook (pio_pre_build.py). Its outputs are committed to the repository and
+verified by CI drift checks.
 
-Operates within the standalone firmware repository by default.
-The root monorepo Makefile calls this script explicitly via the
-``sync-protocol`` and ``check-protocol`` targets for monorepo-level
-synchronization.
+Operates within the standalone firmware repository by default. The root monorepo
+Makefile calls this script explicitly via the ``sync-protocol`` and
+``check-protocol`` targets for monorepo-level synchronization.
 
 Outputs:
-  1. src/ferqon_commands.h — C macros for firmware
+  1. src/ferqon_commands.h            — C macros for firmware
+  2. tools/ferqonfw/_generated.py   — Python generated constants
+  3. tools/ferqonfw/protocol.py      — Python protocol SDK mirror
 
 Usage:
     python3 tools/gen_protocol.py [--check]
@@ -35,10 +36,27 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 SSOT_PATH = REPO_ROOT / "protocol" / "ssot" / "commands.json"
+PINMAP_SOURCE = (
+    REPO_ROOT.parent
+    / "sandbox"
+    / "protocol_sdk"
+    / "sdk"
+    / "serial"
+    / "driver"
+    / "pico_pinmap.json"
+)
 
-OUTPUTS: dict[str, Path] = {
-    "c_header": REPO_ROOT / "src" / "ferqon_commands.h",
-}
+C_HEADER_PATH = REPO_ROOT / "src" / "ferqon_commands.h"
+FW_GENERATED_PATH = REPO_ROOT / "tools" / "ferqonfw" / "_generated.py"
+FW_PROTOCOL_PATH = REPO_ROOT / "tools" / "ferqonfw" / "protocol.py"
+CANON_PROTOCOL_PATH = (
+    REPO_ROOT.parent
+    / "packages"
+    / "hw-sdk"
+    / "ferqon_hw"
+    / "ferqon_hw"
+    / "protocol.py"
+)
 
 _REGEN_NOTICE = "python3 tools/gen_protocol.py"
 
@@ -46,9 +64,22 @@ COPYRIGHT = "SPDX-FileCopyrightText: Copyright (c) 2026 Revyr Labs"
 SPDX_LICENSE = "SPDX-License-Identifier: Apache-2.0"
 
 
+# Make the monorepo tools/ directory importable so we can reuse the backend
+# generator logic without duplicating it.
+sys.path.insert(0, str(REPO_ROOT.parent / "tools"))
+from gen_backend_commands import generate_constants_module  # type: ignore[import-untyped]
+
+
 def load_ssot() -> dict:
     with SSOT_PATH.open("r", encoding="utf-8") as f:
         return json.load(f)
+
+
+def _load_pinmap() -> dict | None:
+    if PINMAP_SOURCE.exists():
+        with PINMAP_SOURCE.open("r", encoding="utf-8") as f:
+            return json.load(f)
+    return None
 
 
 def _sorted_commands(data: dict) -> list[tuple[str, int]]:
@@ -191,6 +222,33 @@ def generate_c_header(data: dict) -> str:
 
 
 # ---------------------------------------------------------------------------
+# 2. Python generated constants for ferqonfw
+# ---------------------------------------------------------------------------
+
+
+def generate_fw_generated(data: dict, pinmap: dict | None) -> str:
+    """Generate the firmware-side _generated.py module."""
+    return generate_constants_module(data, pinmap)
+
+
+# ---------------------------------------------------------------------------
+# 3. Python protocol SDK mirror for ferqonfw
+# ---------------------------------------------------------------------------
+
+
+def generate_fw_protocol() -> str:
+    """Mirror the canonical ferqon_hw/protocol.py into ferqonfw/protocol.py."""
+    if not CANON_PROTOCOL_PATH.exists():
+        raise FileNotFoundError(
+            f"Canonical protocol SDK not found at {CANON_PROTOCOL_PATH}. "
+            "Run python3 tools/gen_backend_commands.py first."
+        )
+    source = CANON_PROTOCOL_PATH.read_text(encoding="utf-8")
+    # Use the firmware package name for logging instead of the SDK package name.
+    return source.replace('logging.getLogger("ferqon_hw")', 'logging.getLogger("ferqonfw.protocol")')
+
+
+# ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
 
@@ -201,39 +259,46 @@ def _write(path: Path, content: str) -> None:
     print(f"  Generated: {path.relative_to(REPO_ROOT)}")
 
 
-def run_generate(data: dict) -> None:
-    print("Generating protocol artifacts from SSOT...")
-    _write(OUTPUTS["c_header"], generate_c_header(data))
+def run_generate(data: dict, pinmap: dict | None) -> None:
+    print("Generating firmware protocol artifacts from SSOT...")
+    _write(C_HEADER_PATH, generate_c_header(data))
+    _write(FW_GENERATED_PATH, generate_fw_generated(data, pinmap))
+    _write(FW_PROTOCOL_PATH, generate_fw_protocol())
     print(f"Done. Protocol version: {data.get('version', '?')}")
 
 
-def run_check(data: dict) -> int:
-    print("Checking protocol artifact drift...")
-    expected = generate_c_header(data)
-    output_path = OUTPUTS["c_header"]
-    if not output_path.exists():
-        print(f"  MISSING: {output_path.relative_to(REPO_ROOT)}")
-        print(
-            "\nERROR: src/ferqon_commands.h is out of sync with the SSOT.\n"
-            "Run: python3 tools/gen_protocol.py"
-        )
-        return 1
-    actual = output_path.read_text(encoding="utf-8")
+def _check_file(path: Path, expected: str, label: str) -> bool:
+    if not path.exists():
+        print(f"  MISSING: {path.relative_to(REPO_ROOT)}")
+        return False
+    actual = path.read_text(encoding="utf-8")
     if actual != expected:
-        print(f"  DRIFT:   {output_path.relative_to(REPO_ROOT)}")
-        print(
-            "\nERROR: src/ferqon_commands.h is out of sync with the SSOT.\n"
-            "Run: python3 tools/gen_protocol.py"
-        )
-        return 1
+        print(f"  DRIFT:   {path.relative_to(REPO_ROOT)}")
+        return False
+    print(f"  OK:      {path.relative_to(REPO_ROOT)}")
+    return True
 
-    print(f"  OK:      {output_path.relative_to(REPO_ROOT)}")
-    print(f"\nProtocol artifacts are in sync. (v{data.get('version', '?')})")
-    return 0
+
+def run_check(data: dict, pinmap: dict | None) -> int:
+    print("Checking firmware protocol artifact drift...")
+    ok = True
+    ok &= _check_file(C_HEADER_PATH, generate_c_header(data), "C header")
+    ok &= _check_file(FW_GENERATED_PATH, generate_fw_generated(data, pinmap), "ferqonfw/_generated.py")
+    ok &= _check_file(FW_PROTOCOL_PATH, generate_fw_protocol(), "ferqonfw/protocol.py")
+
+    if ok:
+        print(f"\nFirmware protocol artifacts are in sync. (v{data.get('version', '?')})")
+        return 0
+
+    print(
+        "\nERROR: Firmware protocol artifacts are out of sync with the SSOT.\n"
+        "Run: python3 tools/gen_protocol.py"
+    )
+    return 1
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Ferqon protocol artifact generator")
+    parser = argparse.ArgumentParser(description="Ferqon firmware protocol artifact generator")
     parser.add_argument(
         "--check",
         action="store_true",
@@ -242,9 +307,10 @@ def main() -> int:
     args = parser.parse_args()
 
     data = load_ssot()
+    pinmap = _load_pinmap()
     if args.check:
-        return run_check(data)
-    run_generate(data)
+        return run_check(data, pinmap)
+    run_generate(data, pinmap)
     return 0
 
 
