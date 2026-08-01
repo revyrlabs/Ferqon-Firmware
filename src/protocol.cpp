@@ -16,17 +16,21 @@ void ferqon_set_write_func(ferqon_write_func_t func) {
 
 /* -------------------------------------------------------------------- CRC */
 
+/* Fold one byte into the running CRC-16/CCITT-FALSE. */
+static inline void crc_update(uint16_t *crc, uint8_t byte) {
+    uint16_t c = *crc;
+    c ^= ((uint16_t)byte) << 8;
+    for (uint8_t b = 0; b < 8; ++b) {
+        if (c & 0x8000) c = (uint16_t)((c << 1) ^ FERQON_CRC_POLY);
+        else            c = (uint16_t)(c << 1);
+    }
+    *crc = c;
+}
+
 uint16_t ferqon_crc16(const uint8_t *data, size_t len) {
     uint16_t crc = FERQON_CRC_INIT;
     for (size_t i = 0; i < len; ++i) {
-        crc ^= ((uint16_t)data[i]) << 8;
-        for (uint8_t b = 0; b < 8; ++b) {
-            if (crc & 0x8000) {
-                crc = (uint16_t)((crc << 1) ^ FERQON_CRC_POLY);
-            } else {
-                crc = (uint16_t)(crc << 1);
-            }
-        }
+        crc_update(&crc, data[i]);
     }
     return crc;
 }
@@ -155,17 +159,6 @@ void ferqon_parser_reset(ferqon_parser_t *parser) {
     parser->crc_lo = 0;
     parser->last_byte_ms = 0;
     parser->frame_start_ms = 0;
-}
-
-/* Fold one byte into the running CRC-16/CCITT-FALSE. */
-static inline void crc_update(uint16_t *crc, uint8_t byte) {
-    uint16_t c = *crc;
-    c ^= ((uint16_t)byte) << 8;
-    for (uint8_t b = 0; b < 8; ++b) {
-        if (c & 0x8000) c = (uint16_t)((c << 1) ^ FERQON_CRC_POLY);
-        else            c = (uint16_t)(c << 1);
-    }
-    *crc = c;
 }
 
 bool ferqon_parser_feed(ferqon_parser_t *parser, uint8_t byte, ferqon_request_t *req) {

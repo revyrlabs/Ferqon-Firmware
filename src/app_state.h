@@ -11,7 +11,5 @@
 void app_state_init(void);
 void app_state_set(uint8_t state);
 uint8_t app_state_get(void);
-void app_state_set_last_error(uint8_t code);
-uint8_t app_state_last_error(void);
 
 #endif /* FERQON_APP_STATE_H */

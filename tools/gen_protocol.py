@@ -63,8 +63,20 @@ def _sorted_commands(data: dict) -> list[tuple[str, int]]:
 # ---------------------------------------------------------------------------
 
 
+def _parse_version(version: str) -> tuple[int, int, int]:
+    parts = version.split(".")
+    if len(parts) != 3:
+        raise ValueError(f"Expected MAJOR.MINOR.PATCH version, got: {version}")
+    major, minor, patch = (int(p) for p in parts)
+    for p, name in ((major, "major"), (minor, "minor"), (patch, "patch")):
+        if p < 0 or p > 255:
+            raise ValueError(f"Version {name} component out of u8 range: {p}")
+    return major, minor, patch
+
+
 def generate_c_header(data: dict) -> str:
     protocol_version = data.get("version", "0.0.0")
+    major, minor, patch = _parse_version(protocol_version)
     lines = [
         f"/* {SPDX_LICENSE} */",
         f"/* {COPYRIGHT} */",
@@ -101,6 +113,9 @@ def generate_c_header(data: dict) -> str:
         "",
         "/* Protocol version (from SSOT) */",
         f'#define FERQON_PROTOCOL_VERSION         "{protocol_version}"',
+        f"#define FERQON_PROTOCOL_VERSION_MAJOR   {major}",
+        f"#define FERQON_PROTOCOL_VERSION_MINOR   {minor}",
+        f"#define FERQON_PROTOCOL_VERSION_PATCH   {patch}",
         "",
         "/* --------------------------------------------------------- Packet types */",
         "",
