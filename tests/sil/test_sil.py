@@ -65,7 +65,7 @@ def encode_frame(seq: int, cmd_id: int, payload: bytes) -> bytes:
 
 
 def _parse_one(buf: bytearray):
-    """If a complete, CRC-valid frame starts in buf, return (seq, cmd, payload, consumed_len)."""
+    """If a complete, CRC-valid frame starts in buf, return (seq, cmd, payload)."""
     while True:
         try:
             start = buf.index(START_BYTE)
@@ -122,10 +122,14 @@ def recv_response(sock: socket.socket, buf: bytearray, timeout_s: float = 2.0):
     raise TimeoutError("Timed out waiting for a valid frame")
 
 
-def expect_done(sock: socket.socket, buf: bytearray, seq: int, cmd_id: int, body_check=None):
+def expect_done(sock: socket.socket, buf: bytearray, seq: int, cmd_id: int, body_check=None, timeout_s: float = 5.0):
     """Receive frames until we get a DONE response for the given seq/cmd."""
+    deadline = time.monotonic() + timeout_s
     while True:
-        rseq, rcmd, payload = recv_response(sock, buf)
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            raise TimeoutError(f"Timed out waiting for DONE response to seq={seq} cmd={cmd_id}")
+        rseq, rcmd, payload = recv_response(sock, buf, timeout_s=remaining)
         if rseq == 0:
             # Unsolicited heartbeat/log/event — ignore.
             continue
