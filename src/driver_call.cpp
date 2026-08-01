@@ -35,8 +35,7 @@ static int parse_args(char *args, const char **keys, const char **values, uint8_
         char *key = p;
         char *value = eq + 1;
 
-        if (*key == '\0' || *value == '\0') return -1;
-        if (strlen(key) > DC_MAX_KEY_LEN) return -1;
+        if (*key == '\0' || strlen(key) > DC_MAX_KEY_LEN) return -1;
 
         char *semi = strchr(value, ';');
         if (semi) {
@@ -45,6 +44,8 @@ static int parse_args(char *args, const char **keys, const char **values, uint8_
         } else {
             p = value + strlen(value);
         }
+
+        if (*value == '\0') return -1;
 
         keys[count] = key;
         values[count] = value;
