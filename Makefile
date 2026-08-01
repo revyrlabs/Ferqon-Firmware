@@ -141,8 +141,9 @@ SIL_CXX       := g++
 
 # Native compiler flags.  -Isil must come before the system include path so that
 # firmware source files pick up the shim Arduino.h instead of the real Arduino.
+# -Werror makes the build treat every warning as an error.
 SIL_CXXFLAGS := \
-	-std=gnu++17 -Wall -Wextra \
+	-std=gnu++17 -Wall -Wextra -Werror \
 	-Isrc -Isil -Igenerated -Iplatforms/pico/generated \
 	-DFERQON_BOARD_NATIVE -DFERQON_HAS_SERIAL1 \
 	'-DFERQON_FW_VERSION="1.1.0"' \
@@ -165,6 +166,13 @@ $(SIL_BUILD_DIR)/generated.stamp:
 $(SIL_BUILD_DIR)/%.o: %.cpp $(SIL_BUILD_DIR)/generated.stamp
 	@mkdir -p $(dir $@)
 	$(SIL_CXX) $(SIL_CXXFLAGS) -c $< -o $@
+
+# src/uart.cpp has a pre-existing unused-parameter warning in uart_send_handler.
+# We silence it only for this object so the original source is not modified and
+# the rest of the build still runs with -Werror.
+$(SIL_BUILD_DIR)/src/uart.o: src/uart.cpp $(SIL_BUILD_DIR)/generated.stamp
+	@mkdir -p $(dir $@)
+	$(SIL_CXX) $(SIL_CXXFLAGS) -Wno-unused-parameter -c $< -o $@
 
 # Link the native SIL executable.
 $(SIL_BIN): $(SIL_OBJS)
