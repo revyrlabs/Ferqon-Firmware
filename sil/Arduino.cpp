@@ -60,13 +60,12 @@ static uint8_t s_pin_value[PIN_COUNT] = {0};
 static unsigned long s_pin_last_change[PIN_COUNT] = {0};
 static uint16_t s_analog_value[PIN_COUNT] = {0};
 
-static bool is_adc_pin(uint8_t pin) {
+__attribute__((constructor))
+static void sil_init_analog_defaults(void) {
     for (size_t i = 0; i < FERQON_ADC_PIN_COUNT; i++) {
-        if (FERQON_ADC_PINS[i] == pin) {
-            return true;
-        }
+        s_analog_value[FERQON_ADC_PINS[i]] =
+            (uint16_t)(1U << (FERQON_ADC_RESOLUTION - 1));
     }
-    return false;
 }
 
 void pinMode(uint8_t pin, uint8_t mode) {
@@ -94,11 +93,6 @@ void digitalWrite(uint8_t pin, uint8_t val) {
 
 int analogRead(uint8_t pin) {
     if (pin < PIN_COUNT) {
-        /* For ADC pins that have not been driven, return half-scale so the
-         * SIL ADC read produces a non-zero, deterministic millivolt value. */
-        if (s_analog_value[pin] == 0 && is_adc_pin(pin)) {
-            return (1 << (FERQON_ADC_RESOLUTION - 1));
-        }
         return static_cast<int>(s_analog_value[pin]);
     }
     return 0;
@@ -114,11 +108,16 @@ unsigned long pulseIn(uint8_t pin, uint8_t state, unsigned long timeout_us) {
     if (pin >= PIN_COUNT || digitalRead(pin) != state) {
         return 0; /* Pin not in target state, report timeout. */
     }
+    if (timeout_us == 0) {
+        return 0;
+    }
     unsigned long elapsed = micros() - s_pin_last_change[pin];
     if (elapsed > timeout_us) {
         return 0; /* Pulse already longer than the requested timeout. */
     }
-    return elapsed;
+    /* A zero microsecond delta can occur in the same clock tick; report 1 us
+     * so callers see a real pulse instead of a false timeout. */
+    return elapsed > 0 ? elapsed : 1;
 }
 
 void analogReadResolution(uint8_t bits) { (void)bits; }

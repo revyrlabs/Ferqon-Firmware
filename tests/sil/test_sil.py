@@ -9,7 +9,8 @@ Software-in-the-Loop (SIL) desktop build.
 
 Connects to the SIL TCP port, encodes/decodes the Ferqon serial protocol
 frames, and verifies that the native firmware binary responds to a small
-health-check suite: ping, echo, device_info, driver_info, and gpio read/write.
+health-check suite: ping, echo, device_info, driver_info, gpio read/write,
+adc_read, and pulse_measure.
 
 Usage:
     python3 tests/sil/test_sil.py [HOST] [PORT]
