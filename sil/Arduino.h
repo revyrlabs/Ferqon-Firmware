@@ -27,11 +27,9 @@
 #include <cstring>
 #include <string>
 #include <deque>
-#include <vector>
 #include <chrono>
 #include <thread>
 #include <mutex>
-#include <atomic>
 
 /* ------------------------------------------------------------------ Types */
 typedef bool boolean;
@@ -110,7 +108,6 @@ public:
 
     /* SIL-specific configuration */
     void set_port(uint16_t port) { m_port = port; }
-    static void set_default_port(uint16_t port);
 
     /* Test helpers */
     void inject_rx(const uint8_t *data, size_t len);

@@ -116,12 +116,6 @@ long map(long x, long in_min, long in_max, long out_min, long out_max) {
 }
 
 /* ------------------------------------------------------------------ Serial */
-static uint16_t s_default_port = 3333;
-
-void SilSerial::set_default_port(uint16_t port) {
-    s_default_port = port;
-}
-
 SilSerial::SilSerial(bool is_server, uint16_t port)
     : m_is_server(is_server), m_port(port) {
     if (!m_is_server) {
@@ -146,7 +140,7 @@ void SilSerial::begin(unsigned long baud) {
 
     if (m_port == 0) {
         const char *env_port = std::getenv("FERQON_SIL_PORT");
-        m_port = env_port ? static_cast<uint16_t>(std::atoi(env_port)) : s_default_port;
+        m_port = env_port ? static_cast<uint16_t>(std::atoi(env_port)) : 3333;
     }
     if (m_port == 0) {
         m_port = 3333;
@@ -171,7 +165,7 @@ void SilSerial::begin(unsigned long baud) {
     struct sockaddr_in addr;
     std::memset(&addr, 0, sizeof(addr));
     addr.sin_family = AF_INET;
-    addr.sin_addr.s_addr = INADDR_ANY;
+    addr.sin_addr.s_addr = ::htonl(INADDR_LOOPBACK);
     addr.sin_port = ::htons(m_port);
 
     if (::bind(m_sock, reinterpret_cast<struct sockaddr *>(&addr), sizeof(addr)) < 0) {
@@ -199,6 +193,10 @@ void SilSerial::end() {
         ::close(m_sock);
         m_sock = -1;
     }
+    {
+        std::lock_guard<std::mutex> lk(m_rx_mtx);
+        m_rx.clear();
+    }
 }
 
 void SilSerial::close_client() {
@@ -219,6 +217,10 @@ bool SilSerial::accept_client() {
         ::close(m_client);
     }
     m_client = c;
+    {
+        std::lock_guard<std::mutex> lk(m_rx_mtx);
+        m_rx.clear();
+    }
     int flags = ::fcntl(m_client, F_GETFL, 0);
     if (flags >= 0) {
         ::fcntl(m_client, F_SETFL, flags | O_NONBLOCK);
