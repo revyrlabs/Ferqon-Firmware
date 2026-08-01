@@ -17,8 +17,9 @@
 #define DC_MAX_ARGS_BUF       128
 
 /* Parse a semicolon-delimited key=value string in-place.
- * Empty segments are skipped. Returns the number of pairs found,
- * or -1 on malformed input. */
+ * Empty segments between ';' are skipped, but empty keys or values,
+ * missing '=', and out-of-range values are rejected.
+ * Returns the number of pairs found, or -1 on malformed input. */
 static int parse_args(char *args, const char **keys, const char **values, uint8_t max_args) {
     int count = 0;
     char *p = args;
