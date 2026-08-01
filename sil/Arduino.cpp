@@ -314,7 +314,14 @@ size_t SilSerial::write(const uint8_t *data, size_t len) {
     while (written < len) {
         ssize_t n = ::send(m_client, data + written, len - written, MSG_NOSIGNAL);
         if (n < 0) {
-            if (errno == EAGAIN || errno == EINTR) {
+            if (errno == EINTR) {
+                continue;
+            }
+            if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                struct pollfd pfd;
+                pfd.fd = m_client;
+                pfd.events = POLLOUT;
+                ::poll(&pfd, 1, 10);
                 continue;
             }
             close_client();
