@@ -60,7 +60,11 @@ int main(int argc, char *argv[]) {
 
     for (;;) {
         loop();
-        delay(1);
+        /* Drain any buffered TCP bytes quickly; sleep only when idle so the
+         * parser does not time out on large frames. */
+        if (Serial.available() == 0) {
+            delay(1);
+        }
     }
     return 0;
 }

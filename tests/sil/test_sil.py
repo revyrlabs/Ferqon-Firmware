@@ -149,6 +149,14 @@ def expect_done(sock: socket.socket, buf: bytearray, seq: int, cmd_id: int, body
         return payload
 
 
+def pack_u16_le(v: int) -> bytes:
+    return bytes([v & 0xFF, (v >> 8) & 0xFF])
+
+
+def pack_u32_le(v: int) -> bytes:
+    return bytes([v & 0xFF, (v >> 8) & 0xFF, (v >> 16) & 0xFF, (v >> 24) & 0xFF])
+
+
 def cmd_payload(cmd_name: str, body: bytes = b"") -> bytes:
     """Build the packet-type prefixed payload for normal commands."""
     if cmd_name in ("device_info", "driver_info"):
@@ -230,6 +238,51 @@ def test_gpio(sock: socket.socket, buf: bytearray):
     print("[OK] gpio_read")
 
 
+def test_adc(sock: socket.socket, buf: bytearray):
+    seq = 7
+    channel = 0  # maps to ADC pin 26 on pico
+    payload = cmd_payload("adc_read", bytes([channel]))
+    sock.sendall(encode_frame(seq, CMD["adc_read"], payload))
+
+    def check(body: bytes):
+        if len(body) < 2:
+            raise AssertionError("adc_read response too short")
+        mv = body[0] | (body[1] << 8)
+        if not (0 < mv < 3300):
+            raise AssertionError(f"adc_read returned {mv} mV, expected 0 < mv < 3300")
+
+    expect_done(sock, buf, seq, CMD["adc_read"], check)
+    print("[OK] adc_read")
+
+
+def test_pulse(sock: socket.socket, buf: bytearray):
+    pin = 25
+
+    # Drive the pin high so the mock has a pulse to measure.
+    seq = 8
+    payload = cmd_payload("gpio_write", bytes([pin, 1]))
+    sock.sendall(encode_frame(seq, CMD["gpio_write"], payload))
+    expect_done(sock, buf, seq, CMD["gpio_write"])
+
+    seq = 9
+    timeout_ms = 1000
+    min_us = 0
+    max_us = 1_000_000
+    pulse_payload = pack_u16_le(timeout_ms) + bytes([pin]) + pack_u32_le(min_us) + pack_u32_le(max_us)
+    payload = cmd_payload("pulse_measure", pulse_payload)
+    sock.sendall(encode_frame(seq, CMD["pulse_measure"], payload))
+
+    def check(body: bytes):
+        if len(body) < 4:
+            raise AssertionError(f"pulse_measure returned {body!r}, expected 4-byte duration")
+        us = (body[0] | (body[1] << 8) | (body[2] << 16) | (body[3] << 24))
+        if not (min_us <= us <= max_us):
+            raise AssertionError(f"pulse_measure returned {us} us, expected {min_us}-{max_us}")
+
+    expect_done(sock, buf, seq, CMD["pulse_measure"], check)
+    print("[OK] pulse_measure")
+
+
 def main() -> int:
     host = sys.argv[1] if len(sys.argv) > 1 else "127.0.0.1"
     port = int(sys.argv[2]) if len(sys.argv) > 2 else 3333
@@ -238,7 +291,7 @@ def main() -> int:
         print("ERROR: could not load command IDs from src/ferqon_commands.h", file=sys.stderr)
         return 1
 
-    required = ["ping", "echo", "device_info", "driver_info", "gpio_read", "gpio_write"]
+    required = ["ping", "echo", "device_info", "driver_info", "gpio_read", "gpio_write", "adc_read", "pulse_measure"]
     missing = [c for c in required if c not in CMD]
     if missing:
         print(f"ERROR: missing command IDs: {missing}", file=sys.stderr)
@@ -255,6 +308,8 @@ def main() -> int:
         test_device_info(sock, buf)
         test_driver_info(sock, buf)
         test_gpio(sock, buf)
+        test_adc(sock, buf)
+        test_pulse(sock, buf)
 
     print("[PASS] SIL health-check suite passed")
     return 0
