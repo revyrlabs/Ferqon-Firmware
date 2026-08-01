@@ -8,6 +8,8 @@
  */
 #include "Arduino.h"
 
+#include "platform_caps.h"
+
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/socket.h>
@@ -55,7 +57,17 @@ void delayMicroseconds(unsigned int us) {
 static constexpr size_t PIN_COUNT = 256;
 static uint8_t s_pin_mode[PIN_COUNT] = {0};
 static uint8_t s_pin_value[PIN_COUNT] = {0};
+static unsigned long s_pin_last_change[PIN_COUNT] = {0};
 static uint16_t s_analog_value[PIN_COUNT] = {0};
+
+static bool is_adc_pin(uint8_t pin) {
+    for (size_t i = 0; i < FERQON_ADC_PIN_COUNT; i++) {
+        if (FERQON_ADC_PINS[i] == pin) {
+            return true;
+        }
+    }
+    return false;
+}
 
 void pinMode(uint8_t pin, uint8_t mode) {
     if (pin < PIN_COUNT) {
@@ -72,12 +84,21 @@ int digitalRead(uint8_t pin) {
 
 void digitalWrite(uint8_t pin, uint8_t val) {
     if (pin < PIN_COUNT) {
-        s_pin_value[pin] = (val == LOW) ? LOW : HIGH;
+        uint8_t new_val = (val == LOW) ? LOW : HIGH;
+        if (s_pin_value[pin] != new_val) {
+            s_pin_value[pin] = new_val;
+            s_pin_last_change[pin] = micros();
+        }
     }
 }
 
 int analogRead(uint8_t pin) {
     if (pin < PIN_COUNT) {
+        /* For ADC pins that have not been driven, return half-scale so the
+         * SIL ADC read produces a non-zero, deterministic millivolt value. */
+        if (s_analog_value[pin] == 0 && is_adc_pin(pin)) {
+            return (1 << (FERQON_ADC_RESOLUTION - 1));
+        }
         return static_cast<int>(s_analog_value[pin]);
     }
     return 0;
@@ -90,11 +111,14 @@ void analogWrite(uint8_t pin, int val) {
 }
 
 unsigned long pulseIn(uint8_t pin, uint8_t state, unsigned long timeout_us) {
-    (void)pin;
-    (void)state;
-    (void)timeout_us;
-    /* No external edges in the SIL mock; always report timeout. */
-    return 0;
+    if (pin >= PIN_COUNT || digitalRead(pin) != state) {
+        return 0; /* Pin not in target state, report timeout. */
+    }
+    unsigned long elapsed = micros() - s_pin_last_change[pin];
+    if (elapsed > timeout_us) {
+        return 0; /* Pulse already longer than the requested timeout. */
+    }
+    return elapsed;
 }
 
 void analogReadResolution(uint8_t bits) { (void)bits; }
