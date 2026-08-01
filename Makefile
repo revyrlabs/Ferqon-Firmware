@@ -3,7 +3,8 @@
 #
 # Ferqon Firmware Makefile
 #
-# This Makefile handles ENVIRONMENT SETUP and PRODUCTION BUNDLING only.
+# This Makefile handles ENVIRONMENT SETUP, PRODUCTION BUNDLING, and the
+# SOFTWARE-IN-THE-LOOP (SIL) native desktop target.
 # All build, flash, and device operations are handled by the ferqonfw CLI.
 #
 #   make init        — production setup
@@ -11,6 +12,8 @@
 #   make doctor      — check environment
 #   make bundle      — create sealed production bundle
 #   make cleanroom   — clean-room verification
+#   make sil         — build native desktop SIL binary
+#   make test-sil    — run SIL integration test over TCP
 #
 # For everything else, use ferqonfw:
 #   ferqonfw build pico       ferqonfw flash pico --port /dev/ttyACM0 --build
@@ -19,7 +22,7 @@
 #   ferqonfw list             ferqonfw info pico
 #
 # Run 'ferqonfw --help' for the full command list.
-.PHONY: init init-dev doctor bundle cleanroom help
+.PHONY: init init-dev doctor bundle cleanroom sil test-sil sil-clean help
 
 # Default target
 .DEFAULT_GOAL := help
@@ -128,6 +131,62 @@ doctor:
 	@ferqonfw doctor
 
 # ─────────────────────────────────────────────────────────────────────────────
+# Software-in-the-Loop (SIL) native desktop target
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Build directory and binary names.
+SIL_BUILD_DIR := build/sil
+SIL_BIN       := $(SIL_BUILD_DIR)/ferqon_sil
+SIL_CXX       := g++
+
+# Native compiler flags.  -Isil must come before the system include path so that
+# firmware source files pick up the shim Arduino.h instead of the real Arduino.
+SIL_CXXFLAGS := \
+	-std=gnu++17 -Wall -Wextra \
+	-Isrc -Isil -Igenerated -Iplatforms/pico/generated \
+	-DFERQON_BOARD_NATIVE -DFERQON_HAS_SERIAL1 \
+	'-DFERQON_FW_VERSION="1.1.0"' \
+	-pthread -D_GNU_SOURCE
+
+SIL_LDFLAGS := -pthread
+
+# All firmware source files plus the SIL host shim and entry point.
+SIL_SRCS := $(wildcard src/*.cpp) $(wildcard sil/*.cpp)
+SIL_OBJS := $(SIL_SRCS:%.cpp=$(SIL_BUILD_DIR)/%.o)
+
+# Generate the build_timestamp.h and production_config.h headers that the
+# firmware source expects. This reuses the existing PlatformIO pre-build hook.
+$(SIL_BUILD_DIR)/generated.stamp:
+	@mkdir -p $(SIL_BUILD_DIR)
+	@python3 tools/pio_pre_build.py
+	@touch $@
+
+# Compile rule preserving the src/ and sil/ directory structure under build/sil/.
+$(SIL_BUILD_DIR)/%.o: %.cpp $(SIL_BUILD_DIR)/generated.stamp
+	@mkdir -p $(dir $@)
+	$(SIL_CXX) $(SIL_CXXFLAGS) -c $< -o $@
+
+# Link the native SIL executable.
+$(SIL_BIN): $(SIL_OBJS)
+	@mkdir -p $(dir $@)
+	$(SIL_CXX) $(SIL_LDFLAGS) $^ -o $@
+
+# Convenience target.
+sil: $(SIL_BIN)
+
+# Run the standard-library-only SIL integration test. Starts the SIL binary on
+# port 3333 in the background, runs the Python test, then tears the binary down.
+test-sil: $(SIL_BIN) tests/sil/test_sil.py
+	@printf "[test-sil] Starting SIL binary on TCP port 3333...\n"
+	@rm -f .sil.pid
+	$(SIL_BIN) 3333 & echo $$! > .sil.pid
+	@sleep 0.5
+	@PYTHONPATH= python3 tests/sil/test_sil.py 127.0.0.1 3333; rc=$$?; kill `cat .sil.pid` 2>/dev/null || true; rm -f .sil.pid; exit $$rc
+
+sil-clean:
+	@rm -rf $(SIL_BUILD_DIR) .sil.pid
+
+# ─────────────────────────────────────────────────────────────────────────────
 # Production bundle
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -158,6 +217,11 @@ help:
 	@echo "Production bundle:"
 	@echo "  make bundle      - Create a sealed production source bundle"
 	@echo "  make cleanroom   - Build all boards from a fresh clean-room bundle"
+	@echo ""
+	@echo "Software-in-the-Loop (SIL):"
+	@echo "  make sil         - Build native desktop SIL binary"
+	@echo "  make test-sil    - Run SIL integration test over TCP"
+	@echo "  make sil-clean   - Remove SIL build artifacts"
 	@echo ""
 	@echo "Build (ferqonfw):"
 	@echo "  ferqonfw build <board>   - Build firmware for a board"
