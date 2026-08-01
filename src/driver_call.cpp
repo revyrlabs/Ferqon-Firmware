@@ -289,14 +289,53 @@ static bool hil_exit(uint8_t seq, uint8_t cmd_id,
     return true;
 }
 
+/* Backend/SSOT still lists adc_read, adc_expect, and pulse_measure as HIL
+ * driver methods.  They are intentionally delegated to dedicated native
+ * commands on the MCU, so reply NOT_IMPLEMENTED and let the caller fall back
+ * to the command IDs for adc_read (20), adc_expect (21), pulse_measure (22). */
+static bool hil_not_implemented(uint8_t seq, uint8_t cmd_id,
+                                const char *method,
+                                bool *already_responded) {
+    (void)method;
+    REPLY_ERROR_STR(seq, cmd_id, FERQON_ERR_NOT_IMPLEMENTED, FERQON_ECAT_COMMAND,
+                    false, 0, "driver method not implemented");
+}
+
+static bool hil_adc_read(uint8_t seq, uint8_t cmd_id,
+                         const char **keys, const char **values, int arg_count,
+                         uint8_t *response, uint8_t *response_len,
+                         bool *already_responded) {
+    (void)keys; (void)values; (void)arg_count; (void)response; (void)response_len;
+    return hil_not_implemented(seq, cmd_id, "adc_read", already_responded);
+}
+
+static bool hil_adc_expect(uint8_t seq, uint8_t cmd_id,
+                           const char **keys, const char **values, int arg_count,
+                           uint8_t *response, uint8_t *response_len,
+                           bool *already_responded) {
+    (void)keys; (void)values; (void)arg_count; (void)response; (void)response_len;
+    return hil_not_implemented(seq, cmd_id, "adc_expect", already_responded);
+}
+
+static bool hil_pulse_measure(uint8_t seq, uint8_t cmd_id,
+                              const char **keys, const char **values, int arg_count,
+                              uint8_t *response, uint8_t *response_len,
+                              bool *already_responded) {
+    (void)keys; (void)values; (void)arg_count; (void)response; (void)response_len;
+    return hil_not_implemented(seq, cmd_id, "pulse_measure", already_responded);
+}
+
 static const struct {
     const char *name;
     hil_method_fn fn;
 } hil_methods[] = {
+    {"adc_read",        hil_adc_read},
+    {"adc_expect",      hil_adc_expect},
     {"io_set",          hil_io_set},
     {"io_get",          hil_io_get},
     {"io_configure",    hil_io_configure},
     {"io_expect",       hil_io_expect},
+    {"pulse_measure",   hil_pulse_measure},
     {"uart_send",       hil_uart_send},
     {"uart_expect",     hil_uart_expect},
     {"enter",           hil_enter},
