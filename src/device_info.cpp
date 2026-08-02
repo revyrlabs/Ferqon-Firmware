@@ -135,7 +135,7 @@ static bool driver_info_handler(uint8_t seq, uint8_t cmd_id,
 extern "C" const ferqon_driver_t device_info_driver = {
     .name = "device_info",
     .id = FERQON_CMD_DEVICE_INFO,
-    .cmd_mask = (uint64_t)1 << FERQON_CMD_DEVICE_INFO,
+    .cmd_mask = FERQON_DRIVER_CMD_MASK_DEVICE_INFO,
     .handle = device_info_handler,
 };
 FERQON_REGISTER_DRIVER(device_info);
@@ -143,7 +143,7 @@ FERQON_REGISTER_DRIVER(device_info);
 extern "C" const ferqon_driver_t driver_info_driver = {
     .name = "driver_info",
     .id = FERQON_CMD_DRIVER_INFO,
-    .cmd_mask = (uint64_t)1 << FERQON_CMD_DRIVER_INFO,
+    .cmd_mask = FERQON_DRIVER_CMD_MASK_DRIVER_INFO,
     .handle = driver_info_handler,
 };
 FERQON_REGISTER_DRIVER(driver_info);

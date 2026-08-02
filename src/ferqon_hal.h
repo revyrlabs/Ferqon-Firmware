@@ -90,7 +90,8 @@ void ferqon_hal_init(const ferqon_hal_t *hal);
 /* Returns true after ferqon_hal_init() has been called. */
 bool ferqon_hal_is_ready(void);
 
-/* Wire-output sink installed into protocol.cpp. */
+/* Wire-output sink installed into protocol.cpp.
+ * The HAL implementation must copy `data` before returning. */
 void ferqon_hal_protocol_write(const uint8_t *data, size_t len);
 
 /* Board-specific initializers.  Exactly one is linked into a given build. */

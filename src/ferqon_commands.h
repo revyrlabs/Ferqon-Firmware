@@ -61,6 +61,24 @@
 #define FERQON_CMD_PULSE_MEASURE       22
 #define FERQON_CMD_SET_DEBUG_LEVEL     23
 
+/* --------------------------------------- Driver command masks (from SSOT) */
+/* One bit per command id handled by the named driver.                    */
+/* Update the 'driver' field in commands.json, regenerate, and the driver   */
+/* definitions automatically claim the right command ids.                   */
+
+#define FERQON_DRIVER_CMD_MASK_ADC             (((uint64_t)1 << FERQON_CMD_ADC_READ) | ((uint64_t)1 << FERQON_CMD_ADC_EXPECT))
+#define FERQON_DRIVER_CMD_MASK_CAPABILITIES    ((uint64_t)1 << FERQON_CMD_CAPABILITIES)
+#define FERQON_DRIVER_CMD_MASK_DEBUG           ((uint64_t)1 << FERQON_CMD_SET_DEBUG_LEVEL)
+#define FERQON_DRIVER_CMD_MASK_DEVICE_INFO     ((uint64_t)1 << FERQON_CMD_DEVICE_INFO)
+#define FERQON_DRIVER_CMD_MASK_DRIVER_CALL     ((uint64_t)1 << FERQON_CMD_DRIVER_CALL)
+#define FERQON_DRIVER_CMD_MASK_DRIVER_INFO     ((uint64_t)1 << FERQON_CMD_DRIVER_INFO)
+#define FERQON_DRIVER_CMD_MASK_ECHO            ((uint64_t)1 << FERQON_CMD_ECHO)
+#define FERQON_DRIVER_CMD_MASK_GPIO            (((uint64_t)1 << FERQON_CMD_PIN_MODE) | ((uint64_t)1 << FERQON_CMD_GPIO_READ) | ((uint64_t)1 << FERQON_CMD_GPIO_WRITE))
+#define FERQON_DRIVER_CMD_MASK_PING            ((uint64_t)1 << FERQON_CMD_PING)
+#define FERQON_DRIVER_CMD_MASK_PULSE           ((uint64_t)1 << FERQON_CMD_PULSE_MEASURE)
+#define FERQON_DRIVER_CMD_MASK_RESET           ((uint64_t)1 << FERQON_CMD_RESET)
+#define FERQON_DRIVER_CMD_MASK_UART            (((uint64_t)1 << FERQON_CMD_UART_SEND) | ((uint64_t)1 << FERQON_CMD_UART_EXPECT))
+
 /* ------------------------------------------- Driver / method name strings */
 /* These match the SSOT so firmware string compares do not drift from the   */
 /* protocol spec.  Only drivers/methods declared in commands.json are emitted. */

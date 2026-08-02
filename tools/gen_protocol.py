@@ -70,6 +70,20 @@ def _sorted_driver_methods(data: dict) -> list[tuple[str, list[str]]]:
     return result
 
 
+def _driver_cmd_masks(data: dict) -> list[tuple[str, list[str]]]:
+    """Return (driver_name, [command_name, ...]) pairs sorted by command id."""
+    masks: dict[str, list[tuple[int, str]]] = {}
+    for cmd_name, cmd_info in data.get("commands", {}).items():
+        driver = cmd_info.get("driver")
+        if not driver:
+            continue
+        masks.setdefault(driver, []).append((int(cmd_info["id"]), cmd_name))
+    return sorted(
+        (driver, [name for _, name in sorted(entries)])
+        for driver, entries in masks.items()
+    )
+
+
 # ---------------------------------------------------------------------------
 # 1. C header
 # ---------------------------------------------------------------------------
@@ -145,6 +159,26 @@ def generate_c_header(data: dict) -> str:
     for name, cmd_id in _sorted_commands(data):
         macro = f"FERQON_CMD_{name.upper()}"
         lines.append(f"#define {macro:<30} {cmd_id}")
+
+    lines += [
+        "",
+        "/* --------------------------------------- Driver command masks (from SSOT) */",
+        "/* One bit per command id handled by the named driver.                    */",
+        "/* Update the 'driver' field in commands.json, regenerate, and the driver   */",
+        "/* definitions automatically claim the right command ids.                   */",
+        "",
+    ]
+
+    for driver, cmd_names in _driver_cmd_masks(data):
+        macro = f"FERQON_DRIVER_CMD_MASK_{driver.upper()}"
+        if len(cmd_names) == 1:
+            expr = f"((uint64_t)1 << FERQON_CMD_{cmd_names[0].upper()})"
+        else:
+            parts = " | ".join(
+                f"((uint64_t)1 << FERQON_CMD_{name.upper()})" for name in cmd_names
+            )
+            expr = f"({parts})"
+        lines.append(f"#define {macro:<38} {expr}")
 
     lines += [
         "",

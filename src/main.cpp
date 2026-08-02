@@ -40,8 +40,9 @@ extern "C" void setup() {
 }
 
 extern "C" void loop() {
-    // Handle serial input
-    if (ferqon_hal_serial_available() > 0) {
+    // Handle serial input. Drain the RX buffer each loop so frames are not
+    // artificially throttled to one byte per main-loop iteration.
+    while (ferqon_hal_serial_available() > 0) {
         int c = ferqon_hal_serial_read();
         ferqon_request_t req;
         if (ferqon_parser_feed(&parser, (uint8_t)c, &req)) {

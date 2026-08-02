@@ -158,6 +158,7 @@
   "commands": {
     "pin_mode": {
       "id": 1,
+      "driver": "gpio",
       "description": "Configure pin mode",
       "params": [
         {
@@ -175,6 +176,7 @@
     },
     "driver_info": {
       "id": 2,
+      "driver": "driver_info",
       "description": "List available drivers and commands",
       "params": [],
       "response": [
@@ -187,6 +189,7 @@
     },
     "driver_call": {
       "id": 3,
+      "driver": "driver_call",
       "description": "Generic driver dispatch",
       "driver_methods": {
         "hil": {
@@ -299,6 +302,7 @@
     },
     "echo": {
       "id": 8,
+      "driver": "echo",
       "description": "Echo diagnostic payload",
       "params": [
         {
@@ -317,18 +321,21 @@
     },
     "ping": {
       "id": 9,
+      "driver": "ping",
       "description": "Health check / keep-alive",
       "params": [],
       "response": []
     },
     "reset": {
       "id": 10,
+      "driver": "reset",
       "description": "Soft-reset the MCU",
       "params": [],
       "response": []
     },
     "device_info": {
       "id": 11,
+      "driver": "device_info",
       "description": "Get device self-description (type, capabilities, IO channels, drivers, versions)",
       "params": [],
       "response": [
@@ -341,6 +348,7 @@
     },
     "capabilities": {
       "id": 12,
+      "driver": "capabilities",
       "description": "Get board capabilities (parsed JSON as bytes)",
       "params": [],
       "response": [
@@ -353,6 +361,7 @@
     },
     "gpio_read": {
       "id": 16,
+      "driver": "gpio",
       "description": "Read GPIO pin value",
       "params": [
         {
@@ -371,6 +380,7 @@
     },
     "gpio_write": {
       "id": 17,
+      "driver": "gpio",
       "description": "Write GPIO pin value",
       "params": [
         {
@@ -388,6 +398,7 @@
     },
     "uart_send": {
       "id": 18,
+      "driver": "uart",
       "description": "Send data over UART (stub)",
       "params": [
         {
@@ -400,6 +411,7 @@
     },
     "uart_expect": {
       "id": 19,
+      "driver": "uart",
       "description": "Wait for UART pattern (stub)",
       "params": [
         {
@@ -423,6 +435,7 @@
     },
     "adc_read": {
       "id": 20,
+      "driver": "adc",
       "description": "Read ADC channel (stub)",
       "params": [
         {
@@ -441,6 +454,7 @@
     },
     "adc_expect": {
       "id": 21,
+      "driver": "adc",
       "description": "Wait for ADC voltage range (stub)",
       "params": [
         {
@@ -468,6 +482,7 @@
     },
     "pulse_measure": {
       "id": 22,
+      "driver": "pulse",
       "description": "Measure pulse width (stub)",
       "params": [
         {
@@ -501,6 +516,7 @@
     },
     "set_debug_level": {
       "id": 23,
+      "driver": "debug",
       "description": "Set runtime debug level (0=off, 1=info, 2=verbose)",
       "params": [
         {

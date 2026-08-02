@@ -27,17 +27,22 @@
 # Default target
 .DEFAULT_GOAL := help
 
-# Virtual environment path used when the system Python is externally
-# managed (PEP 668 — modern Debian/Ubuntu/Fedora). Override with:
+# Virtual environment path used when the system Python is not already
+# inside an active venv. Override with:
 #   make init FERQON_VENV=/path/to/venv
-# If you are already inside an active venv, the bare `pip install` path
-# is used and FERQON_VENV is not created.
 FERQON_VENV ?= .venv
 
-# Detect a PEP 668 externally-managed Python. Prints "1" if installs must
-# go into a venv, "0" otherwise. A venv is required when the system Python
-# is externally managed AND the user is not already inside a venv.
-ferqon_needs_venv = $(shell python3 -c "import sys,sysconfig,os; em=os.path.exists(os.path.join(sysconfig.get_path('stdlib'),'EXTERNALLY-MANAGED')); print('1' if (em and sys.prefix==sys.base_prefix) else '0')")
+# Detect whether we are already running inside a Python virtual environment.
+# When not, init/init-dev create one and install into it.
+FERQON_IN_VENV := $(shell python3 -c "import sys; print('1' if sys.prefix != sys.base_prefix else '0')")
+
+ifeq ($(FERQON_IN_VENV),1)
+FERQON_PIP := python3 -m pip
+FERQON_FW_BIN := ferqonfw
+else
+FERQON_PIP := $(FERQON_VENV)/bin/pip
+FERQON_FW_BIN := $(FERQON_VENV)/bin/ferqonfw
+endif
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Setup
@@ -49,26 +54,20 @@ init:
 	@echo "=== Ferqon Firmware — Production Setup ==="
 	@echo ""
 	@python3 --version 2>/dev/null || { echo "Error: Python 3.10+ required but not found."; exit 1; }
-	@echo "Installing ferqonfw CLI and production dependencies..."
-	@if [ "$(ferqon_needs_venv)" = "1" ]; then \
-		echo "System Python is externally managed (PEP 668). Creating a virtual environment at $(FERQON_VENV)..."; \
+	@if [ "$(FERQON_IN_VENV)" != "1" ]; then \
+		echo "Creating virtual environment at $(FERQON_VENV)..."; \
 		python3 -m venv $(FERQON_VENV); \
-		$(FERQON_VENV)/bin/python -m pip install --upgrade pip >/dev/null; \
-		$(FERQON_VENV)/bin/pip install .; \
-	else \
-		python3 -m pip install .; \
 	fi
+	@echo "Installing ferqonfw CLI and production dependencies..."
+	@$(FERQON_PIP) install --upgrade pip setuptools wheel >/dev/null
+	@$(FERQON_PIP) install .
 	@echo ""
 	@echo "Verifying environment..."
-	@if [ "$(ferqon_needs_venv)" = "1" ]; then \
-		$(FERQON_VENV)/bin/ferqonfw doctor || { echo "Warning: doctor check reported issues. See above."; }; \
-	else \
-		ferqonfw doctor || { echo "Warning: doctor check reported issues. See above."; }; \
-	fi
+	@$(FERQON_FW_BIN) doctor || { echo "Warning: doctor check reported issues. See above."; }
 	@echo ""
 	@echo "=== Setup complete ==="
 	@echo ""
-	@if [ "$(ferqon_needs_venv)" = "1" ]; then \
+	@if [ "$(FERQON_IN_VENV)" != "1" ]; then \
 		echo "Activate the virtual environment before using ferqonfw:"; \
 		echo "  source $(FERQON_VENV)/bin/activate"; \
 		echo ""; \
@@ -90,26 +89,20 @@ init-dev:
 	@echo "=== Ferqon Firmware — Development Setup ==="
 	@echo ""
 	@python3 --version 2>/dev/null || { echo "Error: Python 3.10+ required but not found."; exit 1; }
-	@echo "Installing ferqonfw CLI with development extras (pytest, ruff, black, yamllint)..."
-	@if [ "$(ferqon_needs_venv)" = "1" ]; then \
-		echo "System Python is externally managed (PEP 668). Creating a virtual environment at $(FERQON_VENV)..."; \
+	@if [ "$(FERQON_IN_VENV)" != "1" ]; then \
+		echo "Creating virtual environment at $(FERQON_VENV)..."; \
 		python3 -m venv $(FERQON_VENV); \
-		$(FERQON_VENV)/bin/python -m pip install --upgrade pip >/dev/null; \
-		$(FERQON_VENV)/bin/pip install -e ".[dev]"; \
-	else \
-		python3 -m pip install -e ".[dev]"; \
 	fi
+	@echo "Installing ferqonfw CLI with development extras (pytest, ruff, black, yamllint)..."
+	@$(FERQON_PIP) install --upgrade pip setuptools wheel >/dev/null
+	@$(FERQON_PIP) install -e ".[dev]"
 	@echo ""
 	@echo "Verifying environment..."
-	@if [ "$(ferqon_needs_venv)" = "1" ]; then \
-		$(FERQON_VENV)/bin/ferqonfw doctor || { echo "Warning: doctor check reported issues. See above."; }; \
-	else \
-		ferqonfw doctor || { echo "Warning: doctor check reported issues. See above."; }; \
-	fi
+	@$(FERQON_FW_BIN) doctor || { echo "Warning: doctor check reported issues. See above."; }
 	@echo ""
 	@echo "=== Development setup complete ==="
 	@echo ""
-	@if [ "$(ferqon_needs_venv)" = "1" ]; then \
+	@if [ "$(FERQON_IN_VENV)" != "1" ]; then \
 		echo "Activate the virtual environment before using the CLIs:"; \
 		echo "  source $(FERQON_VENV)/bin/activate"; \
 		echo ""; \
@@ -128,7 +121,7 @@ init-dev:
 
 # Check environment and dependencies without installing anything.
 doctor:
-	@ferqonfw doctor
+	@$(FERQON_FW_BIN) doctor
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Software-in-the-Loop (SIL) native desktop target

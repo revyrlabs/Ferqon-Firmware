@@ -43,7 +43,13 @@ typedef struct {
     uint8_t param_len;
 } ferqon_request_t;
 
-/* Wire-output function pointer — bytes go here. */
+/* Wire-output function pointer — bytes go here.
+ *
+ * CONTRACT:
+ * - The implementation must copy `data` before returning; the caller may
+ *   reuse the underlying buffer immediately after this call.
+ * - All protocol send functions are non-reentrant. The implementation must not
+ *   call back into ferqon_send_*() from within this callback. */
 typedef void (*ferqon_write_func_t)(const uint8_t *data, size_t len);
 void ferqon_set_write_func(ferqon_write_func_t func);
 

@@ -10,6 +10,7 @@ import json
 import os
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 from typing import Any, Dict, Optional, Sequence
 
@@ -19,8 +20,20 @@ from typing import Any, Dict, Optional, Sequence
 
 
 def get_firmware_dir() -> Path:
-    # Script lives at firmware/tools/ferqonfw/; firmware dir is three levels up.
-    return Path(__file__).resolve().parent.parent.parent
+    """Return the firmware root directory.
+
+    When running from the source tree or an editable install, the root is
+    three levels above this file. When installed as a wheel, we locate it by
+    walking up from the current working directory looking for platformio.ini."""
+    source_root = Path(__file__).resolve().parent.parent.parent
+    markers = ["platformio.ini", "src", "platforms"]
+    if all((source_root / m).exists() for m in markers):
+        return source_root
+    cwd = Path.cwd()
+    for path in [cwd, *cwd.parents]:
+        if (path / "platformio.ini").exists() and (path / "src").is_dir():
+            return path
+    return source_root
 
 
 def get_protocol_dir() -> Path:
@@ -68,12 +81,19 @@ def get_board_generated_dir(board_name: str) -> Path:
 
 
 def get_pio_path() -> str:
-    """Get the PlatformIO CLI path."""
-    # Allow override via env, otherwise use shutil.which to find it
+    """Get the PlatformIO CLI executable path.
+
+    Looks on PATH first, then in the same Python environment as this script
+    (so a venv-ferqonfw invoked without activation still finds the venv pio)."""
     custom_path = os.getenv("FERQON_PIO_BIN")
     if custom_path:
         return custom_path
     pio_path = shutil.which("pio")
+    if pio_path:
+        return pio_path
+    # Allow running from a venv binary directory even when it is not on PATH.
+    venv_bin = os.path.dirname(sys.executable)
+    pio_path = shutil.which("pio", path=venv_bin)
     if pio_path:
         return pio_path
     # Fallback to bare executable name; the caller should verify existence

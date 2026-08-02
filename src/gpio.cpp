@@ -83,9 +83,7 @@ static bool gpio_handler(uint8_t seq, uint8_t cmd_id,
 extern "C" const ferqon_driver_t gpio_driver = {
     .name = "gpio",
     .id = FERQON_CMD_GPIO_READ,  /* primary id; handler also claims write/pin_mode */
-    .cmd_mask = ((uint64_t)1 << FERQON_CMD_GPIO_READ) |
-                ((uint64_t)1 << FERQON_CMD_GPIO_WRITE) |
-                ((uint64_t)1 << FERQON_CMD_PIN_MODE),
+    .cmd_mask = FERQON_DRIVER_CMD_MASK_GPIO,
     .handle = gpio_handler,
 };
 FERQON_REGISTER_DRIVER(gpio);
