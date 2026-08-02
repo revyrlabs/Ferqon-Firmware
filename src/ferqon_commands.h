@@ -28,6 +28,9 @@
 
 /* Protocol version (from SSOT) */
 #define FERQON_PROTOCOL_VERSION         "0.1.0"
+#define FERQON_PROTOCOL_VERSION_MAJOR   0
+#define FERQON_PROTOCOL_VERSION_MINOR   1
+#define FERQON_PROTOCOL_VERSION_PATCH   0
 
 /* --------------------------------------------------------- Packet types */
 

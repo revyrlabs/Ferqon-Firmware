@@ -27,7 +27,6 @@
     "src/dispatcher.cpp",
     "src/dispatcher.h",
     "src/driver_call.cpp",
-    "src/driver_call.h",
     "src/echo.cpp",
     "src/ferqon_commands.h",
     "src/ferqon_helpers.h",

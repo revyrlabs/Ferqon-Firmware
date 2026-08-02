@@ -9,7 +9,6 @@
 #include "build_timestamp.h"
 #include <Arduino.h>
 #include <string.h>
-#include <stdio.h>
 #include <stdint.h>
 
 #ifdef __MBED__
@@ -70,22 +69,6 @@ static uint32_t get_free_ram(void) {
 #endif
 }
 
-static bool parse_version(const char *version, uint8_t *major, uint8_t *minor, uint8_t *patch) {
-    *major = *minor = *patch = 0;
-    if (!version) return false;
-    unsigned int maj = 0, min = 0, pat = 0;
-    if (sscanf(version, "%u.%u.%u", &maj, &min, &pat) != 3) {
-        return false;
-    }
-    if (maj > 255 || min > 255 || pat > 255) {
-        return false;
-    }
-    *major = (uint8_t)maj;
-    *minor = (uint8_t)min;
-    *patch = (uint8_t)pat;
-    return true;
-}
-
 static bool device_info_handler(uint8_t seq, uint8_t cmd_id,
                                 const uint8_t *params, uint8_t param_len,
                                 uint8_t *response, uint8_t *response_len,
@@ -110,9 +93,9 @@ static bool device_info_handler(uint8_t seq, uint8_t cmd_id,
 }
 
 static bool driver_info_handler(uint8_t seq, uint8_t cmd_id,
-                               const uint8_t *params, uint8_t param_len,
-                               uint8_t *response, uint8_t *response_len,
-                               bool *already_responded) {
+                                const uint8_t *params, uint8_t param_len,
+                                uint8_t *response, uint8_t *response_len,
+                                bool *already_responded) {
     (void)seq; (void)cmd_id; (void)params; (void)param_len; (void)already_responded;
 
     uint16_t i = 0;
@@ -140,14 +123,12 @@ static bool driver_info_handler(uint8_t seq, uint8_t cmd_id,
     }
 
     /* VERSION TLV: type=0x04, len=3, major, minor, patch */
-    uint8_t major = 0, minor = 0, patch = 0;
-    parse_version(FERQON_PROTOCOL_VERSION, &major, &minor, &patch);
     if (i + 5 <= cap) {
         response[i] = TLV_VERSION;
         response[i + 1] = 3;
-        response[i + 2] = major;
-        response[i + 3] = minor;
-        response[i + 4] = patch;
+        response[i + 2] = FERQON_PROTOCOL_VERSION_MAJOR;
+        response[i + 3] = FERQON_PROTOCOL_VERSION_MINOR;
+        response[i + 4] = FERQON_PROTOCOL_VERSION_PATCH;
         i += 5;
     }
 
@@ -155,34 +136,14 @@ static bool driver_info_handler(uint8_t seq, uint8_t cmd_id,
     return true;
 }
 
-static bool device_info_dispatch(uint8_t seq, uint8_t cmd_id,
-                                const uint8_t *params, uint8_t param_len,
-                                uint8_t *response, uint8_t *response_len,
-                                bool *already_responded) {
-    if (cmd_id == FERQON_CMD_DEVICE_INFO) {
-        return device_info_handler(seq, cmd_id, params, param_len, response, response_len, already_responded);
-    }
-    return false;
-}
-
-static bool driver_info_dispatch(uint8_t seq, uint8_t cmd_id,
-                                const uint8_t *params, uint8_t param_len,
-                                uint8_t *response, uint8_t *response_len,
-                                bool *already_responded) {
-    if (cmd_id == FERQON_CMD_DRIVER_INFO) {
-        return driver_info_handler(seq, cmd_id, params, param_len, response, response_len, already_responded);
-    }
-    return false;
-}
-
 extern "C" const ferqon_driver_t device_info_driver = {
     .name = "device_info",
     .id = FERQON_CMD_DEVICE_INFO,
-    .handle = device_info_dispatch,
+    .handle = device_info_handler,
 };
 
 extern "C" const ferqon_driver_t driver_info_driver = {
     .name = "driver_info",
     .id = FERQON_CMD_DRIVER_INFO,
-    .handle = driver_info_dispatch,
+    .handle = driver_info_handler,
 };
