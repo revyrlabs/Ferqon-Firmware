@@ -13,7 +13,6 @@ static ferqon_write_func_t g_write_func = NULL;
 /* Single shared transmit buffer.  All public ferqon_send_*() functions are
  * non-reentrant by contract; the firmware is single-threaded and every
  * implementation of g_write_func copies the supplied bytes before returning. */
-static uint8_t s_tx_payload[FERQON_MAX_PAYLOAD_BYTES];
 static uint8_t s_tx_frame[FERQON_MAX_PAYLOAD_BYTES + FERQON_FRAME_OVERHEAD];
 
 void ferqon_set_write_func(ferqon_write_func_t func) {
@@ -49,16 +48,22 @@ static void write_all(const uint8_t *data, size_t len) {
     }
 }
 
-/* Emit a complete frame. body_len is the payload length (must be <= MAX). */
+/* Emit a complete frame. (prefix_len + body_len) is the payload length.
+ * The type byte and any fixed header bytes live in prefix; variable data in body.
+ * This lets callers build responses directly without a second scratch buffer. */
 static void ferqon_send_frame(uint8_t seq, uint8_t cmd_id,
+                            const uint8_t *prefix, uint8_t prefix_len,
                             const uint8_t *body, uint8_t body_len) {
-    /* Build the entire frame in a shared buffer and emit it with a single write.
-     * Frame layout: [START][SEQ][CMD][LEN][body...][CRC_LO][CRC_HI]. */
+    uint8_t payload_len = (uint8_t)(prefix_len + body_len);
     size_t pos = 0;
     s_tx_frame[pos++] = FERQON_START_BYTE;
     s_tx_frame[pos++] = seq;
     s_tx_frame[pos++] = cmd_id;
-    s_tx_frame[pos++] = body_len;
+    s_tx_frame[pos++] = payload_len;
+    if (prefix_len > 0 && prefix != NULL) {
+        memcpy(&s_tx_frame[pos], prefix, prefix_len);
+        pos += prefix_len;
+    }
     if (body_len > 0 && body != NULL) {
         memcpy(&s_tx_frame[pos], body, body_len);
         pos += body_len;
@@ -73,73 +78,60 @@ static void ferqon_send_frame(uint8_t seq, uint8_t cmd_id,
 
 void ferqon_send_done(uint8_t seq, uint8_t cmd_id,
                     const uint8_t *body, uint8_t body_len) {
-    if ((size_t)body_len + 1 > sizeof(s_tx_payload)) {
+    uint8_t prefix = FERQON_PKT_DONE;
+    if ((size_t)body_len + 1 > FERQON_MAX_PAYLOAD_BYTES) {
         /* Caller asked to return more than the wire can hold — truncate safely. */
-        body_len = (uint8_t)(sizeof(s_tx_payload) - 1);
+        body_len = (uint8_t)(FERQON_MAX_PAYLOAD_BYTES - 1);
     }
-    s_tx_payload[0] = FERQON_PKT_DONE;
-    if (body_len > 0 && body != NULL) {
-        memcpy(&s_tx_payload[1], body, body_len);
-    }
-    ferqon_send_frame(seq, cmd_id, s_tx_payload, (uint8_t)(body_len + 1));
+    ferqon_send_frame(seq, cmd_id, &prefix, 1, body, body_len);
 }
 
 void ferqon_send_ack(uint8_t seq, uint8_t cmd_id) {
-    uint8_t body = FERQON_PKT_ACK;
-    ferqon_send_frame(seq, cmd_id, &body, 1);
+    uint8_t prefix = FERQON_PKT_ACK;
+    ferqon_send_frame(seq, cmd_id, &prefix, 1, NULL, 0);
 }
 
 void ferqon_send_error(uint8_t seq, uint8_t cmd_id,
                      uint8_t code, uint8_t category, bool retryable,
                      uint8_t ctx, const uint8_t *detail, uint8_t detail_len) {
-    /* [type][code][category][retryable][ctx][detail...]  -> 5 bytes header */
-    uint8_t hdr_len = 5;
-    if ((size_t)detail_len + hdr_len > sizeof(s_tx_payload)) {
-        detail_len = (uint8_t)(sizeof(s_tx_payload) - hdr_len);
+    /* [type][code][category][retryable][ctx][detail...]  -> 5 bytes prefix */
+    uint8_t prefix[5] = {
+        FERQON_PKT_ERROR, code, category,
+        (uint8_t)(retryable ? 1 : 0), ctx
+    };
+    if ((size_t)detail_len + sizeof(prefix) > FERQON_MAX_PAYLOAD_BYTES) {
+        detail_len = (uint8_t)(FERQON_MAX_PAYLOAD_BYTES - sizeof(prefix));
     }
-    s_tx_payload[0] = FERQON_PKT_ERROR;
-    s_tx_payload[1] = code;
-    s_tx_payload[2] = category;
-    s_tx_payload[3] = retryable ? 1 : 0;
-    s_tx_payload[4] = ctx;
-    if (detail_len > 0 && detail != NULL) {
-        memcpy(&s_tx_payload[hdr_len], detail, detail_len);
-    }
-    ferqon_send_frame(seq, cmd_id, s_tx_payload, (uint8_t)(hdr_len + detail_len));
+    ferqon_send_frame(seq, cmd_id, prefix, sizeof(prefix), detail, detail_len);
 }
 
 void ferqon_send_heartbeat(uint8_t state, uint32_t uptime_ms, uint8_t flags) {
-    s_tx_payload[0] = FERQON_PKT_HEARTBEAT;
-    s_tx_payload[1] = state;
-    wr_u32_le(&s_tx_payload[2], uptime_ms);
-    s_tx_payload[6] = flags;
+    uint8_t prefix[2] = {FERQON_PKT_HEARTBEAT, state};
+    uint8_t body[5];
+    wr_u32_le(body, uptime_ms);
+    body[4] = flags;
     /* Heartbeats are unsolicited: seq=0, cmd_id mirrors heartbeat id space.
      * We use cmd_id=0 for "no command" on unsolicited frames. */
-    ferqon_send_frame(FERQON_SEQ_UNSOLICITED, 0, s_tx_payload, 7);
+    ferqon_send_frame(FERQON_SEQ_UNSOLICITED, 0, prefix, sizeof(prefix), body, sizeof(body));
 }
 
 void ferqon_send_log(const char *msg) {
     if (msg == NULL) return;
+    uint8_t prefix = FERQON_PKT_LOG;
     size_t len = strlen(msg);
     if (len > FERQON_MAX_PAYLOAD_BYTES - 1) {
         len = FERQON_MAX_PAYLOAD_BYTES - 1;
     }
-    s_tx_payload[0] = FERQON_PKT_LOG;
-    memcpy(&s_tx_payload[1], msg, len);
-    ferqon_send_frame(FERQON_SEQ_UNSOLICITED, 0, s_tx_payload, (uint8_t)(len + 1));
+    ferqon_send_frame(FERQON_SEQ_UNSOLICITED, 0, &prefix, 1, (const uint8_t *)msg, (uint8_t)len);
 }
 
 /* Send structured binary log with subtype. Payload: [PKT_LOG][subtype][data...] */
 void ferqon_send_log_bin(uint8_t subtype, const uint8_t *data, uint8_t data_len) {
-    if (data_len > FERQON_MAX_PAYLOAD_BYTES - 2) {
-        data_len = FERQON_MAX_PAYLOAD_BYTES - 2;
+    uint8_t prefix[2] = {FERQON_PKT_LOG, subtype};
+    if (data_len > FERQON_MAX_PAYLOAD_BYTES - sizeof(prefix)) {
+        data_len = (uint8_t)(FERQON_MAX_PAYLOAD_BYTES - sizeof(prefix));
     }
-    s_tx_payload[0] = FERQON_PKT_LOG;
-    s_tx_payload[1] = subtype;
-    if (data_len > 0 && data != NULL) {
-        memcpy(&s_tx_payload[2], data, data_len);
-    }
-    ferqon_send_frame(FERQON_SEQ_UNSOLICITED, 0, s_tx_payload, (uint8_t)(data_len + 2));
+    ferqon_send_frame(FERQON_SEQ_UNSOLICITED, 0, prefix, sizeof(prefix), data, data_len);
 }
 
 /* ---------------------------------------------------------------- Parser */

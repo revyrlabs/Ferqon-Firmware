@@ -39,6 +39,12 @@ typedef struct {
 
 void ferqon_register_driver(const ferqon_driver_t *driver);
 
+/* Read-only accessors for the driver registry. These keep the internal
+ * driver table encapsulated while letting device_info / driver_info enumerate
+ * registered drivers without reaching into g_drivers directly. */
+uint8_t ferqon_driver_count(void);
+const ferqon_driver_t *ferqon_driver_get(uint8_t index);
+
 /* Parse packet-type byte, route to a driver, emit the appropriate reply.
  * Returns true if the command was successfully dispatched (success or
  * structured error); false if no driver claimed it (INVALID_COMMAND

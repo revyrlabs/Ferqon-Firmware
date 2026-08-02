@@ -9,8 +9,8 @@
 /* cmd_mask is a uint64_t, so the command-id space must fit in 64 bits. */
 static_assert(FERQON_MAX_COMMAND_ID <= 64, "cmd_mask cannot hold more than 64 command ids");
 
-ferqon_driver_t g_drivers[FERQON_MAX_DRIVERS];
-uint8_t g_driver_count = 0;
+static ferqon_driver_t g_drivers[FERQON_MAX_DRIVERS];
+static uint8_t g_driver_count = 0;
 static uint8_t g_cmd_to_driver[FERQON_MAX_COMMAND_ID];
 
 void ferqon_register_driver(const ferqon_driver_t *driver) {
@@ -39,6 +39,14 @@ void ferqon_register_driver(const ferqon_driver_t *driver) {
 
     memcpy(&g_drivers[g_driver_count], driver, sizeof(ferqon_driver_t));
     g_driver_count++;
+}
+
+uint8_t ferqon_driver_count(void) {
+    return g_driver_count;
+}
+
+const ferqon_driver_t *ferqon_driver_get(uint8_t index) {
+    return (index < g_driver_count) ? &g_drivers[index] : NULL;
 }
 
 bool ferqon_dispatch_request(const ferqon_request_t *req) {

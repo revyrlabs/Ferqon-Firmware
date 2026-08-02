@@ -11,9 +11,7 @@
 #include <string.h>
 #include <stdint.h>
 
-/* Forward declaration of global driver array */
-extern ferqon_driver_t g_drivers[];
-extern uint8_t g_driver_count;
+
 
 static uint16_t append_str_tlv(uint8_t *buf, uint8_t type, const char *s, uint16_t max_len) {
     if (max_len < 2 || !s) return 0;
@@ -83,13 +81,14 @@ static bool driver_info_handler(uint8_t seq, uint8_t cmd_id,
     const uint16_t cap = FERQON_MAX_PAYLOAD_BYTES;
 
     /* Enumerate all registered drivers in deterministic command-id order. */
+    uint8_t count = ferqon_driver_count();
     uint8_t order[FERQON_MAX_DRIVERS];
-    for (uint8_t d = 0; d < g_driver_count; d++) {
+    for (uint8_t d = 0; d < count; d++) {
         order[d] = d;
     }
-    for (uint8_t s = 1; s < g_driver_count; s++) {
+    for (uint8_t s = 1; s < count; s++) {
         uint8_t j = s;
-        while (j > 0 && g_drivers[order[j - 1]].id > g_drivers[order[j]].id) {
+        while (j > 0 && ferqon_driver_get(order[j - 1])->id > ferqon_driver_get(order[j])->id) {
             uint8_t tmp = order[j];
             order[j] = order[j - 1];
             order[j - 1] = tmp;
@@ -97,8 +96,8 @@ static bool driver_info_handler(uint8_t seq, uint8_t cmd_id,
         }
     }
 
-    for (uint8_t d = 0; d < g_driver_count; d++) {
-        const ferqon_driver_t *drv = &g_drivers[order[d]];
+    for (uint8_t d = 0; d < count; d++) {
+        const ferqon_driver_t *drv = ferqon_driver_get(order[d]);
         const char *name = drv->name;
         if (!name) continue;
 

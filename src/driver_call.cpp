@@ -16,12 +16,14 @@
 #define HIL_LEVEL_HIGH  "HIGH"
 #define HIL_LEVEL_LOW   "LOW"
 
-/* Buffer-size limits for driver_call argument parsing. */
+/* Buffer-size limits for driver_call argument parsing.
+ * The args string can be as long as the largest possible payload minus the
+ * length-prefixed driver/method name overhead, so size it for the full frame. */
 #define DC_MAX_KEY_LEN        31
 #define DC_MAX_ARGS           8
 #define DC_MAX_DRIVER_NAME    32
 #define DC_MAX_METHOD_NAME    32
-#define DC_MAX_ARGS_BUF       128
+#define DC_MAX_ARGS_BUF       FERQON_MAX_PAYLOAD_BYTES
 
 /* Parse a semicolon-delimited key=value string in-place.
  * Empty segments between ';' are skipped, but empty keys or values,
