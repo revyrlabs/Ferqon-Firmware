@@ -82,9 +82,24 @@ static bool driver_info_handler(uint8_t seq, uint8_t cmd_id,
     uint16_t i = 0;
     const uint16_t cap = FERQON_MAX_PAYLOAD_BYTES;
 
-    /* Enumerate all registered drivers */
+    /* Enumerate all registered drivers in deterministic command-id order. */
+    uint8_t order[FERQON_MAX_DRIVERS];
     for (uint8_t d = 0; d < g_driver_count; d++) {
-        const char *name = g_drivers[d].name;
+        order[d] = d;
+    }
+    for (uint8_t s = 1; s < g_driver_count; s++) {
+        uint8_t j = s;
+        while (j > 0 && g_drivers[order[j - 1]].id > g_drivers[order[j]].id) {
+            uint8_t tmp = order[j];
+            order[j] = order[j - 1];
+            order[j - 1] = tmp;
+            j--;
+        }
+    }
+
+    for (uint8_t d = 0; d < g_driver_count; d++) {
+        const ferqon_driver_t *drv = &g_drivers[order[d]];
+        const char *name = drv->name;
         if (!name) continue;
 
         uint16_t name_len = (uint16_t)strlen(name);
@@ -98,7 +113,7 @@ static bool driver_info_handler(uint8_t seq, uint8_t cmd_id,
 
         response[i] = TLV_COMMAND;
         response[i + 1] = (uint8_t)(1 + name_len);
-        response[i + 2] = g_drivers[d].id;
+        response[i + 2] = drv->id;
         memcpy(&response[i + 3], name, name_len);
         i += command_tlv;
     }
@@ -120,6 +135,7 @@ static bool driver_info_handler(uint8_t seq, uint8_t cmd_id,
 extern "C" const ferqon_driver_t device_info_driver = {
     .name = "device_info",
     .id = FERQON_CMD_DEVICE_INFO,
+    .cmd_mask = (uint64_t)1 << FERQON_CMD_DEVICE_INFO,
     .handle = device_info_handler,
 };
 FERQON_REGISTER_DRIVER(device_info);
@@ -127,6 +143,7 @@ FERQON_REGISTER_DRIVER(device_info);
 extern "C" const ferqon_driver_t driver_info_driver = {
     .name = "driver_info",
     .id = FERQON_CMD_DRIVER_INFO,
+    .cmd_mask = (uint64_t)1 << FERQON_CMD_DRIVER_INFO,
     .handle = driver_info_handler,
 };
 FERQON_REGISTER_DRIVER(driver_info);

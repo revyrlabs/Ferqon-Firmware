@@ -10,6 +10,12 @@
 /* Wire-output sink (set by ferqon_set_write_func). */
 static ferqon_write_func_t g_write_func = NULL;
 
+/* Single shared transmit buffer.  All public ferqon_send_*() functions are
+ * non-reentrant by contract; the firmware is single-threaded and every
+ * implementation of g_write_func copies the supplied bytes before returning. */
+static uint8_t s_tx_payload[FERQON_MAX_PAYLOAD_BYTES];
+static uint8_t s_tx_frame[FERQON_MAX_PAYLOAD_BYTES + FERQON_FRAME_OVERHEAD];
+
 void ferqon_set_write_func(ferqon_write_func_t func) {
     g_write_func = func;
 }
@@ -46,38 +52,36 @@ static void write_all(const uint8_t *data, size_t len) {
 /* Emit a complete frame. body_len is the payload length (must be <= MAX). */
 static void ferqon_send_frame(uint8_t seq, uint8_t cmd_id,
                             const uint8_t *body, uint8_t body_len) {
-    /* Build the entire frame in one buffer and emit it with a single write.
+    /* Build the entire frame in a shared buffer and emit it with a single write.
      * Frame layout: [START][SEQ][CMD][LEN][body...][CRC_LO][CRC_HI]. */
-    uint8_t frame[FERQON_MAX_PAYLOAD_BYTES + FERQON_FRAME_OVERHEAD];
     size_t pos = 0;
-    frame[pos++] = FERQON_START_BYTE;
-    frame[pos++] = seq;
-    frame[pos++] = cmd_id;
-    frame[pos++] = body_len;
+    s_tx_frame[pos++] = FERQON_START_BYTE;
+    s_tx_frame[pos++] = seq;
+    s_tx_frame[pos++] = cmd_id;
+    s_tx_frame[pos++] = body_len;
     if (body_len > 0 && body != NULL) {
-        memcpy(&frame[pos], body, body_len);
+        memcpy(&s_tx_frame[pos], body, body_len);
         pos += body_len;
     }
 
-    uint16_t crc = ferqon_crc16(&frame[1], pos - 1);
-    frame[pos++] = (uint8_t)(crc & 0xFF);
-    frame[pos++] = (uint8_t)((crc >> 8) & 0xFF);
+    uint16_t crc = ferqon_crc16(&s_tx_frame[1], pos - 1);
+    s_tx_frame[pos++] = (uint8_t)(crc & 0xFF);
+    s_tx_frame[pos++] = (uint8_t)((crc >> 8) & 0xFF);
 
-    write_all(frame, pos);
+    write_all(s_tx_frame, pos);
 }
 
 void ferqon_send_done(uint8_t seq, uint8_t cmd_id,
                     const uint8_t *body, uint8_t body_len) {
-    uint8_t scratch[FERQON_MAX_PAYLOAD_BYTES];
-    if ((size_t)body_len + 1 > sizeof(scratch)) {
+    if ((size_t)body_len + 1 > sizeof(s_tx_payload)) {
         /* Caller asked to return more than the wire can hold — truncate safely. */
-        body_len = (uint8_t)(sizeof(scratch) - 1);
+        body_len = (uint8_t)(sizeof(s_tx_payload) - 1);
     }
-    scratch[0] = FERQON_PKT_DONE;
+    s_tx_payload[0] = FERQON_PKT_DONE;
     if (body_len > 0 && body != NULL) {
-        memcpy(&scratch[1], body, body_len);
+        memcpy(&s_tx_payload[1], body, body_len);
     }
-    ferqon_send_frame(seq, cmd_id, scratch, (uint8_t)(body_len + 1));
+    ferqon_send_frame(seq, cmd_id, s_tx_payload, (uint8_t)(body_len + 1));
 }
 
 void ferqon_send_ack(uint8_t seq, uint8_t cmd_id) {
@@ -88,32 +92,30 @@ void ferqon_send_ack(uint8_t seq, uint8_t cmd_id) {
 void ferqon_send_error(uint8_t seq, uint8_t cmd_id,
                      uint8_t code, uint8_t category, bool retryable,
                      uint8_t ctx, const uint8_t *detail, uint8_t detail_len) {
-    uint8_t scratch[FERQON_MAX_PAYLOAD_BYTES];
     /* [type][code][category][retryable][ctx][detail...]  -> 5 bytes header */
     uint8_t hdr_len = 5;
-    if ((size_t)detail_len + hdr_len > sizeof(scratch)) {
-        detail_len = (uint8_t)(sizeof(scratch) - hdr_len);
+    if ((size_t)detail_len + hdr_len > sizeof(s_tx_payload)) {
+        detail_len = (uint8_t)(sizeof(s_tx_payload) - hdr_len);
     }
-    scratch[0] = FERQON_PKT_ERROR;
-    scratch[1] = code;
-    scratch[2] = category;
-    scratch[3] = retryable ? 1 : 0;
-    scratch[4] = ctx;
+    s_tx_payload[0] = FERQON_PKT_ERROR;
+    s_tx_payload[1] = code;
+    s_tx_payload[2] = category;
+    s_tx_payload[3] = retryable ? 1 : 0;
+    s_tx_payload[4] = ctx;
     if (detail_len > 0 && detail != NULL) {
-        memcpy(&scratch[hdr_len], detail, detail_len);
+        memcpy(&s_tx_payload[hdr_len], detail, detail_len);
     }
-    ferqon_send_frame(seq, cmd_id, scratch, (uint8_t)(hdr_len + detail_len));
+    ferqon_send_frame(seq, cmd_id, s_tx_payload, (uint8_t)(hdr_len + detail_len));
 }
 
 void ferqon_send_heartbeat(uint8_t state, uint32_t uptime_ms, uint8_t flags) {
-    uint8_t body[7];
-    body[0] = FERQON_PKT_HEARTBEAT;
-    body[1] = state;
-    wr_u32_le(&body[2], uptime_ms);
-    body[6] = flags;
+    s_tx_payload[0] = FERQON_PKT_HEARTBEAT;
+    s_tx_payload[1] = state;
+    wr_u32_le(&s_tx_payload[2], uptime_ms);
+    s_tx_payload[6] = flags;
     /* Heartbeats are unsolicited: seq=0, cmd_id mirrors heartbeat id space.
      * We use cmd_id=0 for "no command" on unsolicited frames. */
-    ferqon_send_frame(FERQON_SEQ_UNSOLICITED, 0, body, sizeof(body));
+    ferqon_send_frame(FERQON_SEQ_UNSOLICITED, 0, s_tx_payload, 7);
 }
 
 void ferqon_send_log(const char *msg) {
@@ -122,10 +124,9 @@ void ferqon_send_log(const char *msg) {
     if (len > FERQON_MAX_PAYLOAD_BYTES - 1) {
         len = FERQON_MAX_PAYLOAD_BYTES - 1;
     }
-    uint8_t scratch[FERQON_MAX_PAYLOAD_BYTES];
-    scratch[0] = FERQON_PKT_LOG;
-    memcpy(&scratch[1], msg, len);
-    ferqon_send_frame(FERQON_SEQ_UNSOLICITED, 0, scratch, (uint8_t)(len + 1));
+    s_tx_payload[0] = FERQON_PKT_LOG;
+    memcpy(&s_tx_payload[1], msg, len);
+    ferqon_send_frame(FERQON_SEQ_UNSOLICITED, 0, s_tx_payload, (uint8_t)(len + 1));
 }
 
 /* Send structured binary log with subtype. Payload: [PKT_LOG][subtype][data...] */
@@ -133,13 +134,12 @@ void ferqon_send_log_bin(uint8_t subtype, const uint8_t *data, uint8_t data_len)
     if (data_len > FERQON_MAX_PAYLOAD_BYTES - 2) {
         data_len = FERQON_MAX_PAYLOAD_BYTES - 2;
     }
-    uint8_t scratch[FERQON_MAX_PAYLOAD_BYTES];
-    scratch[0] = FERQON_PKT_LOG;
-    scratch[1] = subtype;
+    s_tx_payload[0] = FERQON_PKT_LOG;
+    s_tx_payload[1] = subtype;
     if (data_len > 0 && data != NULL) {
-        memcpy(&scratch[2], data, data_len);
+        memcpy(&s_tx_payload[2], data, data_len);
     }
-    ferqon_send_frame(FERQON_SEQ_UNSOLICITED, 0, scratch, (uint8_t)(data_len + 2));
+    ferqon_send_frame(FERQON_SEQ_UNSOLICITED, 0, s_tx_payload, (uint8_t)(data_len + 2));
 }
 
 /* ---------------------------------------------------------------- Parser */

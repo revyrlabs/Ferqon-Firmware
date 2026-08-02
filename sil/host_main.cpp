@@ -21,9 +21,12 @@
 #include <cstring>
 #include <iostream>
 
-/* Defined in src/main.cpp */
-extern void setup(void);
-extern void loop(void);
+/* Defined in src/main.cpp (C linkage so the same binary works with the
+ * Arduino framework's weak main() on microcontrollers). */
+extern "C" {
+    extern void setup(void);
+    extern void loop(void);
+}
 
 static void usage(const char *prog) {
     std::cerr << "Usage: " << prog << " [PORT]" << std::endl;

@@ -23,6 +23,7 @@ static bool reset_handler(uint8_t seq, uint8_t cmd_id,
 extern "C" const ferqon_driver_t reset_driver = {
     .name = "reset",
     .id = FERQON_CMD_RESET,
+    .cmd_mask = (uint64_t)1 << FERQON_CMD_RESET,
     .handle = reset_handler,
 };
 FERQON_REGISTER_DRIVER(reset);

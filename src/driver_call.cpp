@@ -430,6 +430,7 @@ static bool driver_call_handler(uint8_t seq, uint8_t cmd_id,
 extern "C" const ferqon_driver_t driver_call_driver = {
     .name = "driver_call",
     .id = FERQON_CMD_DRIVER_CALL,
+    .cmd_mask = (uint64_t)1 << FERQON_CMD_DRIVER_CALL,
     .handle = driver_call_handler,
 };
 FERQON_REGISTER_DRIVER(driver_call);

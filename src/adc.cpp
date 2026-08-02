@@ -108,6 +108,8 @@ static bool adc_handler(uint8_t seq, uint8_t cmd_id,
 extern "C" const ferqon_driver_t adc_driver = {
     .name = "adc",
     .id = FERQON_CMD_ADC_READ,
+    .cmd_mask = ((uint64_t)1 << FERQON_CMD_ADC_READ) |
+                ((uint64_t)1 << FERQON_CMD_ADC_EXPECT),
     .handle = adc_handler,
 };
 FERQON_REGISTER_DRIVER(adc);

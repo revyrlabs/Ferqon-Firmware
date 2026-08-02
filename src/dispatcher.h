@@ -7,6 +7,8 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#define FERQON_MAX_DRIVERS 16
+
 /* A driver handler claims a command by returning true.
  *
  *   cmd_id, params, param_len  - the incoming request (packet-type byte
@@ -28,7 +30,8 @@ typedef bool (*ferqon_driver_handler_t)(uint8_t seq, uint8_t cmd_id,
 
 typedef struct {
     const char *name;
-    uint8_t id;
+    uint8_t id;              /* Primary command id (reported in driver_info). */
+    uint64_t cmd_mask;       /* Bit mask of all command ids this driver handles. */
     ferqon_driver_handler_t handle;
 } ferqon_driver_t;
 

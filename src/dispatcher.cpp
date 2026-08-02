@@ -6,8 +6,6 @@
 #include "ferqon_log.h"
 #include <string.h>
 
-#define FERQON_MAX_DRIVERS 16
-
 ferqon_driver_t g_drivers[FERQON_MAX_DRIVERS];
 uint8_t g_driver_count = 0;
 
@@ -57,7 +55,18 @@ bool ferqon_dispatch_request(const ferqon_request_t *req) {
     uint8_t response_len = 0;
     bool already_responded = false;
 
+    if (req->cmd_id >= 64) {
+        ferqon_send_error(req->seq, req->cmd_id,
+                        FERQON_ERR_INVALID_COMMAND, FERQON_ECAT_COMMAND,
+                        /*retryable=*/false, /*ctx=*/0, NULL, 0);
+        return false;
+    }
+
     for (uint8_t i = 0; i < g_driver_count; i++) {
+        if ((g_drivers[i].cmd_mask & ((uint64_t)1 << req->cmd_id)) == 0) {
+            continue;
+        }
+
         bool handled = g_drivers[i].handle(req->seq, req->cmd_id, args, args_len,
                                 response, &response_len, &already_responded);
         if (handled) {

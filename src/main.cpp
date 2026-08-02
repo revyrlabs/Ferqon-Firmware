@@ -14,7 +14,9 @@ ferqon_parser_t parser;
 unsigned long last_heartbeat_ms = 0;
 static const unsigned long HEARTBEAT_INTERVAL_MS = FERQON_HEARTBEAT_INTERVAL_MS;
 
-void setup() {
+/* setup/loop are the Arduino application entry points and must have C linkage
+ * so the framework's weak main() can find them. */
+extern "C" void setup() {
 #if defined(FERQON_BOARD_NATIVE)
     ferqon_hal_init_host();
 #else
@@ -37,7 +39,7 @@ void setup() {
     FERQON_LOG_INFO("Ferqon %s ready", FERQON_FW_VERSION);
 }
 
-void loop() {
+extern "C" void loop() {
     // Handle serial input
     if (ferqon_hal_serial_available() > 0) {
         int c = ferqon_hal_serial_read();
