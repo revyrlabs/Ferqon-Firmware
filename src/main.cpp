@@ -42,21 +42,21 @@ extern "C" void setup() {
 extern "C" void loop() {
     // Handle serial input. Drain the RX buffer each loop so frames are not
     // artificially throttled to one byte per main-loop iteration.
+    unsigned long now = ferqon_hal_millis();
     while (ferqon_hal_serial_available() > 0) {
         int c = ferqon_hal_serial_read();
         ferqon_request_t req;
-        if (ferqon_parser_feed(&parser, (uint8_t)c, &req)) {
+        if (ferqon_parser_feed_with_time(&parser, (uint8_t)c, &req, (uint32_t)now)) {
             // Dispatch command
             ferqon_dispatch_request(&req);
         }
     }
 
     // Send periodic heartbeat
-    unsigned long now = ferqon_hal_millis();
     if (now - last_heartbeat_ms >= HEARTBEAT_INTERVAL_MS) {
         last_heartbeat_ms = now;
         uint8_t state = app_state_get();
-        uint32_t uptime = now;
+        uint32_t uptime = (uint32_t)now;
         uint8_t flags = 0;  // Could indicate error conditions, etc.
         ferqon_send_heartbeat(state, uptime, flags);
     }

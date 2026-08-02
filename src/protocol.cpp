@@ -163,8 +163,11 @@ void ferqon_parser_reset(ferqon_parser_t *parser) {
 }
 
 bool ferqon_parser_feed(ferqon_parser_t *parser, uint8_t byte, ferqon_request_t *req) {
-    uint32_t now = ferqon_hal_millis();
+    return ferqon_parser_feed_with_time(parser, byte, req, ferqon_hal_millis());
+}
 
+bool ferqon_parser_feed_with_time(ferqon_parser_t *parser, uint8_t byte,
+                                  ferqon_request_t *req, uint32_t now) {
     /* Inter-byte timeout: gap too large inside a frame -> resync. */
     if (parser->state != FERQON_STATE_IDLE && parser->last_byte_ms > 0 &&
         (now - parser->last_byte_ms) > parser->inter_byte_timeout_ms) {

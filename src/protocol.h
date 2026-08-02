@@ -60,8 +60,12 @@ uint16_t ferqon_crc16(const uint8_t *data, size_t len);
 void ferqon_parser_init(ferqon_parser_t *parser);
 void ferqon_parser_reset(ferqon_parser_t *parser);
 
-/* Feed one byte; on success fills `req` and returns true (exactly once per
- * complete, CRC-valid frame). */
+/* Feed one byte with an explicit timestamp. On success fills `req` and returns
+ * true (exactly once per complete, CRC-valid frame). */
+bool ferqon_parser_feed_with_time(ferqon_parser_t *parser, uint8_t byte,
+                                  ferqon_request_t *req, uint32_t now);
+
+/* Feed one byte using the HAL millisecond clock. Convenience wrapper. */
 bool ferqon_parser_feed(ferqon_parser_t *parser, uint8_t byte, ferqon_request_t *req);
 
 /* Emit a framed response. `seq` should be echoed from the originating request. */
