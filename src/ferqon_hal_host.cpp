@@ -8,7 +8,16 @@
  */
 #include <Arduino.h>
 #include "ferqon_hal.h"
+#include "ferqon_commands.h"
 #include "platform_caps.h"
+
+/* The host shim's pinMode constants must match the canonical FERQON_GPIO_*
+ * values because host_gpio_set_mode passes the canonical mode straight through.
+ * If these ever drift, pin modes will silently mean something else on the host. */
+static_assert(INPUT == FERQON_GPIO_INPUT, "host INPUT mismatch");
+static_assert(OUTPUT == FERQON_GPIO_OUTPUT, "host OUTPUT mismatch");
+static_assert(INPUT_PULLUP == FERQON_GPIO_INPUT_PULLUP, "host INPUT_PULLUP mismatch");
+static_assert(INPUT_PULLDOWN == FERQON_GPIO_INPUT_PULLDOWN, "host INPUT_PULLDOWN mismatch");
 
 /* ------------------------------------------------------------------ Time */
 static unsigned long host_millis(void) { return millis(); }
