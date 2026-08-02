@@ -159,3 +159,4 @@ extern "C" const ferqon_driver_t uart_driver = {
     .id = FERQON_CMD_UART_SEND,
     .handle = uart_handler,
 };
+FERQON_REGISTER_DRIVER(uart);

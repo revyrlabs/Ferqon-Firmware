@@ -79,6 +79,23 @@
 #define FERQON_DRIVER_METHOD_HIL_UART_SEND            "uart_send"
 
 
+/* ----------------------------------------------- Driver method dispatch tables */
+/* X-macros for building the per-driver method dispatch table in driver_call.cpp. */
+/* Convention: the C handler for driver 'foo' method 'bar' is named foo_bar.     */
+
+#define FERQON_DRIVER_METHODS_HIL(X)     X(ADC_EXPECT, hil_adc_expect) \
+    X(ADC_READ, hil_adc_read) \
+    X(ENTER, hil_enter) \
+    X(EXIT, hil_exit) \
+    X(IO_CONFIGURE, hil_io_configure) \
+    X(IO_EXPECT, hil_io_expect) \
+    X(IO_GET, hil_io_get) \
+    X(IO_SET, hil_io_set) \
+    X(PULSE_MEASURE, hil_pulse_measure) \
+    X(UART_EXPECT, hil_uart_expect) \
+    X(UART_SEND, hil_uart_send)
+
+
 /* ----------------------------------------------------------- TLV types */
 /* NOTE: TLV type IDs are context-dependent. DEVICE_NAME, MCU_TYPE,
  * FIRMWARE_VERSION, PROTOCOL_VERSION, BUILD_TIMESTAMP, FREE_RAM, and

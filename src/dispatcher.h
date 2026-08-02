@@ -32,7 +32,6 @@ typedef struct {
     ferqon_driver_handler_t handle;
 } ferqon_driver_t;
 
-void ferqon_dispatcher_init(void);
 void ferqon_register_driver(const ferqon_driver_t *driver);
 
 /* Parse packet-type byte, route to a driver, emit the appropriate reply.
@@ -40,5 +39,18 @@ void ferqon_register_driver(const ferqon_driver_t *driver);
  * structured error); false if no driver claimed it (INVALID_COMMAND
  * already sent). */
 bool ferqon_dispatch_request(const ferqon_request_t *req);
+
+#ifdef __cplusplus
+/* Self-registration hook. Place FERQON_REGISTER_DRIVER(name) once at the end
+ * of a driver .cpp file after the `extern "C" const ferqon_driver_t name_driver`
+ * definition. A global dynamic initializer registers the driver before main()
+ * / setup() runs, so no manual driver table is needed. */
+#define FERQON_DRIVER_REGISTER_VAR(name) _ferqon_driver_reg_##name
+#define FERQON_REGISTER_DRIVER(name) \
+    namespace { \
+        __attribute__((used)) static bool FERQON_DRIVER_REGISTER_VAR(name) = \
+            (ferqon_register_driver(&name##_driver), true); \
+    }
+#endif /* __cplusplus */
 
 #endif /* FERQON_DISPATCHER_H */

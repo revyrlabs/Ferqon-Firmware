@@ -26,3 +26,4 @@ extern "C" const ferqon_driver_t capabilities_driver = {
     .id = FERQON_CMD_CAPABILITIES,
     .handle = capabilities_handler,
 };
+FERQON_REGISTER_DRIVER(capabilities);

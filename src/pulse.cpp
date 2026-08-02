@@ -65,3 +65,4 @@ extern "C" const ferqon_driver_t pulse_driver = {
     .id = FERQON_CMD_PULSE_MEASURE,
     .handle = pulse_handler,
 };
+FERQON_REGISTER_DRIVER(pulse);

@@ -52,7 +52,8 @@ static bool device_info_handler(uint8_t seq, uint8_t cmd_id,
                                 const uint8_t *params, uint8_t param_len,
                                 uint8_t *response, uint8_t *response_len,
                                 bool *already_responded) {
-    (void)seq; (void)cmd_id; (void)params; (void)param_len; (void)already_responded;
+    (void)seq; (void)params; (void)param_len; (void)already_responded;
+    if (cmd_id != FERQON_CMD_DEVICE_INFO) return false;
 
     uint16_t i = 0;
     const uint16_t cap = FERQON_MAX_PAYLOAD_BYTES;
@@ -75,7 +76,8 @@ static bool driver_info_handler(uint8_t seq, uint8_t cmd_id,
                                 const uint8_t *params, uint8_t param_len,
                                 uint8_t *response, uint8_t *response_len,
                                 bool *already_responded) {
-    (void)seq; (void)cmd_id; (void)params; (void)param_len; (void)already_responded;
+    (void)seq; (void)params; (void)param_len; (void)already_responded;
+    if (cmd_id != FERQON_CMD_DRIVER_INFO) return false;
 
     uint16_t i = 0;
     const uint16_t cap = FERQON_MAX_PAYLOAD_BYTES;
@@ -120,9 +122,11 @@ extern "C" const ferqon_driver_t device_info_driver = {
     .id = FERQON_CMD_DEVICE_INFO,
     .handle = device_info_handler,
 };
+FERQON_REGISTER_DRIVER(device_info);
 
 extern "C" const ferqon_driver_t driver_info_driver = {
     .name = "driver_info",
     .id = FERQON_CMD_DRIVER_INFO,
     .handle = driver_info_handler,
 };
+FERQON_REGISTER_DRIVER(driver_info);

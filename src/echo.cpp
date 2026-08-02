@@ -26,3 +26,4 @@ extern "C" const ferqon_driver_t echo_driver = {
     .id = FERQON_CMD_ECHO,
     .handle = echo_handler,
 };
+FERQON_REGISTER_DRIVER(echo);

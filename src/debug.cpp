@@ -32,3 +32,4 @@ extern "C" const ferqon_driver_t debug_driver = {
     .id = FERQON_CMD_SET_DEBUG_LEVEL,
     .handle = debug_handler,
 };
+FERQON_REGISTER_DRIVER(debug);

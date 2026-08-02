@@ -85,3 +85,4 @@ extern "C" const ferqon_driver_t gpio_driver = {
     .id = FERQON_CMD_GPIO_READ,  /* primary id; handler also claims write/pin_mode */
     .handle = gpio_handler,
 };
+FERQON_REGISTER_DRIVER(gpio);

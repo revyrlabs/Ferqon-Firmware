@@ -25,3 +25,4 @@ extern "C" const ferqon_driver_t reset_driver = {
     .id = FERQON_CMD_RESET,
     .handle = reset_handler,
 };
+FERQON_REGISTER_DRIVER(reset);

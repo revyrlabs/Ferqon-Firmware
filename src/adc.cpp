@@ -110,3 +110,4 @@ extern "C" const ferqon_driver_t adc_driver = {
     .id = FERQON_CMD_ADC_READ,
     .handle = adc_handler,
 };
+FERQON_REGISTER_DRIVER(adc);

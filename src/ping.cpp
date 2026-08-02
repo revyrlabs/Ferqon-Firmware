@@ -17,3 +17,4 @@ extern "C" const ferqon_driver_t ping_driver = {
     .id = FERQON_CMD_PING,
     .handle = ping_handler,
 };
+FERQON_REGISTER_DRIVER(ping);

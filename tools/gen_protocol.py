@@ -164,6 +164,23 @@ def generate_c_header(data: dict) -> str:
 
     lines += [
         "",
+        "/* ----------------------------------------------- Driver method dispatch tables */",
+        "/* X-macros for building the per-driver method dispatch table in driver_call.cpp. */",
+        "/* Convention: the C handler for driver 'foo' method 'bar' is named foo_bar.     */",
+        "",
+    ]
+
+    for driver, methods in _sorted_driver_methods(data):
+        driver_macro = driver.upper()
+        macro = f"FERQON_DRIVER_METHODS_{driver_macro}"
+        entries = " \\\n".join(
+            f"    X({method.upper()}, {driver}_{method})" for method in methods
+        )
+        lines.append(f"#define {macro}(X) {entries}")
+        lines.append("")
+
+    lines += [
+        "",
         "/* ----------------------------------------------------------- TLV types */",
         "/* NOTE: TLV type IDs are context-dependent. DEVICE_NAME, MCU_TYPE,",
         " * FIRMWARE_VERSION, PROTOCOL_VERSION, BUILD_TIMESTAMP, FREE_RAM, and",

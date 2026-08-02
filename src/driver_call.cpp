@@ -302,9 +302,8 @@ static bool hil_exit(uint8_t seq, uint8_t cmd_id,
  * commands on the MCU, so reply NOT_IMPLEMENTED and let the caller fall back
  * to the command IDs for adc_read (20), adc_expect (21), pulse_measure (22). */
 static bool hil_not_implemented(uint8_t seq, uint8_t cmd_id,
-                                const char *method,
                                 bool *already_responded) {
-    (void)method;
+    (void)already_responded;
     REPLY_ERROR_STR(seq, cmd_id, FERQON_ERR_NOT_IMPLEMENTED, FERQON_ECAT_COMMAND,
                     false, 0, "driver method not implemented");
 }
@@ -314,7 +313,7 @@ static bool hil_adc_read(uint8_t seq, uint8_t cmd_id,
                          uint8_t *response, uint8_t *response_len,
                          bool *already_responded) {
     (void)keys; (void)values; (void)arg_count; (void)response; (void)response_len;
-    return hil_not_implemented(seq, cmd_id, "adc_read", already_responded);
+    return hil_not_implemented(seq, cmd_id, already_responded);
 }
 
 static bool hil_adc_expect(uint8_t seq, uint8_t cmd_id,
@@ -322,7 +321,7 @@ static bool hil_adc_expect(uint8_t seq, uint8_t cmd_id,
                            uint8_t *response, uint8_t *response_len,
                            bool *already_responded) {
     (void)keys; (void)values; (void)arg_count; (void)response; (void)response_len;
-    return hil_not_implemented(seq, cmd_id, "adc_expect", already_responded);
+    return hil_not_implemented(seq, cmd_id, already_responded);
 }
 
 static bool hil_pulse_measure(uint8_t seq, uint8_t cmd_id,
@@ -330,24 +329,16 @@ static bool hil_pulse_measure(uint8_t seq, uint8_t cmd_id,
                               uint8_t *response, uint8_t *response_len,
                               bool *already_responded) {
     (void)keys; (void)values; (void)arg_count; (void)response; (void)response_len;
-    return hil_not_implemented(seq, cmd_id, "pulse_measure", already_responded);
+    return hil_not_implemented(seq, cmd_id, already_responded);
 }
 
 static const struct {
     const char *name;
     hil_method_fn fn;
 } hil_methods[] = {
-    {FERQON_DRIVER_METHOD_HIL_ADC_READ,        hil_adc_read},
-    {FERQON_DRIVER_METHOD_HIL_ADC_EXPECT,      hil_adc_expect},
-    {FERQON_DRIVER_METHOD_HIL_IO_SET,          hil_io_set},
-    {FERQON_DRIVER_METHOD_HIL_IO_GET,          hil_io_get},
-    {FERQON_DRIVER_METHOD_HIL_IO_CONFIGURE,    hil_io_configure},
-    {FERQON_DRIVER_METHOD_HIL_IO_EXPECT,       hil_io_expect},
-    {FERQON_DRIVER_METHOD_HIL_PULSE_MEASURE,   hil_pulse_measure},
-    {FERQON_DRIVER_METHOD_HIL_UART_SEND,       hil_uart_send},
-    {FERQON_DRIVER_METHOD_HIL_UART_EXPECT,     hil_uart_expect},
-    {FERQON_DRIVER_METHOD_HIL_ENTER,           hil_enter},
-    {FERQON_DRIVER_METHOD_HIL_EXIT,            hil_exit},
+#define FERQON_HIL_METHOD_ENTRY(METHOD, FN) { FERQON_DRIVER_METHOD_HIL_##METHOD, FN },
+    FERQON_DRIVER_METHODS_HIL(FERQON_HIL_METHOD_ENTRY)
+#undef FERQON_HIL_METHOD_ENTRY
 };
 static const uint8_t hil_method_count =
     (uint8_t)(sizeof(hil_methods) / sizeof(hil_methods[0]));
@@ -441,3 +432,4 @@ extern "C" const ferqon_driver_t driver_call_driver = {
     .id = FERQON_CMD_DRIVER_CALL,
     .handle = driver_call_handler,
 };
+FERQON_REGISTER_DRIVER(driver_call);

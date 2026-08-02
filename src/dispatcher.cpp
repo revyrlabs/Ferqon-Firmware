@@ -11,10 +11,6 @@
 ferqon_driver_t g_drivers[FERQON_MAX_DRIVERS];
 uint8_t g_driver_count = 0;
 
-void ferqon_dispatcher_init(void) {
-    g_driver_count = 0;
-}
-
 void ferqon_register_driver(const ferqon_driver_t *driver) {
     if (g_driver_count >= FERQON_MAX_DRIVERS) {
         FERQON_LOG_ERROR("driver table full; cannot register %s", driver->name);

@@ -46,23 +46,24 @@ static void write_all(const uint8_t *data, size_t len) {
 /* Emit a complete frame. body_len is the payload length (must be <= MAX). */
 static void ferqon_send_frame(uint8_t seq, uint8_t cmd_id,
                             const uint8_t *body, uint8_t body_len) {
-    /* Build SEQ..last payload byte into a scratch buffer for CRC. */
-    uint8_t hdr_and_body[FERQON_MAX_PAYLOAD_BYTES + 3]; /* seq + cmd + len + payload */
-    hdr_and_body[0] = seq;
-    hdr_and_body[1] = cmd_id;
-    hdr_and_body[2] = body_len;
+    /* Build the entire frame in one buffer and emit it with a single write.
+     * Frame layout: [START][SEQ][CMD][LEN][body...][CRC_LO][CRC_HI]. */
+    uint8_t frame[FERQON_MAX_PAYLOAD_BYTES + FERQON_FRAME_OVERHEAD];
+    size_t pos = 0;
+    frame[pos++] = FERQON_START_BYTE;
+    frame[pos++] = seq;
+    frame[pos++] = cmd_id;
+    frame[pos++] = body_len;
     if (body_len > 0 && body != NULL) {
-        memcpy(&hdr_and_body[3], body, body_len);
+        memcpy(&frame[pos], body, body_len);
+        pos += body_len;
     }
 
-    uint16_t crc = ferqon_crc16(hdr_and_body, (size_t)body_len + 3);
+    uint16_t crc = ferqon_crc16(&frame[1], pos - 1);
+    frame[pos++] = (uint8_t)(crc & 0xFF);
+    frame[pos++] = (uint8_t)((crc >> 8) & 0xFF);
 
-    /* Emit START, SEQ..payload, CRC_LO, CRC_HI. */
-    uint8_t start = FERQON_START_BYTE;
-    write_all(&start, 1);
-    write_all(hdr_and_body, (size_t)body_len + 3);
-    uint8_t crc_bytes[2] = { (uint8_t)(crc & 0xFF), (uint8_t)((crc >> 8) & 0xFF) };
-    write_all(crc_bytes, 2);
+    write_all(frame, pos);
 }
 
 void ferqon_send_done(uint8_t seq, uint8_t cmd_id,
