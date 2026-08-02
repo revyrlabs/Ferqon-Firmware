@@ -152,7 +152,8 @@ SIL_CXXFLAGS := \
 SIL_LDFLAGS := -pthread
 
 # All firmware source files plus the SIL host shim and entry point.
-SIL_SRCS := $(wildcard src/*.cpp) $(wildcard sil/*.cpp)
+# The Arduino HAL implementation is not used on the host build.
+SIL_SRCS := $(filter-out src/ferqon_hal_arduino.cpp,$(wildcard src/*.cpp)) $(wildcard sil/*.cpp)
 SIL_OBJS := $(SIL_SRCS:%.cpp=$(SIL_BUILD_DIR)/%.o)
 
 # Generate the build_timestamp.h and production_config.h headers that the

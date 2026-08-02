@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 /* SPDX-FileCopyrightText: Copyright (c) 2026 Revyr Labs */
 /* Main entry point: register drivers, initialize protocol, and run the loop. */
-#include <Arduino.h>
+#include "ferqon_hal.h"
 #include "board_config.h"
 #include "ferqon_commands.h"
 #include "protocol.h"
@@ -9,16 +9,6 @@
 #include "app_state.h"
 #include "ferqon_log.h"
 #include "production_config.h"
-
-/* Not every Arduino board package defines LED_BUILTIN; fall back to the board
- * definition in board_config.h. */
-#ifndef LED_BUILTIN
-#ifdef FERQON_LED_PIN
-#define LED_BUILTIN FERQON_LED_PIN
-#else
-#error "LED_BUILTIN not defined and FERQON_LED_PIN not set for this board"
-#endif
-#endif
 
 /* Driver extern declarations (defined in their .cpp files). Adding a new
  * driver is a single entry in this array — no separate extern + register
@@ -53,23 +43,24 @@ static const ferqon_driver_t *const g_all_drivers[] = {
 static const uint8_t g_driver_count =
     (uint8_t)(sizeof(g_all_drivers) / sizeof(g_all_drivers[0]));
 
-static void serial_write(const uint8_t *data, size_t len) {
-    Serial.write(data, len);
-}
-
 ferqon_parser_t parser;
 unsigned long last_heartbeat_ms = 0;
 static const unsigned long HEARTBEAT_INTERVAL_MS = FERQON_HEARTBEAT_INTERVAL_MS;
 
 void setup() {
-    Serial.begin(FERQON_SERIAL_BAUD);
-    pinMode(LED_BUILTIN, OUTPUT);
+#if defined(FERQON_BOARD_NATIVE)
+    ferqon_hal_init_host();
+#else
+    ferqon_hal_init_arduino();
+#endif
+
+    ferqon_hal_gpio_set_mode(FERQON_LED_PIN, FERQON_GPIO_OUTPUT);
+    ferqon_hal_serial_init(FERQON_SERIAL_BAUD);
 
     FERQON_LOG_INFO("Ferqon %s firmware starting", FERQON_FW_VERSION);
 
     ferqon_dispatcher_init();
 
-    ferqon_set_write_func(serial_write);
     ferqon_parser_init(&parser);
     FERQON_LOG_INFO("Protocol initialized");
 
@@ -88,8 +79,8 @@ void setup() {
 
 void loop() {
     // Handle serial input
-    if (Serial.available() > 0) {
-        int c = Serial.read();
+    if (ferqon_hal_serial_available() > 0) {
+        int c = ferqon_hal_serial_read();
         ferqon_request_t req;
         if (ferqon_parser_feed(&parser, (uint8_t)c, &req)) {
             // Dispatch command
@@ -98,7 +89,7 @@ void loop() {
     }
 
     // Send periodic heartbeat
-    unsigned long now = millis();
+    unsigned long now = ferqon_hal_millis();
     if (now - last_heartbeat_ms >= HEARTBEAT_INTERVAL_MS) {
         last_heartbeat_ms = now;
         uint8_t state = app_state_get();

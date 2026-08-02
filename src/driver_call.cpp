@@ -5,9 +5,9 @@
 #include "ferqon_log.h"
 #include "uart.h"
 #include "production_config.h"
+#include "ferqon_hal.h"
 #include <string.h>
 #include <stdlib.h>
-#include <Arduino.h>
 
 /* Buffer-size limits for driver_call argument parsing. */
 #define DC_MAX_KEY_LEN        31
@@ -122,7 +122,7 @@ static bool hil_io_set(uint8_t seq, uint8_t cmd_id,
     }
     if (ferqon_check_pin(seq, cmd_id, pin, already_responded)) return true;
 
-    digitalWrite(pin, (strcmp(level_str, "HIGH") == 0) ? HIGH : LOW);
+    ferqon_hal_gpio_write(pin, (strcmp(level_str, "HIGH") == 0) ? 1 : 0);
     return true;
 }
 
@@ -138,7 +138,7 @@ static bool hil_io_get(uint8_t seq, uint8_t cmd_id,
     }
     if (ferqon_check_pin(seq, cmd_id, pin, already_responded)) return true;
 
-    response[0] = (uint8_t)digitalRead(pin);
+    response[0] = (uint8_t)ferqon_hal_gpio_read(pin);
     *response_len = 1;
     return true;
 }
@@ -157,17 +157,17 @@ static bool hil_io_configure(uint8_t seq, uint8_t cmd_id,
     }
     if (ferqon_check_pin(seq, cmd_id, pin, already_responded)) return true;
 
-    int arduino_mode;
-    if (strcmp(mode_str, "INPUT") == 0)           arduino_mode = INPUT;
-    else if (strcmp(mode_str, "OUTPUT") == 0)     arduino_mode = OUTPUT;
-    else if (strcmp(mode_str, "INPUT_PULLUP") == 0)    arduino_mode = INPUT_PULLUP;
-    else if (strcmp(mode_str, "INPUT_PULLDOWN") == 0)  arduino_mode = INPUT_PULLDOWN;
+    uint8_t ferqon_mode;
+    if (strcmp(mode_str, "INPUT") == 0)                ferqon_mode = FERQON_GPIO_INPUT;
+    else if (strcmp(mode_str, "OUTPUT") == 0)          ferqon_mode = FERQON_GPIO_OUTPUT;
+    else if (strcmp(mode_str, "INPUT_PULLUP") == 0)   ferqon_mode = FERQON_GPIO_INPUT_PULLUP;
+    else if (strcmp(mode_str, "INPUT_PULLDOWN") == 0) ferqon_mode = FERQON_GPIO_INPUT_PULLDOWN;
     else {
         REPLY_ERROR(seq, cmd_id, FERQON_ERR_UNSUPPORTED_MODE, FERQON_ECAT_COMMAND,
                     false, 0, NULL, 0);
     }
 
-    pinMode(pin, arduino_mode);
+    ferqon_hal_gpio_set_mode(pin, ferqon_mode);
     return true;
 }
 
@@ -192,14 +192,14 @@ static bool hil_io_expect(uint8_t seq, uint8_t cmd_id,
 
     uint8_t expected_level = (strcmp(level_str, "HIGH") == 0) ? 1 : 0;
 
-    unsigned long start = millis();
-    while ((millis() - start) < timeout_ms) {
-        if (digitalRead(pin) == expected_level) {
+    unsigned long start = ferqon_hal_millis();
+    while ((ferqon_hal_millis() - start) < timeout_ms) {
+        if (ferqon_hal_gpio_read(pin) == expected_level) {
             response[0] = 1; /* Success */
             *response_len = 1;
             return true;
         }
-        delay(1);
+        ferqon_hal_delay_ms(1);
     }
 
     /* Timeout */

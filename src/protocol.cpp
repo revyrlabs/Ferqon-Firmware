@@ -4,7 +4,7 @@
 #include "protocol.h"
 #include "ferqon_helpers.h"
 #include "ferqon_log.h"
-#include <Arduino.h>
+#include "ferqon_hal.h"
 #include <string.h>
 
 /* Wire-output sink (set by ferqon_set_write_func). */
@@ -162,7 +162,7 @@ void ferqon_parser_reset(ferqon_parser_t *parser) {
 }
 
 bool ferqon_parser_feed(ferqon_parser_t *parser, uint8_t byte, ferqon_request_t *req) {
-    uint32_t now = millis();
+    uint32_t now = ferqon_hal_millis();
 
     /* Inter-byte timeout: gap too large inside a frame -> resync. */
     if (parser->state != FERQON_STATE_IDLE && parser->last_byte_ms > 0 &&

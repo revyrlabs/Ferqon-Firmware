@@ -5,15 +5,11 @@
 #include "protocol.h"
 #include "ferqon_helpers.h"
 #include "ferqon_log.h"
+#include "ferqon_hal.h"
 #include "platform_caps.h"
 #include "build_timestamp.h"
-#include <Arduino.h>
 #include <string.h>
 #include <stdint.h>
-
-#ifdef __MBED__
-#include <platform/mbed_stats.h>
-#endif
 
 /* Forward declaration of global driver array */
 extern ferqon_driver_t g_drivers[];
@@ -52,23 +48,6 @@ static uint16_t append_signature(uint8_t *buf, uint16_t max_len) {
     return (uint16_t)(2 + total_len);
 }
 
-static uint32_t get_free_ram(void) {
-#ifdef __MBED__
-#if MBED_HEAP_STATS_ENABLED
-    mbed_stats_heap_t stats;
-    mbed_stats_heap_get(&stats);
-    uint32_t used = stats.current_size + stats.overhead_size;
-    return (stats.reserved_size > used) ? (stats.reserved_size - used) : 0;
-#else
-    return FERQON_RAM_SIZE_BYTES;
-#endif
-#elif defined(ESP32) || defined(ESP8266)
-    return ESP.getFreeHeap();
-#else
-    return FERQON_RAM_SIZE_BYTES;
-#endif
-}
-
 static bool device_info_handler(uint8_t seq, uint8_t cmd_id,
                                 const uint8_t *params, uint8_t param_len,
                                 uint8_t *response, uint8_t *response_len,
@@ -83,8 +62,8 @@ static bool device_info_handler(uint8_t seq, uint8_t cmd_id,
     i += append_str_tlv(&response[i], TLV_FIRMWARE_VERSION, FERQON_FW_VERSION,       cap - i);
     i += append_str_tlv(&response[i], TLV_PROTOCOL_VERSION, FERQON_PROTOCOL_VERSION, cap - i);
     i += append_u32_tlv(&response[i], TLV_BUILD_TIMESTAMP,  FERQON_BUILD_TIMESTAMP,  cap - i);
-    i += append_u32_tlv(&response[i], TLV_FREE_RAM,         get_free_ram(),          cap - i);
-    i += append_u32_tlv(&response[i], TLV_UPTIME_MS,        (uint32_t)millis(),      cap - i);
+    i += append_u32_tlv(&response[i], TLV_FREE_RAM,         ferqon_hal_free_ram_bytes(), cap - i);
+    i += append_u32_tlv(&response[i], TLV_UPTIME_MS,        ferqon_hal_uptime_ms(),      cap - i);
 
     i += append_signature(&response[i], cap - i);
 
