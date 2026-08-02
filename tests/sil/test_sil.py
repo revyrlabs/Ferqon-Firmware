@@ -18,6 +18,7 @@ Usage:
 Defaults to 127.0.0.1:3333. The script has no third-party dependencies.
 """
 
+import os
 import re
 import socket
 import sys
@@ -286,7 +287,7 @@ def test_pulse(sock: socket.socket, buf: bytearray):
 
 def main() -> int:
     host = sys.argv[1] if len(sys.argv) > 1 else "127.0.0.1"
-    port = int(sys.argv[2]) if len(sys.argv) > 2 else 3333
+    port = int(sys.argv[2]) if len(sys.argv) > 2 else int(os.environ.get("FERQON_SIL_PORT", "3333"))
 
     if not CMD:
         print("ERROR: could not load command IDs from src/ferqon_commands.h", file=sys.stderr)

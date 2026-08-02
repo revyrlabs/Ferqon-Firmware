@@ -61,6 +61,24 @@
 #define FERQON_CMD_PULSE_MEASURE       22
 #define FERQON_CMD_SET_DEBUG_LEVEL     23
 
+/* ------------------------------------------- Driver / method name strings */
+/* These match the SSOT so firmware string compares do not drift from the   */
+/* protocol spec.  Only drivers/methods declared in commands.json are emitted. */
+
+#define FERQON_DRIVER_NAME_HIL                  "hil"
+#define FERQON_DRIVER_METHOD_HIL_ADC_EXPECT           "adc_expect"
+#define FERQON_DRIVER_METHOD_HIL_ADC_READ             "adc_read"
+#define FERQON_DRIVER_METHOD_HIL_ENTER                "enter"
+#define FERQON_DRIVER_METHOD_HIL_EXIT                 "exit"
+#define FERQON_DRIVER_METHOD_HIL_IO_CONFIGURE         "io_configure"
+#define FERQON_DRIVER_METHOD_HIL_IO_EXPECT            "io_expect"
+#define FERQON_DRIVER_METHOD_HIL_IO_GET               "io_get"
+#define FERQON_DRIVER_METHOD_HIL_IO_SET               "io_set"
+#define FERQON_DRIVER_METHOD_HIL_PULSE_MEASURE        "pulse_measure"
+#define FERQON_DRIVER_METHOD_HIL_UART_EXPECT          "uart_expect"
+#define FERQON_DRIVER_METHOD_HIL_UART_SEND            "uart_send"
+
+
 /* ----------------------------------------------------------- TLV types */
 /* NOTE: TLV type IDs are context-dependent. DEVICE_NAME, MCU_TYPE,
  * FIRMWARE_VERSION, PROTOCOL_VERSION, BUILD_TIMESTAMP, FREE_RAM, and
@@ -95,6 +113,11 @@
 #define FERQON_GPIO_OUTPUT                 1
 #define FERQON_GPIO_INPUT_PULLUP           2
 #define FERQON_GPIO_INPUT_PULLDOWN         3
+
+#define FERQON_GPIO_MODE_NAME_INPUT      "INPUT"
+#define FERQON_GPIO_MODE_NAME_OUTPUT     "OUTPUT"
+#define FERQON_GPIO_MODE_NAME_INPUT_PULLUP "INPUT_PULLUP"
+#define FERQON_GPIO_MODE_NAME_INPUT_PULLDOWN "INPUT_PULLDOWN"
 
 /* -------------------------------------------------------- App states */
 

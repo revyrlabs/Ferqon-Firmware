@@ -58,6 +58,18 @@ def _sorted_commands(data: dict) -> list[tuple[str, int]]:
     )
 
 
+def _sorted_driver_methods(data: dict) -> list[tuple[str, list[str]]]:
+    """Return (driver_name, [method_name, ...]) pairs sorted by driver/method."""
+    result: list[tuple[str, list[str]]] = []
+    for cmd_name, cmd_info in sorted(data.get("commands", {}).items()):
+        driver_methods = cmd_info.get("driver_methods", {})
+        if not driver_methods:
+            continue
+        for driver, methods in sorted(driver_methods.items()):
+            result.append((driver, sorted(methods.keys())))
+    return result
+
+
 # ---------------------------------------------------------------------------
 # 1. C header
 # ---------------------------------------------------------------------------
@@ -136,6 +148,22 @@ def generate_c_header(data: dict) -> str:
 
     lines += [
         "",
+        "/* ------------------------------------------- Driver / method name strings */",
+        "/* These match the SSOT so firmware string compares do not drift from the   */",
+        "/* protocol spec.  Only drivers/methods declared in commands.json are emitted. */",
+        "",
+    ]
+
+    for driver, methods in _sorted_driver_methods(data):
+        driver_macro = driver.upper()
+        lines.append(f'#define FERQON_DRIVER_NAME_{driver_macro:<20} "{driver}"')
+        for method in methods:
+            macro = f"FERQON_DRIVER_METHOD_{driver_macro}_{method.upper()}"
+            lines.append(f'#define {macro:<45} "{method}"')
+        lines.append("")
+
+    lines += [
+        "",
         "/* ----------------------------------------------------------- TLV types */",
         "/* NOTE: TLV type IDs are context-dependent. DEVICE_NAME, MCU_TYPE,",
         " * FIRMWARE_VERSION, PROTOCOL_VERSION, BUILD_TIMESTAMP, FREE_RAM, and",
@@ -169,6 +197,11 @@ def generate_c_header(data: dict) -> str:
 
     for name, val in sorted(data.get("gpio_modes", {}).items(), key=lambda x: x[1]):
         lines.append(f"#define FERQON_GPIO_{name:<22} {val}")
+
+    lines += [""]
+    for name, _ in sorted(data.get("gpio_modes", {}).items(), key=lambda x: x[1]):
+        macro = f"FERQON_GPIO_MODE_NAME_{name}"
+        lines.append(f'#define {macro:<32} "{name}"')
 
     lines += [
         "",

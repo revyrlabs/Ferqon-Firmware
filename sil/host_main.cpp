@@ -27,7 +27,7 @@ extern void loop(void);
 
 static void usage(const char *prog) {
     std::cerr << "Usage: " << prog << " [PORT]" << std::endl;
-    std::cerr << "If PORT is omitted, FERQON_SIL_PORT or 3333 is used." << std::endl;
+    std::cerr << "If PORT is omitted, FERQON_SIL_PORT or " << FERQON_SIL_DEFAULT_PORT << " is used." << std::endl;
 }
 
 int main(int argc, char *argv[]) {
@@ -49,7 +49,7 @@ int main(int argc, char *argv[]) {
         }
     }
     if (port == 0) {
-        port = 3333;
+        port = FERQON_SIL_DEFAULT_PORT;
     }
 
     Serial.set_port(port);

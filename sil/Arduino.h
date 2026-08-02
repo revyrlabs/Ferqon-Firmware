@@ -11,6 +11,9 @@
  *
  *   - Serial  -> TCP server on localhost (configurable via FERQON_SIL_PORT)
  *   - Serial1 -> in-memory loopback UART for hil_uart_send/expect tests
+ *
+ * Default TCP port for the SIL control UART. Override with FERQON_SIL_PORT
+ * env var or by passing a port argument to host_main.
  *   - GPIO    -> in-memory pin state table
  *   - ADC     -> deterministic mock values
  *   - millis()/delay() -> host monotonic clock / sleep
@@ -39,6 +42,9 @@ typedef bool boolean;
 #define F(s) (s)
 #define pgm_read_byte(addr) (*(const uint8_t *)(addr))
 #define pgm_read_word(addr) (*(const uint16_t *)(addr))
+
+/* Default localhost TCP port for the SIL control UART. */
+#define FERQON_SIL_DEFAULT_PORT 3333
 
 /* ----------------------------------------------------------------- Pins */
 #define HIGH 0x1

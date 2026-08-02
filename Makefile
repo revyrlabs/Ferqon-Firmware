@@ -138,6 +138,7 @@ doctor:
 SIL_BUILD_DIR := build/sil
 SIL_BIN       := $(SIL_BUILD_DIR)/ferqon_sil
 SIL_CXX       := g++
+SIL_PORT      ?= 3333
 
 # Native compiler flags.  -Isil must come before the system include path so that
 # firmware source files pick up the shim Arduino.h instead of the real Arduino.
@@ -186,11 +187,11 @@ sil: $(SIL_BIN)
 # Run the standard-library-only SIL integration test. Starts the SIL binary on
 # port 3333 in the background, runs the Python test, then tears the binary down.
 test-sil: $(SIL_BIN) tests/sil/test_sil.py
-	@printf "[test-sil] Starting SIL binary on TCP port 3333...\n"
+	@printf "[test-sil] Starting SIL binary on TCP port $(SIL_PORT)...\n"
 	@rm -f .sil.pid
-	$(SIL_BIN) 3333 & echo $$! > .sil.pid
+	$(SIL_BIN) $(SIL_PORT) & echo $$! > .sil.pid
 	@sleep 0.5
-	@PYTHONPATH= python3 tests/sil/test_sil.py 127.0.0.1 3333; rc=$$?; kill `cat .sil.pid` 2>/dev/null || true; rm -f .sil.pid; exit $$rc
+	@PYTHONPATH= python3 tests/sil/test_sil.py 127.0.0.1 $(SIL_PORT); rc=$$?; kill `cat .sil.pid` 2>/dev/null || true; rm -f .sil.pid; exit $$rc
 
 sil-clean:
 	@rm -rf $(SIL_BUILD_DIR) .sil.pid

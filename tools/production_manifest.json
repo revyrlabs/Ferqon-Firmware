@@ -42,7 +42,8 @@
     "src/protocol.h",
     "src/pulse.cpp",
     "src/reset.cpp",
-    "src/uart.cpp"
+    "src/uart.cpp",
+    "src/uart.h"
   ],
   "board_files": {
     "pico": [

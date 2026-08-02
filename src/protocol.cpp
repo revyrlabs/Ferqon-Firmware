@@ -246,7 +246,8 @@ bool ferqon_parser_feed(ferqon_parser_t *parser, uint8_t byte, ferqon_request_t 
                     payload[0] = seq;
                     payload[1] = cmd_id;
                     payload[2] = plen;
-                    uint8_t copy_len = (plen > 7) ? 7 : plen;
+                    const uint8_t max_copy = (uint8_t)(sizeof(payload) - 3);
+                    uint8_t copy_len = (plen > max_copy) ? max_copy : plen;
                     for (uint8_t i = 0; i < copy_len; i++) {
                         payload[3 + i] = pbuf[i];
                     }

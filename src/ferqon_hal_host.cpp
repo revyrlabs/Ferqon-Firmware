@@ -66,7 +66,7 @@ static int host_uart1_read(void) { return -1; }
 /* ------------------------------------------------------------------- GPIO */
 static void host_gpio_set_mode(uint8_t pin, uint8_t mode) { pinMode(pin, mode); }
 static int host_gpio_read(uint8_t pin) { return digitalRead(pin); }
-static void host_gpio_write(uint8_t pin, uint8_t value) { digitalWrite(pin, value ? HIGH : LOW); }
+static void host_gpio_write(uint8_t pin, uint8_t value) { digitalWrite(pin, value); }
 
 /* ---------------------------------------------------------------- ADC/PWM */
 static int host_adc_read(uint8_t pin) { return analogRead(pin); }

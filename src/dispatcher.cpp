@@ -70,13 +70,14 @@ bool ferqon_dispatch_request(const ferqon_request_t *req) {
                 payload[0] = req->seq;
                 payload[1] = req->cmd_id;
                 const char *name = g_drivers[i].name;
+                const uint8_t max_name_len = (uint8_t)(sizeof(payload) - 3);
                 uint8_t name_len = 0;
-                while (name[name_len] && name_len < 29) {
+                while (name[name_len] && name_len < max_name_len) {
                     payload[2 + name_len] = name[name_len];
                     name_len++;
                 }
                 payload[2 + name_len] = 0; // null terminator
-                ferqon_send_log_bin(FERQON_LOG_SUBTYPE_DISPATCH_ROUTED, payload, 3 + name_len + 1); /* DISPATCH_ROUTED */
+                ferqon_send_log_bin(FERQON_LOG_SUBTYPE_DISPATCH_ROUTED, payload, 3 + name_len); /* DISPATCH_ROUTED */
             }
             if (!already_responded) {
                 ferqon_send_done(req->seq, req->cmd_id, response, response_len);

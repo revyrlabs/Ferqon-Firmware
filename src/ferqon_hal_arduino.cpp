@@ -81,7 +81,7 @@ static void arduino_gpio_set_mode(uint8_t pin, uint8_t mode) {
 }
 
 static int arduino_gpio_read(uint8_t pin) { return digitalRead(pin); }
-static void arduino_gpio_write(uint8_t pin, uint8_t value) { digitalWrite(pin, value ? HIGH : LOW); }
+static void arduino_gpio_write(uint8_t pin, uint8_t value) { digitalWrite(pin, value); }
 
 /* ---------------------------------------------------------------- ADC/PWM */
 static int arduino_adc_read(uint8_t pin) { return analogRead(pin); }

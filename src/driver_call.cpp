@@ -8,6 +8,13 @@
 #include "ferqon_hal.h"
 #include <string.h>
 #include <stdlib.h>
+#include <stdint.h>
+
+/* Canonical string literals for the bool_high_low arg type. Not in the
+ * SSOT because the type is generic; centralised here so the two places
+ * that parse a level string cannot drift apart. */
+#define HIL_LEVEL_HIGH  "HIGH"
+#define HIL_LEVEL_LOW   "LOW"
 
 /* Buffer-size limits for driver_call argument parsing. */
 #define DC_MAX_KEY_LEN        31
@@ -122,7 +129,7 @@ static bool hil_io_set(uint8_t seq, uint8_t cmd_id,
     }
     if (ferqon_check_pin(seq, cmd_id, pin, already_responded)) return true;
 
-    ferqon_hal_gpio_write(pin, (strcmp(level_str, "HIGH") == 0) ? 1 : 0);
+    ferqon_hal_gpio_write(pin, (strcmp(level_str, HIL_LEVEL_HIGH) == 0) ? 1 : 0);
     return true;
 }
 
@@ -158,10 +165,10 @@ static bool hil_io_configure(uint8_t seq, uint8_t cmd_id,
     if (ferqon_check_pin(seq, cmd_id, pin, already_responded)) return true;
 
     uint8_t ferqon_mode;
-    if (strcmp(mode_str, "INPUT") == 0)                ferqon_mode = FERQON_GPIO_INPUT;
-    else if (strcmp(mode_str, "OUTPUT") == 0)          ferqon_mode = FERQON_GPIO_OUTPUT;
-    else if (strcmp(mode_str, "INPUT_PULLUP") == 0)   ferqon_mode = FERQON_GPIO_INPUT_PULLUP;
-    else if (strcmp(mode_str, "INPUT_PULLDOWN") == 0) ferqon_mode = FERQON_GPIO_INPUT_PULLDOWN;
+    if (strcmp(mode_str, FERQON_GPIO_MODE_NAME_INPUT) == 0)                ferqon_mode = FERQON_GPIO_INPUT;
+    else if (strcmp(mode_str, FERQON_GPIO_MODE_NAME_OUTPUT) == 0)          ferqon_mode = FERQON_GPIO_OUTPUT;
+    else if (strcmp(mode_str, FERQON_GPIO_MODE_NAME_INPUT_PULLUP) == 0)   ferqon_mode = FERQON_GPIO_INPUT_PULLUP;
+    else if (strcmp(mode_str, FERQON_GPIO_MODE_NAME_INPUT_PULLDOWN) == 0) ferqon_mode = FERQON_GPIO_INPUT_PULLDOWN;
     else {
         REPLY_ERROR(seq, cmd_id, FERQON_ERR_UNSUPPORTED_MODE, FERQON_ECAT_COMMAND,
                     false, 0, NULL, 0);
@@ -190,7 +197,7 @@ static bool hil_io_expect(uint8_t seq, uint8_t cmd_id,
     }
     if (ferqon_check_pin(seq, cmd_id, pin, already_responded)) return true;
 
-    uint8_t expected_level = (strcmp(level_str, "HIGH") == 0) ? 1 : 0;
+    uint8_t expected_level = (strcmp(level_str, HIL_LEVEL_HIGH) == 0) ? 1 : 0;
 
     unsigned long start = ferqon_hal_millis();
     while ((ferqon_hal_millis() - start) < timeout_ms) {
@@ -266,7 +273,7 @@ static bool hil_enter(uint8_t seq, uint8_t cmd_id,
     if (uart_baud_str) {
         char *end = NULL;
         unsigned long baud = strtoul(uart_baud_str, &end, 10);
-        if (*uart_baud_str != '\0' && *end == '\0' && baud > 0 && baud <= 0xFFFFFFFFUL) {
+        if (*uart_baud_str != '\0' && *end == '\0' && baud > 0 && baud <= UINT32_MAX) {
             ferqon_uart1_init((uint32_t)baud);
         }
     }
@@ -330,17 +337,17 @@ static const struct {
     const char *name;
     hil_method_fn fn;
 } hil_methods[] = {
-    {"adc_read",        hil_adc_read},
-    {"adc_expect",      hil_adc_expect},
-    {"io_set",          hil_io_set},
-    {"io_get",          hil_io_get},
-    {"io_configure",    hil_io_configure},
-    {"io_expect",       hil_io_expect},
-    {"pulse_measure",   hil_pulse_measure},
-    {"uart_send",       hil_uart_send},
-    {"uart_expect",     hil_uart_expect},
-    {"enter",           hil_enter},
-    {"exit",            hil_exit},
+    {FERQON_DRIVER_METHOD_HIL_ADC_READ,        hil_adc_read},
+    {FERQON_DRIVER_METHOD_HIL_ADC_EXPECT,      hil_adc_expect},
+    {FERQON_DRIVER_METHOD_HIL_IO_SET,          hil_io_set},
+    {FERQON_DRIVER_METHOD_HIL_IO_GET,          hil_io_get},
+    {FERQON_DRIVER_METHOD_HIL_IO_CONFIGURE,    hil_io_configure},
+    {FERQON_DRIVER_METHOD_HIL_IO_EXPECT,       hil_io_expect},
+    {FERQON_DRIVER_METHOD_HIL_PULSE_MEASURE,   hil_pulse_measure},
+    {FERQON_DRIVER_METHOD_HIL_UART_SEND,       hil_uart_send},
+    {FERQON_DRIVER_METHOD_HIL_UART_EXPECT,     hil_uart_expect},
+    {FERQON_DRIVER_METHOD_HIL_ENTER,           hil_enter},
+    {FERQON_DRIVER_METHOD_HIL_EXIT,            hil_exit},
 };
 static const uint8_t hil_method_count =
     (uint8_t)(sizeof(hil_methods) / sizeof(hil_methods[0]));
@@ -402,7 +409,7 @@ static bool driver_call_handler(uint8_t seq, uint8_t cmd_id,
     args_buf[args_len] = '\0';
 
     /* For now, only handle "hil" driver */
-    if (strcmp(driver_name, "hil") != 0) {
+    if (strcmp(driver_name, FERQON_DRIVER_NAME_HIL) != 0) {
         FERQON_LOG_DEBUG("DRIVER_CALL unknown driver: %s", driver_name);
         REPLY_ERROR(seq, cmd_id, FERQON_ERR_INVALID_DRIVER, FERQON_ECAT_COMMAND,
                     false, 0, (const uint8_t *)driver_name, (uint8_t)strlen(driver_name));

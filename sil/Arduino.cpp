@@ -163,10 +163,10 @@ void SilSerial::begin(unsigned long baud) {
 
     if (m_port == 0) {
         const char *env_port = std::getenv("FERQON_SIL_PORT");
-        m_port = env_port ? static_cast<uint16_t>(std::atoi(env_port)) : 3333;
+        m_port = env_port ? static_cast<uint16_t>(std::atoi(env_port)) : FERQON_SIL_DEFAULT_PORT;
     }
     if (m_port == 0) {
-        m_port = 3333;
+        m_port = FERQON_SIL_DEFAULT_PORT;
     }
 
     m_sock = ::socket(AF_INET, SOCK_STREAM, 0);
