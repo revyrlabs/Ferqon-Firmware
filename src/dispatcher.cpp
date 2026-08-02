@@ -6,6 +6,9 @@
 #include "ferqon_log.h"
 #include <string.h>
 
+/* cmd_mask is a uint64_t, so the command-id space must fit in 64 bits. */
+static_assert(FERQON_MAX_COMMAND_ID <= 64, "cmd_mask cannot hold more than 64 command ids");
+
 ferqon_driver_t g_drivers[FERQON_MAX_DRIVERS];
 uint8_t g_driver_count = 0;
 static uint8_t g_cmd_to_driver[FERQON_MAX_COMMAND_ID];
