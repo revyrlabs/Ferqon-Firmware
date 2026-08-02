@@ -392,10 +392,13 @@ static bool driver_call_handler(uint8_t seq, uint8_t cmd_id,
     method_name[method_len] = '\0';
     p += method_len;
 
-    /* Remaining bytes are the args string (key=value;key=value;...) */
+    /* Remaining bytes are the args string (key=value;key=value;...).
+     * Reject oversized args rather than silently truncating. */
     size_t args_len = (size_t)(end - p);
+    if (args_len >= DC_MAX_ARGS_BUF) {
+        REPLY_INVALID_PARAMS_STR(seq, cmd_id, "args too long");
+    }
     char args_buf[DC_MAX_ARGS_BUF];
-    if (args_len >= sizeof(args_buf)) args_len = sizeof(args_buf) - 1;
     memcpy(args_buf, p, args_len);
     args_buf[args_len] = '\0';
 
