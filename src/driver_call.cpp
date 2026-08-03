@@ -75,27 +75,36 @@ static const char *get_arg(const char **keys, const char **values, int count, co
     return NULL;
 }
 
-/* Parse an unsigned 16-bit value from a null-terminated string. */
-static bool parse_u16(const char *value, uint16_t *out) {
+/* Parse an unsigned decimal integer, capping at max. */
+static bool parse_uint(const char *value, unsigned long max, unsigned long *out) {
     if (!value || *value == '\0') return false;
 
     char *end = NULL;
     unsigned long v = strtoul(value, &end, 10);
-    if (end == value || *end != '\0' || v > 65535) return false;
+    if (end == value || *end != '\0' || v > max) return false;
 
+    *out = v;
+    return true;
+}
+
+static bool parse_u16(const char *value, uint16_t *out) {
+    unsigned long v;
+    if (!parse_uint(value, 65535UL, &v)) return false;
     *out = (uint16_t)v;
     return true;
 }
 
-/* Parse an unsigned 8-bit value from a null-terminated string. */
 static bool parse_u8(const char *value, uint8_t *out) {
-    if (!value || *value == '\0') return false;
-
-    char *end = NULL;
-    unsigned long v = strtoul(value, &end, 10);
-    if (end == value || *end != '\0' || v > 255) return false;
-
+    unsigned long v;
+    if (!parse_uint(value, 255UL, &v)) return false;
     *out = (uint8_t)v;
+    return true;
+}
+
+static bool parse_u32(const char *value, uint32_t *out) {
+    unsigned long v;
+    if (!parse_uint(value, 4294967295UL, &v)) return false;
+    *out = (uint32_t)v;
     return true;
 }
 
@@ -273,10 +282,9 @@ static bool hil_enter(uint8_t seq, uint8_t cmd_id,
      * Always succeeds (even with no DUT connected). */
     const char *uart_baud_str = get_arg(keys, values, arg_count, "uart_baud");
     if (uart_baud_str) {
-        char *end = NULL;
-        unsigned long baud = strtoul(uart_baud_str, &end, 10);
-        if (*uart_baud_str != '\0' && *end == '\0' && baud > 0 && baud <= UINT32_MAX) {
-            ferqon_uart1_init((uint32_t)baud);
+        uint32_t baud;
+        if (parse_u32(uart_baud_str, &baud) && baud > 0) {
+            ferqon_uart1_init(baud);
         }
     }
 

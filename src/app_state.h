@@ -8,7 +8,6 @@
 
 /* Minimal app-level state machine exposed via GET_STATE and HEARTBEAT. */
 
-void app_state_init(void);
 void app_state_set(uint8_t state);
 uint8_t app_state_get(void);
 

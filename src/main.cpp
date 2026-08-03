@@ -12,7 +12,6 @@
 
 ferqon_parser_t parser;
 unsigned long last_heartbeat_ms = 0;
-static const unsigned long HEARTBEAT_INTERVAL_MS = FERQON_HEARTBEAT_INTERVAL_MS;
 
 /* setup/loop are the Arduino application entry points and must have C linkage
  * so the framework's weak main() can find them. */
@@ -31,10 +30,7 @@ extern "C" void setup() {
     ferqon_parser_init(&parser);
     FERQON_LOG_INFO("Protocol initialized");
 
-    app_state_init();
-    FERQON_LOG_INFO("App state initialized");
-
-    // Ready
+    // Boot -> Ready transition is logged by app_state_set.
     app_state_set(FERQON_STATE_APP_READY);
     FERQON_LOG_INFO("Ferqon %s ready", FERQON_FW_VERSION);
 }
@@ -53,7 +49,7 @@ extern "C" void loop() {
     }
 
     // Send periodic heartbeat
-    if (now - last_heartbeat_ms >= HEARTBEAT_INTERVAL_MS) {
+    if (now - last_heartbeat_ms >= FERQON_HEARTBEAT_INTERVAL_MS) {
         last_heartbeat_ms = now;
         uint8_t state = app_state_get();
         uint32_t uptime = (uint32_t)now;

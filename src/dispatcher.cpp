@@ -12,6 +12,7 @@ static_assert(FERQON_MAX_COMMAND_ID <= 64, "cmd_mask cannot hold more than 64 co
 static ferqon_driver_t g_drivers[FERQON_MAX_DRIVERS];
 static uint8_t g_driver_count = 0;
 static uint8_t g_cmd_to_driver[FERQON_MAX_COMMAND_ID];
+static uint8_t s_dispatch_response[FERQON_MAX_PAYLOAD_BYTES];
 
 void ferqon_register_driver(const ferqon_driver_t *driver) {
     if (g_driver_count >= FERQON_MAX_DRIVERS) {
@@ -82,7 +83,6 @@ bool ferqon_dispatch_request(const ferqon_request_t *req) {
         args_len = (uint8_t)(req->param_len - 1);
     }
 
-    uint8_t response[FERQON_MAX_PAYLOAD_BYTES];
     uint8_t response_len = 0;
     bool already_responded = false;
 
@@ -106,7 +106,7 @@ bool ferqon_dispatch_request(const ferqon_request_t *req) {
     }
 
     bool handled = g_drivers[idx].handle(req->seq, req->cmd_id, args, args_len,
-                            response, &response_len, &already_responded);
+                            s_dispatch_response, &response_len, &already_responded);
     if (handled) {
         if (g_debug_level >= FERQON_LOG_LEVEL_VERBOSE) {
             uint8_t payload[32];
@@ -123,7 +123,7 @@ bool ferqon_dispatch_request(const ferqon_request_t *req) {
             ferqon_send_log_bin(FERQON_LOG_SUBTYPE_DISPATCH_ROUTED, payload, 3 + name_len); /* DISPATCH_ROUTED */
         }
         if (!already_responded) {
-            ferqon_send_done(req->seq, req->cmd_id, response, response_len);
+            ferqon_send_done(req->seq, req->cmd_id, s_dispatch_response, response_len);
         }
         return true;
     }

@@ -230,11 +230,13 @@ bool ferqon_parser_feed_with_time(ferqon_parser_t *parser, uint8_t byte,
 
         case FERQON_STATE_CRC_HI: {
             uint16_t recv = (uint16_t)parser->crc_lo | ((uint16_t)byte << 8);
-            bool ok = (recv == parser->crc);
+            uint16_t computed_crc = parser->crc;
+            bool ok = (recv == computed_crc);
             uint8_t seq = parser->seq;
             uint8_t cmd_id = parser->cmd_id;
             uint8_t plen = parser->param_len;
             uint8_t *pbuf = parser->payload;
+            uint8_t saved_crc_lo = parser->crc_lo;
             ferqon_parser_reset(parser);
             if (ok) {
                 if (g_debug_level >= FERQON_LOG_LEVEL_VERBOSE) {
@@ -260,9 +262,9 @@ bool ferqon_parser_feed_with_time(ferqon_parser_t *parser, uint8_t byte,
              * the seq/cmd_id from the partial parse. */
             if (g_debug_level >= FERQON_LOG_LEVEL_VERBOSE) {
                 uint8_t payload[6];
-                payload[0] = (uint8_t)(parser->crc & 0xFF);
-                payload[1] = (uint8_t)((parser->crc >> 8) & 0xFF);
-                payload[2] = parser->crc_lo;
+                payload[0] = (uint8_t)(computed_crc & 0xFF);
+                payload[1] = (uint8_t)((computed_crc >> 8) & 0xFF);
+                payload[2] = saved_crc_lo;
                 payload[3] = byte;
                 payload[4] = seq;
                 payload[5] = cmd_id;

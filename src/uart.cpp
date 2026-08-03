@@ -77,21 +77,16 @@ bool ferqon_uart1_expect(const char *pattern, size_t pattern_len, uint16_t timeo
     uart_rx_len = 0;
 
     /* Wait for pattern in secondary UART RX buffer with timeout.
+     * Only the most recent pattern_len bytes need to be checked, because a
+     * match can only appear when its final byte is the one just received.
      * BLOCKING: no other commands or heartbeats are processed during this. */
     unsigned long start = ferqon_hal_millis();
     while ((ferqon_hal_millis() - start) < timeout_ms) {
-        /* Read available data into buffer */
         while (ferqon_hal_uart1_available() > 0 && uart_rx_len < UART_RX_BUFFER_SIZE - 1) {
             uart_rx_buffer[uart_rx_len++] = (char)ferqon_hal_uart1_read();
-        }
-
-        /* Check if pattern is in buffer */
-        if (uart_rx_len >= pattern_len) {
-            for (size_t i = 0; i <= uart_rx_len - pattern_len; i++) {
-                if (memcmp(uart_rx_buffer + i, pattern, pattern_len) == 0) {
-                    /* Pattern found */
-                    return true;
-                }
+            if (uart_rx_len >= pattern_len &&
+                memcmp(uart_rx_buffer + uart_rx_len - pattern_len, pattern, pattern_len) == 0) {
+                return true;
             }
         }
 

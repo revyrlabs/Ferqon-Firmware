@@ -7,10 +7,6 @@
 
 static uint8_t g_state = FERQON_STATE_APP_BOOT;
 
-void app_state_init(void) {
-    g_state = FERQON_STATE_APP_READY;
-}
-
 void app_state_set(uint8_t state) {
     uint8_t old_state = g_state;
     g_state = state;
