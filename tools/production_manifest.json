@@ -1,7 +1,7 @@
 {
   "_license": "Apache-2.0",
   "_copyright": "SPDX-FileCopyrightText: Copyright (c) 2026 Revyr Labs",
-  "_description": "Production source manifest for Ferqon firmware. The bundler (tools/create_production_bundle.py) copies only the files listed here into a sealed staging directory. Forbidden paths are explicitly excluded and verified absent.",
+  "_description": "Production source manifest for Ferqon firmware. The bundler (tools/create_production_bundle.py) copies only the files listed or matched by glob patterns here into a sealed staging directory. Forbidden paths are explicitly excluded and verified absent. source_files uses globs so new src/ drivers are picked up automatically.",
   "production_environments": [
     "pico_arduino",
     "esp32",
@@ -17,33 +17,8 @@
     "teensy41"
   ],
   "source_files": [
-    "src/adc.cpp",
-    "src/app_state.cpp",
-    "src/app_state.h",
-    "src/board_config.h",
-    "src/capabilities.cpp",
-    "src/debug.cpp",
-    "src/device_info.cpp",
-    "src/dispatcher.cpp",
-    "src/dispatcher.h",
-    "src/driver_call.cpp",
-    "src/echo.cpp",
-    "src/ferqon_commands.h",
-    "src/ferqon_hal.cpp",
-    "src/ferqon_hal.h",
-    "src/ferqon_hal_arduino.cpp",
-    "src/ferqon_helpers.h",
-    "src/ferqon_log.cpp",
-    "src/ferqon_log.h",
-    "src/gpio.cpp",
-    "src/main.cpp",
-    "src/ping.cpp",
-    "src/protocol.cpp",
-    "src/protocol.h",
-    "src/pulse.cpp",
-    "src/reset.cpp",
-    "src/uart.cpp",
-    "src/uart.h"
+    "src/*.cpp",
+    "src/*.h"
   ],
   "board_files": {
     "pico": [
