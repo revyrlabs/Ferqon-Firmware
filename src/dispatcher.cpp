@@ -14,7 +14,7 @@ static_assert(FERQON_COMMAND_ID_COUNT <= 64, "cmd_mask cannot hold more than 64 
 static_assert(FERQON_MAX_COMMAND_ID < FERQON_COMMAND_ID_COUNT,
               "MAX_COMMAND_ID must fit inside COMMAND_ID_COUNT");
 
-static ferqon_driver_t g_drivers[FERQON_MAX_DRIVERS];
+static const ferqon_driver_t *g_drivers[FERQON_MAX_DRIVERS];
 static uint8_t g_driver_count = 0;
 static uint8_t g_cmd_to_driver[FERQON_COMMAND_ID_COUNT];
 static uint8_t s_dispatch_response[FERQON_MAX_PAYLOAD_BYTES];
@@ -36,15 +36,14 @@ void ferqon_register_driver(const ferqon_driver_t *driver) {
         if (mask & ((uint64_t)1 << id)) {
             if (g_cmd_to_driver[id] != FERQON_DRIVER_INDEX_INVALID) {
                 FERQON_LOG_ERROR("command id %u already mapped to %s; cannot register %s",
-                                 id, g_drivers[g_cmd_to_driver[id]].name, driver->name);
+                                 id, g_drivers[g_cmd_to_driver[id]]->name, driver->name);
             } else {
                 g_cmd_to_driver[id] = g_driver_count;
             }
         }
     }
 
-    memcpy(&g_drivers[g_driver_count], driver, sizeof(ferqon_driver_t));
-    g_driver_count++;
+    g_drivers[g_driver_count++] = driver;
 }
 
 uint8_t ferqon_driver_count(void) {
@@ -52,7 +51,7 @@ uint8_t ferqon_driver_count(void) {
 }
 
 const ferqon_driver_t *ferqon_driver_get(uint8_t index) {
-    return (index < g_driver_count) ? &g_drivers[index] : NULL;
+    return (index < g_driver_count) ? g_drivers[index] : NULL;
 }
 
 bool ferqon_dispatch_request(const ferqon_request_t *req) {
@@ -110,14 +109,14 @@ bool ferqon_dispatch_request(const ferqon_request_t *req) {
         return false;
     }
 
-    bool handled = g_drivers[idx].handle(req->seq, req->cmd_id, args, args_len,
+    bool handled = g_drivers[idx]->handle(req->seq, req->cmd_id, args, args_len,
                             s_dispatch_response, &response_len, &already_responded);
     if (handled) {
         if (g_debug_level >= FERQON_LOG_LEVEL_VERBOSE) {
             uint8_t payload[32];
             payload[0] = req->seq;
             payload[1] = req->cmd_id;
-            const char *name = g_drivers[idx].name;
+            const char *name = g_drivers[idx]->name;
             const uint8_t max_name_len = (uint8_t)(sizeof(payload) - 3);
             uint8_t name_len = 0;
             while (name[name_len] && name_len < max_name_len) {

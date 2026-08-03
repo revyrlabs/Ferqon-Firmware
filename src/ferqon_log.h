@@ -3,10 +3,8 @@
 #ifndef FERQON_LOG_H
 #define FERQON_LOG_H
 
-#include "ferqon_hal.h"
-#include <stdio.h>
-
-/* Structured logging helpers and runtime level control. */
+#include <stdint.h>
+#include <stdarg.h>
 
 /* Log levels — ordered by verbosity. Higher value = more verbose.
  * OFF(0) → INFO(1) → DEBUG(2, alias of VERBOSE). ERROR always fires.
@@ -31,27 +29,16 @@ extern uint8_t g_debug_level;
 /* Protocol forward declaration for log routing */
 void ferqon_send_log(const char *msg);
 
-/* Raw log for boot-time messages before protocol is initialized */
-#define FERQON_LOG_RAW(msg) \
-    ferqon_hal_log_raw(msg)
+/* Format and send a log through the protocol framing if level is enabled. */
+void ferqon_vlog(uint8_t level, const char *fmt, ...);
 
-/* Internal generator macro — do not use directly. All four public
- * log macros below share the same body; only the threshold differs.
- * ERROR uses FERQON_LOG_LEVEL_OFF so it always fires. */
-#define FERQON_LOG_IMPL(level, fmt, ...) \
-    do { \
-        if (g_debug_level >= (level)) { \
-            char _ferqon_log_buf[128]; \
-            snprintf(_ferqon_log_buf, sizeof(_ferqon_log_buf), fmt, ##__VA_ARGS__); \
-            ferqon_send_log(_ferqon_log_buf); \
-        } \
-    } while (0)
+/* Raw boot-time log before the protocol is initialized. */
+void ferqon_log_raw(const char *msg);
 
-/* Log macros - route through protocol framing when debug is enabled.
- * They support printf-style formatting: FERQON_LOG_INFO("x=%d", x). */
-#define FERQON_LOG_DEBUG(fmt, ...) FERQON_LOG_IMPL(FERQON_LOG_LEVEL_DEBUG, fmt, ##__VA_ARGS__)
-#define FERQON_LOG_INFO(fmt, ...)  FERQON_LOG_IMPL(FERQON_LOG_LEVEL_INFO,  fmt, ##__VA_ARGS__)
-#define FERQON_LOG_WARN(fmt, ...)  FERQON_LOG_IMPL(FERQON_LOG_LEVEL_INFO,  fmt, ##__VA_ARGS__)
-#define FERQON_LOG_ERROR(fmt, ...) FERQON_LOG_IMPL(FERQON_LOG_LEVEL_OFF,   fmt, ##__VA_ARGS__)
+#define FERQON_LOG_RAW(msg)      ferqon_log_raw(msg)
+#define FERQON_LOG_DEBUG(...)    ferqon_vlog(FERQON_LOG_LEVEL_DEBUG, __VA_ARGS__)
+#define FERQON_LOG_INFO(...)     ferqon_vlog(FERQON_LOG_LEVEL_INFO,  __VA_ARGS__)
+#define FERQON_LOG_WARN(...)     ferqon_vlog(FERQON_LOG_LEVEL_INFO,  __VA_ARGS__)
+#define FERQON_LOG_ERROR(...)    ferqon_vlog(FERQON_LOG_LEVEL_OFF,   __VA_ARGS__)
 
 #endif /* FERQON_LOG_H */

@@ -94,33 +94,7 @@ static void host_log_raw(const char *msg) {
 
 /* ------------------------------------------------------------------ HAL table */
 static const ferqon_hal_t ferqon_hal_host = {
-    .name = "host",
-    .millis = host_millis,
-    .micros = host_micros,
-    .delay_ms = host_delay_ms,
-    .delay_us = host_delay_us,
-    .serial_init = host_serial_init,
-    .serial_available = host_serial_available,
-    .serial_read = host_serial_read,
-    .serial_write = host_serial_write,
-    .serial_flush = host_serial_flush,
-    .uart1_init = host_uart1_init,
-    .uart1_release = host_uart1_release,
-    .uart1_is_ready = host_uart1_is_ready,
-    .uart1_write = host_uart1_write,
-    .uart1_flush = host_uart1_flush,
-    .uart1_available = host_uart1_available,
-    .uart1_read = host_uart1_read,
-    .gpio_set_mode = host_gpio_set_mode,
-    .gpio_read = host_gpio_read,
-    .gpio_write = host_gpio_write,
-    .adc_read = host_adc_read,
-    .adc_write = host_adc_write,
-    .pulse_in = host_pulse_in,
-    .system_reset = host_system_reset,
-    .uptime_ms = host_uptime_ms,
-    .free_ram_bytes = host_free_ram_bytes,
-    .log_raw = host_log_raw,
+    FERQON_HAL_TABLE(host_, "host")
 };
 
 extern "C" void ferqon_hal_init_host(void) {

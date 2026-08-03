@@ -27,10 +27,4 @@ static bool debug_handler(uint8_t seq, uint8_t cmd_id,
     return true;
 }
 
-extern "C" const ferqon_driver_t debug_driver = {
-    .name = "debug",
-    .id = FERQON_CMD_SET_DEBUG_LEVEL,
-    .cmd_mask = FERQON_DRIVER_CMD_MASK_DEBUG,
-    .handle = debug_handler,
-};
-FERQON_REGISTER_DRIVER(debug);
+FERQON_DEFINE_DRIVER(debug, FERQON_CMD_SET_DEBUG_LEVEL, FERQON_DRIVER_CMD_MASK_DEBUG, debug_handler);

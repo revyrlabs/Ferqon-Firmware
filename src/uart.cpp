@@ -149,10 +149,4 @@ static bool uart_handler(uint8_t seq, uint8_t cmd_id,
     }
 }
 
-extern "C" const ferqon_driver_t uart_driver = {
-    .name = "uart",
-    .id = FERQON_CMD_UART_SEND,
-    .cmd_mask = FERQON_DRIVER_CMD_MASK_UART,
-    .handle = uart_handler,
-};
-FERQON_REGISTER_DRIVER(uart);
+FERQON_DEFINE_DRIVER(uart, FERQON_CMD_UART_SEND, FERQON_DRIVER_CMD_MASK_UART, uart_handler);

@@ -21,10 +21,4 @@ static bool capabilities_handler(uint8_t seq, uint8_t cmd_id,
     return true;
 }
 
-extern "C" const ferqon_driver_t capabilities_driver = {
-    .name = "capabilities",
-    .id = FERQON_CMD_CAPABILITIES,
-    .cmd_mask = FERQON_DRIVER_CMD_MASK_CAPABILITIES,
-    .handle = capabilities_handler,
-};
-FERQON_REGISTER_DRIVER(capabilities);
+FERQON_DEFINE_DRIVER(capabilities, FERQON_CMD_CAPABILITIES, FERQON_DRIVER_CMD_MASK_CAPABILITIES, capabilities_handler);

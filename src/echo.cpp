@@ -21,10 +21,4 @@ static bool echo_handler(uint8_t seq, uint8_t cmd_id,
     return true;
 }
 
-extern "C" const ferqon_driver_t echo_driver = {
-    .name = "echo",
-    .id = FERQON_CMD_ECHO,
-    .cmd_mask = FERQON_DRIVER_CMD_MASK_ECHO,
-    .handle = echo_handler,
-};
-FERQON_REGISTER_DRIVER(echo);
+FERQON_DEFINE_DRIVER(echo, FERQON_CMD_ECHO, FERQON_DRIVER_CMD_MASK_ECHO, echo_handler);

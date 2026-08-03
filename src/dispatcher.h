@@ -60,6 +60,19 @@ bool ferqon_dispatch_request(const ferqon_request_t *req);
         __attribute__((used)) static bool FERQON_DRIVER_REGISTER_VAR(name) = \
             (ferqon_register_driver(&name##_driver), true); \
     }
+
+/* Convenience macro that defines the driver struct and registers it in one
+ * place.  Use this at the bottom of a driver .cpp file instead of manually
+ * writing the `extern "C" const ferqon_driver_t ...` block and a separate
+ * FERQON_REGISTER_DRIVER() line. */
+#define FERQON_DEFINE_DRIVER(driver_name, primary_id, mask, fn) \
+    extern "C" const ferqon_driver_t driver_name##_driver = { \
+        .name = #driver_name, \
+        .id = (primary_id), \
+        .cmd_mask = (mask), \
+        .handle = (fn), \
+    }; \
+    FERQON_REGISTER_DRIVER(driver_name)
 #endif /* __cplusplus */
 
 #endif /* FERQON_DISPATCHER_H */

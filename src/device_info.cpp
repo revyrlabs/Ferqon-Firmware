@@ -9,29 +9,8 @@
 #include "platform_caps.h"
 #include "build_timestamp.h"
 #include <string.h>
+#include <stdlib.h>
 #include <stdint.h>
-
-
-
-static uint16_t append_str_tlv(uint8_t *buf, uint8_t type, const char *s, uint16_t max_len) {
-    if (max_len < 2 || !s) return 0;
-    uint16_t n = (uint16_t)strlen(s);
-    uint16_t max_val = max_len - 2;
-    if (n > max_val) n = max_val;
-    if (n > 255) n = 255;  /* TLV length field is one byte */
-    buf[0] = type;
-    buf[1] = (uint8_t)n;
-    memcpy(&buf[2], s, n);
-    return (uint16_t)(2 + n);
-}
-
-static uint16_t append_u32_tlv(uint8_t *buf, uint8_t type, uint32_t v, uint16_t max_len) {
-    if (max_len < 6) return 0;
-    buf[0] = type;
-    buf[1] = 4;
-    wr_u32_le(&buf[2], v);
-    return 6;
-}
 
 static uint16_t append_signature(uint8_t *buf, uint16_t max_len) {
     const uint8_t magic_len = (uint8_t)(sizeof(FERQON_SIGNATURE_MAGIC) - 1);
@@ -46,6 +25,14 @@ static uint16_t append_signature(uint8_t *buf, uint16_t max_len) {
     return (uint16_t)(2 + total_len);
 }
 
+static int compare_driver_id(const void *a, const void *b) {
+    uint8_t ia = *(const uint8_t *)a;
+    uint8_t ib = *(const uint8_t *)b;
+    uint8_t id_a = ferqon_driver_get(ia)->id;
+    uint8_t id_b = ferqon_driver_get(ib)->id;
+    return (id_a > id_b) - (id_a < id_b);
+}
+
 static bool device_info_handler(uint8_t seq, uint8_t cmd_id,
                                 const uint8_t *params, uint8_t param_len,
                                 uint8_t *response, uint8_t *response_len,
@@ -56,13 +43,13 @@ static bool device_info_handler(uint8_t seq, uint8_t cmd_id,
     uint16_t i = 0;
     const uint16_t cap = FERQON_MAX_PAYLOAD_BYTES;
 
-    i += append_str_tlv(&response[i], TLV_DEVICE_NAME,      FERQON_BOARD_NAME,       cap - i);
-    i += append_str_tlv(&response[i], TLV_MCU_TYPE,         FERQON_MCU_FAMILY,       cap - i);
-    i += append_str_tlv(&response[i], TLV_FIRMWARE_VERSION, FERQON_FW_VERSION,       cap - i);
-    i += append_str_tlv(&response[i], TLV_PROTOCOL_VERSION, FERQON_PROTOCOL_VERSION, cap - i);
-    i += append_u32_tlv(&response[i], TLV_BUILD_TIMESTAMP,  FERQON_BUILD_TIMESTAMP,  cap - i);
-    i += append_u32_tlv(&response[i], TLV_FREE_RAM,         ferqon_hal_free_ram_bytes(), cap - i);
-    i += append_u32_tlv(&response[i], TLV_UPTIME_MS,        ferqon_hal_uptime_ms(),      cap - i);
+    i += ferqon_append_str_tlv(&response[i], TLV_DEVICE_NAME,      FERQON_BOARD_NAME,       cap - i);
+    i += ferqon_append_str_tlv(&response[i], TLV_MCU_TYPE,         FERQON_MCU_FAMILY,       cap - i);
+    i += ferqon_append_str_tlv(&response[i], TLV_FIRMWARE_VERSION, FERQON_FW_VERSION,       cap - i);
+    i += ferqon_append_str_tlv(&response[i], TLV_PROTOCOL_VERSION, FERQON_PROTOCOL_VERSION, cap - i);
+    i += ferqon_append_u32_tlv(&response[i], TLV_BUILD_TIMESTAMP,  FERQON_BUILD_TIMESTAMP,  cap - i);
+    i += ferqon_append_u32_tlv(&response[i], TLV_FREE_RAM,         ferqon_hal_free_ram_bytes(), cap - i);
+    i += ferqon_append_u32_tlv(&response[i], TLV_UPTIME_MS,        ferqon_hal_uptime_ms(),      cap - i);
 
     i += append_signature(&response[i], cap - i);
 
@@ -86,15 +73,7 @@ static bool driver_info_handler(uint8_t seq, uint8_t cmd_id,
     for (uint8_t d = 0; d < count; d++) {
         order[d] = d;
     }
-    for (uint8_t s = 1; s < count; s++) {
-        uint8_t j = s;
-        while (j > 0 && ferqon_driver_get(order[j - 1])->id > ferqon_driver_get(order[j])->id) {
-            uint8_t tmp = order[j];
-            order[j] = order[j - 1];
-            order[j - 1] = tmp;
-            j--;
-        }
-    }
+    qsort(order, count, sizeof(order[0]), compare_driver_id);
 
     for (uint8_t d = 0; d < count; d++) {
         const ferqon_driver_t *drv = ferqon_driver_get(order[d]);
@@ -108,7 +87,7 @@ static bool driver_info_handler(uint8_t seq, uint8_t cmd_id,
         uint16_t command_tlv = (uint16_t)(3 + name_len);
         if (i + driver_tlv + command_tlv > cap) continue;
 
-        i += append_str_tlv(&response[i], TLV_DRIVER, name, cap - i);
+        i += ferqon_append_str_tlv(&response[i], TLV_DRIVER, name, cap - i);
 
         response[i] = TLV_COMMAND;
         response[i + 1] = (uint8_t)(1 + name_len);
@@ -131,18 +110,5 @@ static bool driver_info_handler(uint8_t seq, uint8_t cmd_id,
     return true;
 }
 
-extern "C" const ferqon_driver_t device_info_driver = {
-    .name = "device_info",
-    .id = FERQON_CMD_DEVICE_INFO,
-    .cmd_mask = FERQON_DRIVER_CMD_MASK_DEVICE_INFO,
-    .handle = device_info_handler,
-};
-FERQON_REGISTER_DRIVER(device_info);
-
-extern "C" const ferqon_driver_t driver_info_driver = {
-    .name = "driver_info",
-    .id = FERQON_CMD_DRIVER_INFO,
-    .cmd_mask = FERQON_DRIVER_CMD_MASK_DRIVER_INFO,
-    .handle = driver_info_handler,
-};
-FERQON_REGISTER_DRIVER(driver_info);
+FERQON_DEFINE_DRIVER(device_info, FERQON_CMD_DEVICE_INFO, FERQON_DRIVER_CMD_MASK_DEVICE_INFO, device_info_handler);
+FERQON_DEFINE_DRIVER(driver_info, FERQON_CMD_DRIVER_INFO, FERQON_DRIVER_CMD_MASK_DRIVER_INFO, driver_info_handler);

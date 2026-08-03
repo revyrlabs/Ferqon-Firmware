@@ -20,10 +20,4 @@ static bool reset_handler(uint8_t seq, uint8_t cmd_id,
     return true;
 }
 
-extern "C" const ferqon_driver_t reset_driver = {
-    .name = "reset",
-    .id = FERQON_CMD_RESET,
-    .cmd_mask = FERQON_DRIVER_CMD_MASK_RESET,
-    .handle = reset_handler,
-};
-FERQON_REGISTER_DRIVER(reset);
+FERQON_DEFINE_DRIVER(reset, FERQON_CMD_RESET, FERQON_DRIVER_CMD_MASK_RESET, reset_handler);

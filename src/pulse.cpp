@@ -60,10 +60,4 @@ static bool pulse_handler(uint8_t seq, uint8_t cmd_id,
     }
 }
 
-extern "C" const ferqon_driver_t pulse_driver = {
-    .name = "pulse",
-    .id = FERQON_CMD_PULSE_MEASURE,
-    .cmd_mask = FERQON_DRIVER_CMD_MASK_PULSE,
-    .handle = pulse_handler,
-};
-FERQON_REGISTER_DRIVER(pulse);
+FERQON_DEFINE_DRIVER(pulse, FERQON_CMD_PULSE_MEASURE, FERQON_DRIVER_CMD_MASK_PULSE, pulse_handler);

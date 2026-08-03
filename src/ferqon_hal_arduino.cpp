@@ -112,7 +112,7 @@ static void arduino_system_reset(void) {
 }
 
 /* ---------------------------------------------------------------- Free RAM */
-static uint32_t arduino_free_ram(void) {
+static uint32_t arduino_free_ram_bytes(void) {
 #if defined(ESP32) || defined(ESP8266)
     return ESP.getFreeHeap();
 #elif defined(__MBED__) && defined(MBED_HEAP_STATS_ENABLED)
@@ -134,33 +134,7 @@ static void arduino_log_raw(const char *msg) {
 
 /* ------------------------------------------------------------------ HAL table */
 static const ferqon_hal_t ferqon_hal_arduino = {
-    .name = "arduino",
-    .millis = arduino_millis,
-    .micros = arduino_micros,
-    .delay_ms = arduino_delay_ms,
-    .delay_us = arduino_delay_us,
-    .serial_init = arduino_serial_init,
-    .serial_available = arduino_serial_available,
-    .serial_read = arduino_serial_read,
-    .serial_write = arduino_serial_write,
-    .serial_flush = arduino_serial_flush,
-    .uart1_init = arduino_uart1_init,
-    .uart1_release = arduino_uart1_release,
-    .uart1_is_ready = arduino_uart1_is_ready,
-    .uart1_write = arduino_uart1_write,
-    .uart1_flush = arduino_uart1_flush,
-    .uart1_available = arduino_uart1_available,
-    .uart1_read = arduino_uart1_read,
-    .gpio_set_mode = arduino_gpio_set_mode,
-    .gpio_read = arduino_gpio_read,
-    .gpio_write = arduino_gpio_write,
-    .adc_read = arduino_adc_read,
-    .adc_write = arduino_adc_write,
-    .pulse_in = arduino_pulse_in,
-    .system_reset = arduino_system_reset,
-    .uptime_ms = arduino_uptime_ms,
-    .free_ram_bytes = arduino_free_ram,
-    .log_raw = arduino_log_raw,
+    FERQON_HAL_TABLE(arduino_, "arduino")
 };
 
 extern "C" void ferqon_hal_init_arduino(void) {

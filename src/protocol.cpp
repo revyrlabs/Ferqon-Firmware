@@ -44,7 +44,7 @@ uint16_t ferqon_crc16(const uint8_t *data, size_t len) {
 
 static void write_all(const uint8_t *data, size_t len) {
     if (g_write_func) {
-        g_write_func(data, len);
+        (void)g_write_func(data, len);
     }
 }
 

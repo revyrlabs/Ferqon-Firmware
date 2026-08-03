@@ -23,9 +23,8 @@ static bool adc_check_channel(uint8_t seq, uint8_t cmd_id, uint8_t channel,
                     false, channel, NULL, 0);
     }
     uint8_t adc_pin = FERQON_ADC_PIN(channel);
-    if (ferqon_cap_pin_is_reserved(adc_pin)) {
-        REPLY_ERROR(seq, cmd_id, FERQON_ERR_UNSUPPORTED_PIN, FERQON_ECAT_COMMAND,
-                    false, adc_pin, NULL, 0);
+    if (ferqon_check_pin(seq, cmd_id, adc_pin, already_responded)) {
+        return true;
     }
     *out_pin = adc_pin;
     return false;  /* channel OK — caller proceeds */
@@ -105,10 +104,4 @@ static bool adc_handler(uint8_t seq, uint8_t cmd_id,
     }
 }
 
-extern "C" const ferqon_driver_t adc_driver = {
-    .name = "adc",
-    .id = FERQON_CMD_ADC_READ,
-    .cmd_mask = FERQON_DRIVER_CMD_MASK_ADC,
-    .handle = adc_handler,
-};
-FERQON_REGISTER_DRIVER(adc);
+FERQON_DEFINE_DRIVER(adc, FERQON_CMD_ADC_READ, FERQON_DRIVER_CMD_MASK_ADC, adc_handler);
