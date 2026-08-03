@@ -8,6 +8,11 @@
 
 /* cmd_mask is a uint64_t, so the command-id space must fit in 64 bits. */
 static_assert(FERQON_COMMAND_ID_COUNT <= 64, "cmd_mask cannot hold more than 64 command ids");
+/* The lookup table is sized by COMMAND_ID_COUNT and indexed by cmd_id values.
+ * MAX_COMMAND_ID is the highest id actually used; it must be strictly smaller
+ * than COMMAND_ID_COUNT so every possible id fits in the table. */
+static_assert(FERQON_MAX_COMMAND_ID < FERQON_COMMAND_ID_COUNT,
+              "MAX_COMMAND_ID must fit inside COMMAND_ID_COUNT");
 
 static ferqon_driver_t g_drivers[FERQON_MAX_DRIVERS];
 static uint8_t g_driver_count = 0;
