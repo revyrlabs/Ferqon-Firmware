@@ -3,7 +3,7 @@
 #ifndef FERQON_LOG_H
 #define FERQON_LOG_H
 
-#include <Arduino.h>
+#include "ferqon_hal.h"
 #include <stdio.h>
 
 /* Structured logging helpers and runtime level control. */
@@ -33,7 +33,7 @@ void ferqon_send_log(const char *msg);
 
 /* Raw log for boot-time messages before protocol is initialized */
 #define FERQON_LOG_RAW(msg) \
-    Serial.print("[RAW] "); Serial.println(msg)
+    ferqon_hal_log_raw(msg)
 
 /* Internal generator macro — do not use directly. All four public
  * log macros below share the same body; only the threshold differs.

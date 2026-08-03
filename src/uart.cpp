@@ -17,58 +17,57 @@
 #include "ferqon_helpers.h"
 #include "uart.h"
 #include "production_config.h"
-#include <Arduino.h>
+#include "ferqon_hal.h"
 
 #define UART_RX_BUFFER_SIZE 256
 static char uart_rx_buffer[UART_RX_BUFFER_SIZE];
 static size_t uart_rx_len = 0;
-static bool uart1_initialized = false;
+static bool uart1_init_attempted = false;
 static uint32_t uart1_current_baud = 0;
 
 void ferqon_uart1_init(uint32_t baud) {
-    if (uart1_initialized && baud != 0 && baud == uart1_current_baud) {
+    /* baud == 0 means "use the current/default baud"; do not force a
+     * re-initialization when already up. A non-zero baud is a request to switch
+     * to that speed, so re-initialize only if it differs. */
+    if (uart1_init_attempted && (baud == 0 || baud == uart1_current_baud)) {
         return;
     }
     uint32_t effective_baud = (baud != 0) ? baud : FERQON_SERIAL_BAUD;
-    Serial1.begin(effective_baud);
-    uart1_initialized = true;
+    ferqon_hal_uart1_init(effective_baud);
+    uart1_init_attempted = true;
     uart1_current_baud = effective_baud;
 }
 
 void ferqon_uart1_release(void) {
-    if (uart1_initialized) {
-        Serial1.end();
-        uart1_initialized = false;
+    if (uart1_init_attempted) {
+        ferqon_hal_uart1_release();
+        uart1_init_attempted = false;
         uart1_current_baud = 0;
         uart_rx_len = 0;
     }
 }
 
 bool ferqon_uart1_is_ready(void) {
-    return uart1_initialized;
+    /* The HAL is the source of truth for whether the secondary UART is ready. */
+    return ferqon_hal_uart1_is_ready();
 }
 
 static void uart1_ensure_init(void) {
-    ferqon_uart1_init(0);
+    if (!ferqon_hal_uart1_is_ready()) {
+        ferqon_uart1_init(0);
+    }
 }
 
 void ferqon_uart1_send(const uint8_t *data, size_t len) {
-#ifndef FERQON_HAS_SERIAL1
-#error "FERQON_HAS_SERIAL1 must be defined for UART driver — all supported boards have a secondary UART"
-#else
     if (len == 0) {
         return;
     }
     uart1_ensure_init();
-    Serial1.write(data, len);
-    Serial1.flush();
-#endif
+    ferqon_hal_uart1_write(data, len);
+    ferqon_hal_uart1_flush();
 }
 
 bool ferqon_uart1_expect(const char *pattern, size_t pattern_len, uint16_t timeout_ms) {
-#ifndef FERQON_HAS_SERIAL1
-#error "FERQON_HAS_SERIAL1 must be defined for UART driver — all supported boards have a secondary UART"
-#else
     if (pattern_len == 0 || timeout_ms == 0) {
         return false;
     }
@@ -77,13 +76,13 @@ bool ferqon_uart1_expect(const char *pattern, size_t pattern_len, uint16_t timeo
     uart1_ensure_init();
     uart_rx_len = 0;
 
-    /* Wait for pattern in Serial1 RX buffer with timeout.
+    /* Wait for pattern in secondary UART RX buffer with timeout.
      * BLOCKING: no other commands or heartbeats are processed during this. */
-    unsigned long start = millis();
-    while ((millis() - start) < timeout_ms) {
+    unsigned long start = ferqon_hal_millis();
+    while ((ferqon_hal_millis() - start) < timeout_ms) {
         /* Read available data into buffer */
-        while (Serial1.available() > 0 && uart_rx_len < UART_RX_BUFFER_SIZE - 1) {
-            uart_rx_buffer[uart_rx_len++] = (char)Serial1.read();
+        while (ferqon_hal_uart1_available() > 0 && uart_rx_len < UART_RX_BUFFER_SIZE - 1) {
+            uart_rx_buffer[uart_rx_len++] = (char)ferqon_hal_uart1_read();
         }
 
         /* Check if pattern is in buffer */
@@ -96,12 +95,11 @@ bool ferqon_uart1_expect(const char *pattern, size_t pattern_len, uint16_t timeo
             }
         }
 
-        delay(1);
+        ferqon_hal_delay_ms(1);
     }
 
     /* Timeout - pattern not found */
     return false;
-#endif
 }
 
 static bool uart_send_handler(uint8_t seq, uint8_t cmd_id,
@@ -159,5 +157,7 @@ static bool uart_handler(uint8_t seq, uint8_t cmd_id,
 extern "C" const ferqon_driver_t uart_driver = {
     .name = "uart",
     .id = FERQON_CMD_UART_SEND,
+    .cmd_mask = FERQON_DRIVER_CMD_MASK_UART,
     .handle = uart_handler,
 };
+FERQON_REGISTER_DRIVER(uart);

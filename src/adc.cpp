@@ -3,7 +3,7 @@
 #include "dispatcher.h"
 #include "ferqon_helpers.h"
 #include "board_config.h"
-#include <Arduino.h>
+#include "ferqon_hal.h"
 
 /* Convert a raw ADC sample to millivolts using board-specific reference
  * voltage and resolution. Centralised here so adc_read and adc_expect
@@ -46,7 +46,7 @@ static bool adc_read_handler(uint8_t seq, uint8_t cmd_id,
         return true;
     }
 
-    uint16_t mv = adc_raw_to_mv(analogRead(adc_pin));
+    uint16_t mv = adc_raw_to_mv(ferqon_hal_adc_read(adc_pin));
     wr_u16_le(response, mv);
     *response_len = 2;
     return true;
@@ -73,15 +73,15 @@ static bool adc_expect_handler(uint8_t seq, uint8_t cmd_id,
 
     /* Wait for ADC to be within range with timeout.
      * BLOCKING: no other commands or heartbeats processed during this. */
-    unsigned long start = millis();
-    while ((millis() - start) < timeout_ms) {
-        uint16_t mv = adc_raw_to_mv(analogRead(adc_pin));
+    unsigned long start = ferqon_hal_millis();
+    while ((ferqon_hal_millis() - start) < timeout_ms) {
+        uint16_t mv = adc_raw_to_mv(ferqon_hal_adc_read(adc_pin));
         if (mv >= min_mv && mv <= max_mv) {
             response[0] = 1; /* Success */
             *response_len = 1;
             return true;
         }
-        delay(10); /* Sample every 10ms */
+        ferqon_hal_delay_ms(10); /* Sample every 10ms */
     }
 
     /* Timeout */
@@ -108,5 +108,7 @@ static bool adc_handler(uint8_t seq, uint8_t cmd_id,
 extern "C" const ferqon_driver_t adc_driver = {
     .name = "adc",
     .id = FERQON_CMD_ADC_READ,
+    .cmd_mask = FERQON_DRIVER_CMD_MASK_ADC,
     .handle = adc_handler,
 };
+FERQON_REGISTER_DRIVER(adc);

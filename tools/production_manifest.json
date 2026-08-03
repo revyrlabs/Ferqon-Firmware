@@ -27,9 +27,11 @@
     "src/dispatcher.cpp",
     "src/dispatcher.h",
     "src/driver_call.cpp",
-    "src/driver_call.h",
     "src/echo.cpp",
     "src/ferqon_commands.h",
+    "src/ferqon_hal.cpp",
+    "src/ferqon_hal.h",
+    "src/ferqon_hal_arduino.cpp",
     "src/ferqon_helpers.h",
     "src/ferqon_log.cpp",
     "src/ferqon_log.h",
@@ -40,7 +42,8 @@
     "src/protocol.h",
     "src/pulse.cpp",
     "src/reset.cpp",
-    "src/uart.cpp"
+    "src/uart.cpp",
+    "src/uart.h"
   ],
   "board_files": {
     "pico": [

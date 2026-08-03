@@ -15,5 +15,7 @@ static bool ping_handler(uint8_t seq, uint8_t cmd_id,
 extern "C" const ferqon_driver_t ping_driver = {
     .name = "ping",
     .id = FERQON_CMD_PING,
+    .cmd_mask = FERQON_DRIVER_CMD_MASK_PING,
     .handle = ping_handler,
 };
+FERQON_REGISTER_DRIVER(ping);

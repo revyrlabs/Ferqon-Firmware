@@ -4,6 +4,7 @@
 #define FERQON_UART_H
 
 #include <stdint.h>
+#include <stdbool.h>
 
 /* Initialise the secondary UART (Serial1) if not already initialised.
  * Pass 0 to use the board default (FERQON_SERIAL_BAUD); otherwise the
