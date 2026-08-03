@@ -25,7 +25,7 @@ static bool pulse_measure_handler(uint8_t seq, uint8_t cmd_id,
     /* Measure pulse width using pulseIn.
      * BLOCKING: no other commands or heartbeats processed during this. */
     /* pulseIn(pin, state, timeout) - timeout is in microseconds */
-    unsigned long pulse_us = ferqon_hal_pulse_in(pin, 1, timeout_ms * 1000);
+    unsigned long pulse_us = ferqon_hal_pulse_in(pin, 1, (unsigned long)timeout_ms * 1000UL);
 
     if (pulse_us == 0) {
         /* Timeout or no pulse */

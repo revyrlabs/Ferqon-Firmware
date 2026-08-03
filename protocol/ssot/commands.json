@@ -249,6 +249,7 @@
           },
           "adc_read": {
             "native_cmd": "adc_read",
+            "firmware_implemented": false,
             "arg_map": {
               "channel": "u8"
             }
@@ -256,6 +257,7 @@
           "adc_expect": {
             "native_cmd": "driver_call",
             "sub_handler": "adc_expect",
+            "firmware_implemented": false,
             "arg_map": {
               "timeout_ms": "u16_le",
               "channel": "u8",
@@ -266,6 +268,7 @@
           "pulse_measure": {
             "native_cmd": "driver_call",
             "sub_handler": "pulse_measure",
+            "firmware_implemented": false,
             "arg_map": {
               "timeout_ms": "u16_le",
               "pin": "u8",

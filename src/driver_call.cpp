@@ -310,36 +310,17 @@ static bool hil_exit(uint8_t seq, uint8_t cmd_id,
 /* Backend/SSOT still lists adc_read, adc_expect, and pulse_measure as HIL
  * driver methods.  They are intentionally delegated to dedicated native
  * commands on the MCU, so reply NOT_IMPLEMENTED and let the caller fall back
- * to the command IDs for adc_read (20), adc_expect (21), pulse_measure (22). */
+ * to the command IDs for adc_read (20), adc_expect (21), pulse_measure (22).
+ *
+ * The dispatch table generated from commands.json points these methods at
+ * hil_not_implemented directly, so no per-method stub functions are needed. */
 static bool hil_not_implemented(uint8_t seq, uint8_t cmd_id,
+                                const char **keys, const char **values, int arg_count,
+                                uint8_t *response, uint8_t *response_len,
                                 bool *already_responded) {
-    (void)already_responded;
+    (void)keys; (void)values; (void)arg_count; (void)response; (void)response_len;
     REPLY_ERROR_STR(seq, cmd_id, FERQON_ERR_NOT_IMPLEMENTED, FERQON_ECAT_COMMAND,
                     false, 0, "driver method not implemented");
-}
-
-static bool hil_adc_read(uint8_t seq, uint8_t cmd_id,
-                         const char **keys, const char **values, int arg_count,
-                         uint8_t *response, uint8_t *response_len,
-                         bool *already_responded) {
-    (void)keys; (void)values; (void)arg_count; (void)response; (void)response_len;
-    return hil_not_implemented(seq, cmd_id, already_responded);
-}
-
-static bool hil_adc_expect(uint8_t seq, uint8_t cmd_id,
-                           const char **keys, const char **values, int arg_count,
-                           uint8_t *response, uint8_t *response_len,
-                           bool *already_responded) {
-    (void)keys; (void)values; (void)arg_count; (void)response; (void)response_len;
-    return hil_not_implemented(seq, cmd_id, already_responded);
-}
-
-static bool hil_pulse_measure(uint8_t seq, uint8_t cmd_id,
-                              const char **keys, const char **values, int arg_count,
-                              uint8_t *response, uint8_t *response_len,
-                              bool *already_responded) {
-    (void)keys; (void)values; (void)arg_count; (void)response; (void)response_len;
-    return hil_not_implemented(seq, cmd_id, already_responded);
 }
 
 static const struct {

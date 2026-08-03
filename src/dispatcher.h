@@ -7,8 +7,6 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#define FERQON_MAX_DRIVERS 16
-#define FERQON_MAX_COMMAND_ID 64
 #define FERQON_DRIVER_INDEX_INVALID 0xFF
 
 /* A driver handler claims a command by returning true.

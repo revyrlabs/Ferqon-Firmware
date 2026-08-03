@@ -7,11 +7,11 @@
 #include <string.h>
 
 /* cmd_mask is a uint64_t, so the command-id space must fit in 64 bits. */
-static_assert(FERQON_MAX_COMMAND_ID <= 64, "cmd_mask cannot hold more than 64 command ids");
+static_assert(FERQON_COMMAND_ID_COUNT <= 64, "cmd_mask cannot hold more than 64 command ids");
 
 static ferqon_driver_t g_drivers[FERQON_MAX_DRIVERS];
 static uint8_t g_driver_count = 0;
-static uint8_t g_cmd_to_driver[FERQON_MAX_COMMAND_ID];
+static uint8_t g_cmd_to_driver[FERQON_COMMAND_ID_COUNT];
 static uint8_t s_dispatch_response[FERQON_MAX_PAYLOAD_BYTES];
 
 void ferqon_register_driver(const ferqon_driver_t *driver) {
@@ -27,7 +27,7 @@ void ferqon_register_driver(const ferqon_driver_t *driver) {
 
     /* Build the O(1) command routing table from the SSOT-derived mask. */
     uint64_t mask = driver->cmd_mask;
-    for (uint8_t id = 0; id < FERQON_MAX_COMMAND_ID; id++) {
+    for (uint8_t id = 0; id < FERQON_COMMAND_ID_COUNT; id++) {
         if (mask & ((uint64_t)1 << id)) {
             if (g_cmd_to_driver[id] != FERQON_DRIVER_INDEX_INVALID) {
                 FERQON_LOG_ERROR("command id %u already mapped to %s; cannot register %s",
@@ -86,7 +86,7 @@ bool ferqon_dispatch_request(const ferqon_request_t *req) {
     uint8_t response_len = 0;
     bool already_responded = false;
 
-    if (req->cmd_id >= FERQON_MAX_COMMAND_ID) {
+    if (req->cmd_id >= FERQON_COMMAND_ID_COUNT) {
         ferqon_send_error(req->seq, req->cmd_id,
                         FERQON_ERR_INVALID_COMMAND, FERQON_ECAT_COMMAND,
                         /*retryable=*/false, /*ctx=*/0, NULL, 0);

@@ -58,15 +58,28 @@ def _sorted_commands(data: dict) -> list[tuple[str, int]]:
     )
 
 
-def _sorted_driver_methods(data: dict) -> list[tuple[str, list[str]]]:
-    """Return (driver_name, [method_name, ...]) pairs sorted by driver/method."""
-    result: list[tuple[str, list[str]]] = []
+def _sorted_driver_methods(data: dict) -> list[tuple[str, list[tuple[str, str]]]]:
+    """Return (driver_name, [(method_name, handler_name), ...]) pairs.
+
+    handler_name follows the convention driver_method for implemented handlers,
+    or driver_not_implemented for methods the firmware marks as
+    firmware_implemented=false.
+    """
+    result: list[tuple[str, list[tuple[str, str]]]] = []
     for cmd_name, cmd_info in sorted(data.get("commands", {}).items()):
         driver_methods = cmd_info.get("driver_methods", {})
         if not driver_methods:
             continue
         for driver, methods in sorted(driver_methods.items()):
-            result.append((driver, sorted(methods.keys())))
+            entries: list[tuple[str, str]] = []
+            for method in sorted(methods.keys()):
+                info = methods[method]
+                if info.get("firmware_implemented", True):
+                    handler = f"{driver}_{method}"
+                else:
+                    handler = f"{driver}_not_implemented"
+                entries.append((method, handler))
+            result.append((driver, entries))
     return result
 
 
@@ -156,11 +169,21 @@ def generate_c_header(data: dict) -> str:
         "",
     ]
 
-    for name, cmd_id in _sorted_commands(data):
+    sorted_commands = _sorted_commands(data)
+    max_cmd_id = max((cmd_id for _, cmd_id in sorted_commands), default=0)
+    driver_masks = _driver_cmd_masks(data)
+    max_drivers = len(driver_masks)
+
+    for name, cmd_id in sorted_commands:
         macro = f"FERQON_CMD_{name.upper()}"
         lines.append(f"#define {macro:<30} {cmd_id}")
 
     lines += [
+        "",
+        "/* ------------------------------------------------ Dispatcher sizing */",
+        f"#define FERQON_MAX_COMMAND_ID           {max_cmd_id}",
+        f"#define FERQON_COMMAND_ID_COUNT         {max_cmd_id + 1}",
+        f"#define FERQON_MAX_DRIVERS              {max_drivers}",
         "",
         "/* --------------------------------------- Driver command masks (from SSOT) */",
         "/* One bit per command id handled by the named driver.                    */",
@@ -169,7 +192,7 @@ def generate_c_header(data: dict) -> str:
         "",
     ]
 
-    for driver, cmd_names in _driver_cmd_masks(data):
+    for driver, cmd_names in driver_masks:
         macro = f"FERQON_DRIVER_CMD_MASK_{driver.upper()}"
         if len(cmd_names) == 1:
             expr = f"((uint64_t)1 << FERQON_CMD_{cmd_names[0].upper()})"
@@ -191,7 +214,7 @@ def generate_c_header(data: dict) -> str:
     for driver, methods in _sorted_driver_methods(data):
         driver_macro = driver.upper()
         lines.append(f'#define FERQON_DRIVER_NAME_{driver_macro:<20} "{driver}"')
-        for method in methods:
+        for method, _ in methods:
             macro = f"FERQON_DRIVER_METHOD_{driver_macro}_{method.upper()}"
             lines.append(f'#define {macro:<45} "{method}"')
         lines.append("")
@@ -208,7 +231,7 @@ def generate_c_header(data: dict) -> str:
         driver_macro = driver.upper()
         macro = f"FERQON_DRIVER_METHODS_{driver_macro}"
         entries = " \\\n".join(
-            f"    X({method.upper()}, {driver}_{method})" for method in methods
+            f"    X({method.upper()}, {handler})" for method, handler in methods
         )
         lines.append(f"#define {macro}(X) {entries}")
         lines.append("")

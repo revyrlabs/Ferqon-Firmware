@@ -61,6 +61,11 @@
 #define FERQON_CMD_PULSE_MEASURE       22
 #define FERQON_CMD_SET_DEBUG_LEVEL     23
 
+/* ------------------------------------------------ Dispatcher sizing */
+#define FERQON_MAX_COMMAND_ID           23
+#define FERQON_COMMAND_ID_COUNT         24
+#define FERQON_MAX_DRIVERS              12
+
 /* --------------------------------------- Driver command masks (from SSOT) */
 /* One bit per command id handled by the named driver.                    */
 /* Update the 'driver' field in commands.json, regenerate, and the driver   */
@@ -101,15 +106,15 @@
 /* X-macros for building the per-driver method dispatch table in driver_call.cpp. */
 /* Convention: the C handler for driver 'foo' method 'bar' is named foo_bar.     */
 
-#define FERQON_DRIVER_METHODS_HIL(X)     X(ADC_EXPECT, hil_adc_expect) \
-    X(ADC_READ, hil_adc_read) \
+#define FERQON_DRIVER_METHODS_HIL(X)     X(ADC_EXPECT, hil_not_implemented) \
+    X(ADC_READ, hil_not_implemented) \
     X(ENTER, hil_enter) \
     X(EXIT, hil_exit) \
     X(IO_CONFIGURE, hil_io_configure) \
     X(IO_EXPECT, hil_io_expect) \
     X(IO_GET, hil_io_get) \
     X(IO_SET, hil_io_set) \
-    X(PULSE_MEASURE, hil_pulse_measure) \
+    X(PULSE_MEASURE, hil_not_implemented) \
     X(UART_EXPECT, hil_uart_expect) \
     X(UART_SEND, hil_uart_send)
 
