@@ -120,4 +120,29 @@ static inline void wr_u32_le(uint8_t *p, uint32_t v) {
     p[3] = (uint8_t)((v >> 24) & 0xFF);
 }
 
+/* Append a length-delimited string TLV.
+ * Returns the number of bytes written (0 on failure). */
+static inline uint16_t ferqon_append_str_tlv(uint8_t *buf, uint8_t type,
+                                              const char *s, uint16_t max_len) {
+    if (max_len < 2 || !s) return 0;
+    uint16_t n = (uint16_t)strlen(s);
+    uint16_t max_val = max_len - 2;
+    if (n > max_val) n = max_val;
+    if (n > 255) n = 255;
+    buf[0] = type;
+    buf[1] = (uint8_t)n;
+    memcpy(&buf[2], s, n);
+    return (uint16_t)(2 + n);
+}
+
+/* Append a length-delimited u32 TLV (4 bytes, little-endian). */
+static inline uint16_t ferqon_append_u32_tlv(uint8_t *buf, uint8_t type,
+                                             uint32_t v, uint16_t max_len) {
+    if (max_len < 6) return 0;
+    buf[0] = type;
+    buf[1] = 4;
+    wr_u32_le(&buf[2], v);
+    return 6;
+}
+
 #endif /* FERQON_HELPERS_H */

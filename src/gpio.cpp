@@ -3,7 +3,7 @@
 #include "dispatcher.h"
 #include "ferqon_helpers.h"
 #include "board_config.h"
-#include <Arduino.h>
+#include "ferqon_hal.h"
 
 static bool pin_mode_call(uint8_t seq, const uint8_t *params, uint8_t param_len,
                           bool *already_responded) {
@@ -16,12 +16,12 @@ static bool pin_mode_call(uint8_t seq, const uint8_t *params, uint8_t param_len,
         return true;
     }
 
-    int arduino_mode;
     switch (mode) {
-        case FERQON_GPIO_INPUT:          arduino_mode = INPUT;          break;
-        case FERQON_GPIO_OUTPUT:         arduino_mode = OUTPUT;         break;
-        case FERQON_GPIO_INPUT_PULLUP:   arduino_mode = INPUT_PULLUP;   break;
-        case FERQON_GPIO_INPUT_PULLDOWN: arduino_mode = INPUT_PULLDOWN; break;
+        case FERQON_GPIO_INPUT:
+        case FERQON_GPIO_OUTPUT:
+        case FERQON_GPIO_INPUT_PULLUP:
+        case FERQON_GPIO_INPUT_PULLDOWN:
+            break;
         default: {
             uint8_t detail[2] = { pin, mode };
             REPLY_ERROR(seq, FERQON_CMD_PIN_MODE, FERQON_ERR_UNSUPPORTED_MODE,
@@ -29,7 +29,7 @@ static bool pin_mode_call(uint8_t seq, const uint8_t *params, uint8_t param_len,
         }
     }
 
-    pinMode(pin, arduino_mode);
+    ferqon_hal_gpio_set_mode(pin, mode);
     return true;  /* core will send DONE */
 }
 
@@ -43,7 +43,7 @@ static bool gpio_read_call(uint8_t seq, const uint8_t *params, uint8_t param_len
     if (ferqon_check_pin(seq, FERQON_CMD_GPIO_READ, pin, already_responded)) {
         return true;
     }
-    response[0] = (uint8_t)digitalRead(pin);
+    response[0] = (uint8_t)ferqon_hal_gpio_read(pin);
     *response_len = 1;
     return true;
 }
@@ -57,7 +57,7 @@ static bool gpio_write_call(uint8_t seq, const uint8_t *params, uint8_t param_le
     if (ferqon_check_pin(seq, FERQON_CMD_GPIO_WRITE, pin, already_responded)) {
         return true;
     }
-    digitalWrite(pin, value ? HIGH : LOW);
+    ferqon_hal_gpio_write(pin, value);
     return true;
 }
 
@@ -80,8 +80,4 @@ static bool gpio_handler(uint8_t seq, uint8_t cmd_id,
     }
 }
 
-extern "C" const ferqon_driver_t gpio_driver = {
-    .name = "gpio",
-    .id = FERQON_CMD_GPIO_READ,  /* primary id; handler also claims write/pin_mode */
-    .handle = gpio_handler,
-};
+FERQON_DEFINE_DRIVER(gpio, FERQON_CMD_GPIO_READ, FERQON_DRIVER_CMD_MASK_GPIO, gpio_handler);

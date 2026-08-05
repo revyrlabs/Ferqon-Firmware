@@ -28,6 +28,9 @@
 
 /* Protocol version (from SSOT) */
 #define FERQON_PROTOCOL_VERSION         "0.1.0"
+#define FERQON_PROTOCOL_VERSION_MAJOR   0
+#define FERQON_PROTOCOL_VERSION_MINOR   1
+#define FERQON_PROTOCOL_VERSION_PATCH   0
 
 /* --------------------------------------------------------- Packet types */
 
@@ -57,6 +60,64 @@
 #define FERQON_CMD_ADC_EXPECT          21
 #define FERQON_CMD_PULSE_MEASURE       22
 #define FERQON_CMD_SET_DEBUG_LEVEL     23
+
+/* ------------------------------------------------ Dispatcher sizing */
+#define FERQON_MAX_COMMAND_ID           23
+#define FERQON_COMMAND_ID_COUNT         24
+#define FERQON_MAX_DRIVERS              12
+
+/* --------------------------------------- Driver command masks (from SSOT) */
+/* One bit per command id handled by the named driver.                    */
+/* Update the 'driver' field in commands.json, regenerate, and the driver   */
+/* definitions automatically claim the right command ids.                   */
+
+#define FERQON_DRIVER_CMD_MASK_ADC             (((uint64_t)1 << FERQON_CMD_ADC_READ) | ((uint64_t)1 << FERQON_CMD_ADC_EXPECT))
+#define FERQON_DRIVER_CMD_MASK_CAPABILITIES    ((uint64_t)1 << FERQON_CMD_CAPABILITIES)
+#define FERQON_DRIVER_CMD_MASK_DEBUG           ((uint64_t)1 << FERQON_CMD_SET_DEBUG_LEVEL)
+#define FERQON_DRIVER_CMD_MASK_DEVICE_INFO     ((uint64_t)1 << FERQON_CMD_DEVICE_INFO)
+#define FERQON_DRIVER_CMD_MASK_DRIVER_CALL     ((uint64_t)1 << FERQON_CMD_DRIVER_CALL)
+#define FERQON_DRIVER_CMD_MASK_DRIVER_INFO     ((uint64_t)1 << FERQON_CMD_DRIVER_INFO)
+#define FERQON_DRIVER_CMD_MASK_ECHO            ((uint64_t)1 << FERQON_CMD_ECHO)
+#define FERQON_DRIVER_CMD_MASK_GPIO            (((uint64_t)1 << FERQON_CMD_PIN_MODE) | ((uint64_t)1 << FERQON_CMD_GPIO_READ) | ((uint64_t)1 << FERQON_CMD_GPIO_WRITE))
+#define FERQON_DRIVER_CMD_MASK_PING            ((uint64_t)1 << FERQON_CMD_PING)
+#define FERQON_DRIVER_CMD_MASK_PULSE           ((uint64_t)1 << FERQON_CMD_PULSE_MEASURE)
+#define FERQON_DRIVER_CMD_MASK_RESET           ((uint64_t)1 << FERQON_CMD_RESET)
+#define FERQON_DRIVER_CMD_MASK_UART            (((uint64_t)1 << FERQON_CMD_UART_SEND) | ((uint64_t)1 << FERQON_CMD_UART_EXPECT))
+
+/* ------------------------------------------- Driver / method name strings */
+/* These match the SSOT so firmware string compares do not drift from the   */
+/* protocol spec.  Only drivers/methods declared in commands.json are emitted. */
+
+#define FERQON_DRIVER_NAME_HIL                  "hil"
+#define FERQON_DRIVER_METHOD_HIL_ADC_EXPECT           "adc_expect"
+#define FERQON_DRIVER_METHOD_HIL_ADC_READ             "adc_read"
+#define FERQON_DRIVER_METHOD_HIL_ENTER                "enter"
+#define FERQON_DRIVER_METHOD_HIL_EXIT                 "exit"
+#define FERQON_DRIVER_METHOD_HIL_IO_CONFIGURE         "io_configure"
+#define FERQON_DRIVER_METHOD_HIL_IO_EXPECT            "io_expect"
+#define FERQON_DRIVER_METHOD_HIL_IO_GET               "io_get"
+#define FERQON_DRIVER_METHOD_HIL_IO_SET               "io_set"
+#define FERQON_DRIVER_METHOD_HIL_PULSE_MEASURE        "pulse_measure"
+#define FERQON_DRIVER_METHOD_HIL_UART_EXPECT          "uart_expect"
+#define FERQON_DRIVER_METHOD_HIL_UART_SEND            "uart_send"
+
+
+/* ----------------------------------------------- Driver method dispatch tables */
+/* X-macros for building the per-driver method dispatch table in driver_call.cpp. */
+/* Convention: the C handler for driver 'foo' method 'bar' is named foo_bar.     */
+
+#define FERQON_DRIVER_METHODS_HIL(X)     X(ADC_EXPECT, hil_not_implemented) \
+    X(ADC_READ, hil_not_implemented) \
+    X(ENTER, hil_enter) \
+    X(EXIT, hil_exit) \
+    X(IO_CONFIGURE, hil_io_configure) \
+    X(IO_EXPECT, hil_io_expect) \
+    X(IO_GET, hil_io_get) \
+    X(IO_SET, hil_io_set) \
+    X(PULSE_MEASURE, hil_not_implemented) \
+    X(UART_EXPECT, hil_uart_expect) \
+    X(UART_SEND, hil_uart_send)
+
 
 /* ----------------------------------------------------------- TLV types */
 /* NOTE: TLV type IDs are context-dependent. DEVICE_NAME, MCU_TYPE,
@@ -92,6 +153,11 @@
 #define FERQON_GPIO_OUTPUT                 1
 #define FERQON_GPIO_INPUT_PULLUP           2
 #define FERQON_GPIO_INPUT_PULLDOWN         3
+
+#define FERQON_GPIO_MODE_NAME_INPUT      "INPUT"
+#define FERQON_GPIO_MODE_NAME_OUTPUT     "OUTPUT"
+#define FERQON_GPIO_MODE_NAME_INPUT_PULLUP "INPUT_PULLUP"
+#define FERQON_GPIO_MODE_NAME_INPUT_PULLDOWN "INPUT_PULLDOWN"
 
 /* -------------------------------------------------------- App states */
 

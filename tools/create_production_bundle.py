@@ -40,10 +40,34 @@ def load_manifest(firmware_dir: Path) -> dict:
         return json.load(f)
 
 
-def collect_all_files(manifest: dict) -> list[str]:
-    """Collect all file paths from the manifest."""
+def _is_glob(pattern: str) -> bool:
+    return "*" in pattern or "?" in pattern or "[" in pattern
+
+
+def _expand_patterns(patterns: list[str], firmware_dir: Path) -> list[str]:
+    """Expand glob patterns against the firmware directory.
+
+    Plain strings are returned as-is so board_files, config_files, etc.
+    continue to work exactly as before.
+    """
+    expanded: list[str] = []
+    for pattern in patterns:
+        if _is_glob(pattern):
+            matches = sorted(firmware_dir.glob(pattern))
+            if not matches:
+                print(f"  WARNING: glob pattern matched no files: {pattern}")
+            for match in matches:
+                if match.is_file():
+                    expanded.append(str(match.relative_to(firmware_dir)))
+        else:
+            expanded.append(pattern)
+    return expanded
+
+
+def collect_all_files(manifest: dict, firmware_dir: Path) -> list[str]:
+    """Collect all file paths from the manifest, expanding any globs."""
     files: list[str] = []
-    files.extend(manifest.get("source_files", []))
+    files.extend(_expand_patterns(manifest.get("source_files", []), firmware_dir))
     files.extend(manifest.get("config_files", []))
     files.extend(manifest.get("build_hook_files", []))
     files.extend(manifest.get("cli_files", []))
@@ -58,7 +82,7 @@ def collect_all_files(manifest: dict) -> list[str]:
 
 def create_bundle(firmware_dir: Path, output_dir: Path, manifest: dict) -> list[str]:
     """Copy allowlisted files into the output directory. Returns copied paths."""
-    files = collect_all_files(manifest)
+    files = collect_all_files(manifest, firmware_dir)
     copied: list[str] = []
 
     for rel_path in files:
@@ -154,7 +178,8 @@ def main() -> int:
     output_dir.mkdir(parents=True)
 
     # Create bundle
-    print(f"\nCopying {len(collect_all_files(manifest))} files...")
+    all_files = collect_all_files(manifest, firmware_dir)
+    print(f"\nCopying {len(all_files)} files...")
     copied = create_bundle(firmware_dir, output_dir, manifest)
     print(f"Copied {len(copied)} files")
 
@@ -170,13 +195,17 @@ def main() -> int:
 
     # Verify source filter matches manifest
     print("\nVerifying source filter matches manifest...")
-    src_in_manifest = set(manifest.get("source_files", []))
+    src_in_manifest = set(_expand_patterns(manifest.get("source_files", []), firmware_dir))
     src_in_bundle = {f for f in copied if f.startswith("src/")}
 
     # Check that all source files in manifest are in the bundle
     missing = src_in_manifest - src_in_bundle
     if missing:
         print(f"WARNING: source files in manifest but not copied: {missing}")
+
+    extra = src_in_bundle - src_in_manifest
+    if extra:
+        print(f"WARNING: source files in bundle but not in manifest globs: {extra}")
 
     print(f"\nBundle created successfully at: {output_dir}")
     print(f"  {len(copied)} files")

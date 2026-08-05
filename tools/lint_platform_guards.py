@@ -43,7 +43,11 @@ PERIPHERAL_APIS = {
 # Files where Arduino API calls are exempt from guard requirements:
 # - main.cpp: initialization code uses known-valid pins (LED_BUILTIN) and
 #   the control Serial port, which is not a peripheral UART.
-EXEMPT_FILES = {"main.cpp"}
+# - ferqon_hal_arduino.cpp: HAL implementation layer. The capability guards
+#   live in the callers (gpio.cpp, adc.cpp via ferqon_check_pin /
+#   adc_check_channel). The HAL is the lowest-level wrapper that directly
+#   calls the Arduino API after guards have already passed.
+EXEMPT_FILES = {"main.cpp", "ferqon_hal_arduino.cpp"}
 
 # How many lines to look backwards for a ferqon_cap_ guard call.
 # Set generously to cover cases where error-handling code or switch

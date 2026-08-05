@@ -306,7 +306,7 @@ def run_test_ping(transport: Transport) -> TestResult:
     """Test PING command."""
     start = time.time()
     try:
-        frame = _encode_frame(seq=1, cmd_id=CMD_PING, payload=b"")
+        frame = _encode_frame(seq=1, cmd_id=CMD_PING, payload=bytes([PKT_REQUEST]))
         resp = transport.send_frame(frame, timeout_s=2.0)
 
         if resp.get("ok"):

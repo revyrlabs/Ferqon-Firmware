@@ -75,11 +75,16 @@ class TestProductionManifest:
                 ).exists(), f"Missing board artifact: {rel_path}"
 
     def test_all_source_files_exist(self, manifest, firmware_dir):
-        """Every source file in the manifest must exist."""
+        """Every source file (or glob pattern) in the manifest must resolve to real files."""
+        import glob
         for rel_path in manifest["source_files"]:
-            assert (
-                firmware_dir / rel_path
-            ).exists(), f"Missing source file: {rel_path}"
+            full = firmware_dir / rel_path
+            if "*" in rel_path or "?" in rel_path:
+                # Glob pattern — must match at least one file
+                matches = glob.glob(str(full))
+                assert len(matches) > 0, f"Glob pattern matched no files: {rel_path}"
+            else:
+                assert full.exists(), f"Missing source file: {rel_path}"
 
     def test_forbidden_paths_are_marked(self, manifest):
         """Forbidden paths must include tests, examples, in_development, dev CLI."""
@@ -114,7 +119,7 @@ class TestPlatformIOSrcFilter:
         with open(manifest_path, encoding="utf-8") as f:
             manifest = json.load(f)
 
-        # Extract .cpp files from manifest source_files
+        # Extract .cpp patterns from manifest source_files
         manifest_cpp = {
             Path(f).name for f in manifest["source_files"] if f.endswith(".cpp")
         }
@@ -127,6 +132,12 @@ class TestPlatformIOSrcFilter:
             line = line.strip()
             if line.startswith("_src_filter"):
                 in_filter = True
+                # Handle single-line format: _src_filter = +<*.cpp>
+                rest = line.split("=", 1)[-1].strip() if "=" in line else ""
+                if rest.startswith("+<") and rest.endswith(">"):
+                    fname = rest[2:-1]
+                    filter_files.add(fname)
+                    in_filter = False
                 continue
             if in_filter:
                 if line.startswith("+<") and line.endswith(">"):

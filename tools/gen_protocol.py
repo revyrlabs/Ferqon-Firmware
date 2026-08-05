@@ -58,13 +58,64 @@ def _sorted_commands(data: dict) -> list[tuple[str, int]]:
     )
 
 
+def _sorted_driver_methods(data: dict) -> list[tuple[str, list[tuple[str, str]]]]:
+    """Return (driver_name, [(method_name, handler_name), ...]) pairs.
+
+    handler_name follows the convention driver_method for implemented handlers,
+    or driver_not_implemented for methods the firmware marks as
+    firmware_implemented=false.
+    """
+    result: list[tuple[str, list[tuple[str, str]]]] = []
+    for cmd_name, cmd_info in sorted(data.get("commands", {}).items()):
+        driver_methods = cmd_info.get("driver_methods", {})
+        if not driver_methods:
+            continue
+        for driver, methods in sorted(driver_methods.items()):
+            entries: list[tuple[str, str]] = []
+            for method in sorted(methods.keys()):
+                info = methods[method]
+                if info.get("firmware_implemented", True):
+                    handler = f"{driver}_{method}"
+                else:
+                    handler = f"{driver}_not_implemented"
+                entries.append((method, handler))
+            result.append((driver, entries))
+    return result
+
+
+def _driver_cmd_masks(data: dict) -> list[tuple[str, list[str]]]:
+    """Return (driver_name, [command_name, ...]) pairs sorted by command id."""
+    masks: dict[str, list[tuple[int, str]]] = {}
+    for cmd_name, cmd_info in data.get("commands", {}).items():
+        driver = cmd_info.get("driver")
+        if not driver:
+            continue
+        masks.setdefault(driver, []).append((int(cmd_info["id"]), cmd_name))
+    return sorted(
+        (driver, [name for _, name in sorted(entries)])
+        for driver, entries in masks.items()
+    )
+
+
 # ---------------------------------------------------------------------------
 # 1. C header
 # ---------------------------------------------------------------------------
 
 
+def _parse_version(version: str) -> tuple[int, int, int]:
+    parts = version.split(".")
+    if len(parts) != 3:
+        raise ValueError(f"Expected MAJOR.MINOR.PATCH version, got: {version}")
+    major, minor, patch = (int(p) for p in parts)
+    for p, name in ((major, "major"), (minor, "minor"), (patch, "patch")):
+        if p < 0 or p > 255:
+            raise ValueError(f"Version {name} component out of u8 range: {p}")
+    return major, minor, patch
+
+
 def generate_c_header(data: dict) -> str:
     protocol_version = data.get("version", "0.0.0")
+    major, minor, patch = _parse_version(protocol_version)
     lines = [
         f"/* {SPDX_LICENSE} */",
         f"/* {COPYRIGHT} */",
@@ -101,6 +152,9 @@ def generate_c_header(data: dict) -> str:
         "",
         "/* Protocol version (from SSOT) */",
         f'#define FERQON_PROTOCOL_VERSION         "{protocol_version}"',
+        f"#define FERQON_PROTOCOL_VERSION_MAJOR   {major}",
+        f"#define FERQON_PROTOCOL_VERSION_MINOR   {minor}",
+        f"#define FERQON_PROTOCOL_VERSION_PATCH   {patch}",
         "",
         "/* --------------------------------------------------------- Packet types */",
         "",
@@ -115,9 +169,72 @@ def generate_c_header(data: dict) -> str:
         "",
     ]
 
-    for name, cmd_id in _sorted_commands(data):
+    sorted_commands = _sorted_commands(data)
+    max_cmd_id = max((cmd_id for _, cmd_id in sorted_commands), default=0)
+    driver_masks = _driver_cmd_masks(data)
+    max_drivers = len(driver_masks)
+
+    for name, cmd_id in sorted_commands:
         macro = f"FERQON_CMD_{name.upper()}"
         lines.append(f"#define {macro:<30} {cmd_id}")
+
+    lines += [
+        "",
+        "/* ------------------------------------------------ Dispatcher sizing */",
+        f"#define FERQON_MAX_COMMAND_ID           {max_cmd_id}",
+        f"#define FERQON_COMMAND_ID_COUNT         {max_cmd_id + 1}",
+        f"#define FERQON_MAX_DRIVERS              {max_drivers}",
+        "",
+        "/* --------------------------------------- Driver command masks (from SSOT) */",
+        "/* One bit per command id handled by the named driver.                    */",
+        "/* Update the 'driver' field in commands.json, regenerate, and the driver   */",
+        "/* definitions automatically claim the right command ids.                   */",
+        "",
+    ]
+
+    for driver, cmd_names in driver_masks:
+        macro = f"FERQON_DRIVER_CMD_MASK_{driver.upper()}"
+        if len(cmd_names) == 1:
+            expr = f"((uint64_t)1 << FERQON_CMD_{cmd_names[0].upper()})"
+        else:
+            parts = " | ".join(
+                f"((uint64_t)1 << FERQON_CMD_{name.upper()})" for name in cmd_names
+            )
+            expr = f"({parts})"
+        lines.append(f"#define {macro:<38} {expr}")
+
+    lines += [
+        "",
+        "/* ------------------------------------------- Driver / method name strings */",
+        "/* These match the SSOT so firmware string compares do not drift from the   */",
+        "/* protocol spec.  Only drivers/methods declared in commands.json are emitted. */",
+        "",
+    ]
+
+    for driver, methods in _sorted_driver_methods(data):
+        driver_macro = driver.upper()
+        lines.append(f'#define FERQON_DRIVER_NAME_{driver_macro:<20} "{driver}"')
+        for method, _ in methods:
+            macro = f"FERQON_DRIVER_METHOD_{driver_macro}_{method.upper()}"
+            lines.append(f'#define {macro:<45} "{method}"')
+        lines.append("")
+
+    lines += [
+        "",
+        "/* ----------------------------------------------- Driver method dispatch tables */",
+        "/* X-macros for building the per-driver method dispatch table in driver_call.cpp. */",
+        "/* Convention: the C handler for driver 'foo' method 'bar' is named foo_bar.     */",
+        "",
+    ]
+
+    for driver, methods in _sorted_driver_methods(data):
+        driver_macro = driver.upper()
+        macro = f"FERQON_DRIVER_METHODS_{driver_macro}"
+        entries = " \\\n".join(
+            f"    X({method.upper()}, {handler})" for method, handler in methods
+        )
+        lines.append(f"#define {macro}(X) {entries}")
+        lines.append("")
 
     lines += [
         "",
@@ -154,6 +271,11 @@ def generate_c_header(data: dict) -> str:
 
     for name, val in sorted(data.get("gpio_modes", {}).items(), key=lambda x: x[1]):
         lines.append(f"#define FERQON_GPIO_{name:<22} {val}")
+
+    lines += [""]
+    for name, _ in sorted(data.get("gpio_modes", {}).items(), key=lambda x: x[1]):
+        macro = f"FERQON_GPIO_MODE_NAME_{name}"
+        lines.append(f'#define {macro:<32} "{name}"')
 
     lines += [
         "",

@@ -2,7 +2,7 @@
 /* SPDX-FileCopyrightText: Copyright (c) 2026 Revyr Labs */
 #include "dispatcher.h"
 #include "ferqon_helpers.h"
-#include <Arduino.h>
+#include "ferqon_hal.h"
 
 static bool pulse_measure_handler(uint8_t seq, uint8_t cmd_id,
                                   const uint8_t *params, uint8_t param_len,
@@ -25,7 +25,7 @@ static bool pulse_measure_handler(uint8_t seq, uint8_t cmd_id,
     /* Measure pulse width using pulseIn.
      * BLOCKING: no other commands or heartbeats processed during this. */
     /* pulseIn(pin, state, timeout) - timeout is in microseconds */
-    unsigned long pulse_us = pulseIn(pin, HIGH, timeout_ms * 1000);
+    unsigned long pulse_us = ferqon_hal_pulse_in(pin, 1, (unsigned long)timeout_ms * 1000UL);
 
     if (pulse_us == 0) {
         /* Timeout or no pulse */
@@ -60,8 +60,4 @@ static bool pulse_handler(uint8_t seq, uint8_t cmd_id,
     }
 }
 
-extern "C" const ferqon_driver_t pulse_driver = {
-    .name = "pulse",
-    .id = FERQON_CMD_PULSE_MEASURE,
-    .handle = pulse_handler,
-};
+FERQON_DEFINE_DRIVER(pulse, FERQON_CMD_PULSE_MEASURE, FERQON_DRIVER_CMD_MASK_PULSE, pulse_handler);
