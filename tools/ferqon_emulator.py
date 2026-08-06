@@ -33,19 +33,37 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-# Module-level constants (no hardcoded string fallbacks)
-_DEFAULT_EMPTY_STRING = b""
-_DEFAULT_ZERO = 0
+from ferqonfw.protocol import (
+    CMD_CAPABILITIES,
+    CMD_DEVICE_INFO,
+    CMD_DRIVER_INFO,
+    CMD_ECHO,
+    CMD_GPIO_READ,
+    CMD_GPIO_WRITE,
+    CMD_PING,
+    FERQON_SIGNATURE_CAPABILITY_VERSION as FERQON_SIGNATURE_CAP_VERSION,
+    FERQON_SIGNATURE_MAGIC,
+    FERQON_SIGNATURE_VENDOR,
+    PROTOCOL_VERSION,
+    PKT_DONE,
+    PKT_ERROR,
+    PKT_REQUEST,
+    TLV_BUILD_TIMESTAMP,
+    TLV_COMMAND,
+    TLV_DEVICE_NAME,
+    TLV_DRIVER,
+    TLV_FERQON_SIGNATURE,
+    TLV_FIRMWARE_VERSION,
+    TLV_FREE_RAM,
+    TLV_MCU_TYPE,
+    TLV_PROTOCOL_VERSION,
+    TLV_UPTIME_MS,
+    TLV_VERSION,
+    FrameDecoder,
+    encode_frame as build_frame,
+)
 
-
-# Load SSOT
-def _load_commands_json() -> dict[str, Any]:
-    """Load commands.json SSOT from the firmware protocol directory."""
-    path = Path(__file__).resolve().parents[1] / "protocol" / "ssot" / "commands.json"
-    if not path.exists():
-        raise FileNotFoundError(f"commands.json SSOT not found: {path}")
-    with open(path, encoding="utf-8") as f:
-        return json.load(f)
+log = logging.getLogger(__name__)
 
 
 def _load_board_json(board: str) -> dict[str, Any]:
@@ -65,97 +83,14 @@ def _load_board_json(board: str) -> dict[str, Any]:
         return json.load(f)
 
 
-_SPEC = _load_commands_json()
-
-# Protocol constants from SSOT
-_frame = _SPEC["frame"]
-START_BYTE = _frame["start_byte"]
-CRC_POLY = _frame["crc_poly"]
-CRC_INIT = _frame["crc_init"]
-
-_packet_types = _SPEC["packet_types"]
-PKT_REQUEST = _packet_types["REQUEST"]
-PKT_ACK = _packet_types["ACK"]
-PKT_DONE = _packet_types["DONE"]
-PKT_ERROR = _packet_types["ERROR"]
-
-# Command IDs from SSOT
-_commands = _SPEC["commands"]
-CMD_PING = _commands["ping"]["id"]
-CMD_ECHO = _commands["echo"]["id"]
-CMD_DRIVER_INFO = _commands["driver_info"]["id"]
-CMD_DEVICE_INFO = _commands["device_info"]["id"]
-CMD_CAPABILITIES = _commands["capabilities"]["id"]
-CMD_GPIO_READ = _commands["gpio_read"]["id"]
-CMD_GPIO_WRITE = _commands["gpio_write"]["id"]
-
-# TLV types from SSOT
-_tlv_types = _SPEC["tlv_types"]
-TLV_DEVICE_NAME = _tlv_types["DEVICE_NAME"]
-TLV_MCU_TYPE = _tlv_types["MCU_TYPE"]
-TLV_FIRMWARE_VERSION = _tlv_types["FIRMWARE_VERSION"]
-TLV_PROTOCOL_VERSION = _tlv_types["PROTOCOL_VERSION"]
-TLV_BUILD_TIMESTAMP = _tlv_types["BUILD_TIMESTAMP"]
-TLV_FREE_RAM = _tlv_types["FREE_RAM"]
-TLV_UPTIME_MS = _tlv_types["UPTIME_MS"]
-TLV_FERQON_SIGNATURE = _tlv_types["FERQON_SIGNATURE"]
-TLV_DRIVER = _tlv_types["DRIVER"]
-TLV_COMMAND = _tlv_types["COMMAND"]
-TLV_VERSION = _tlv_types["VERSION"]
-
-# Signature configuration from SSOT
-_signature_config = _SPEC["ferqon_signature"]
-FERQON_SIGNATURE_MAGIC = _signature_config["magic"].encode("utf-8")
-FERQON_SIGNATURE_VENDOR = _signature_config["vendor"].encode("utf-8")
-FERQON_SIGNATURE_CAP_VERSION = _signature_config["capability_version"]
-
-log = logging.getLogger(__name__)
-
-
-def crc16_ccitt_false(data: bytes) -> int:
-    """Calculate CRC-16/CCITT-FALSE."""
-    crc = CRC_INIT
-    for byte in data:
-        crc ^= byte << 8
-        for _ in range(8):
-            if crc & 0x8000:
-                crc = (crc << 1) ^ CRC_POLY
-            else:
-                crc = crc << 1
-            crc = crc & 0xFFFF
-    return crc
-
-
-def build_frame(seq: int, cmd_id: int, payload: bytes) -> bytes:
-    """Build a complete Ferqon protocol frame."""
-    header = bytes([seq, cmd_id, len(payload)])
-    crc_data = header + payload
-    crc = crc16_ccitt_false(crc_data)
-    return bytes([START_BYTE]) + crc_data + bytes([crc & 0xFF, (crc >> 8) & 0xFF])
-
-
 def parse_frame(data: bytes) -> tuple[int, int, bytes] | None:
     """Parse a frame, returning (seq, cmd_id, payload) or None if invalid."""
-    if len(data) < 6:
+    decoder = FrameDecoder()
+    frames = decoder.feed(data)
+    if not frames:
         return None
-    if data[0] != START_BYTE:
-        return None
-
-    seq = data[1]
-    cmd_id = data[2]
-    payload_len = data[3]
-    payload = data[4 : 4 + payload_len]
-    crc_lo = data[4 + payload_len]
-    crc_hi = data[5 + payload_len]
-    recv_crc = crc_lo | (crc_hi << 8)
-
-    header = bytes([seq, cmd_id, payload_len])
-    calc_crc = crc16_ccitt_false(header + payload)
-
-    if recv_crc != calc_crc:
-        return None
-
-    return seq, cmd_id, payload
+    frame = frames[0]
+    return frame.seq, frame.cmd_id, frame.payload
 
 
 @dataclass
@@ -228,7 +163,7 @@ class FerqonEmulator:
         response.extend(bytes([TLV_COMMAND, 1 + 5, CMD_GPIO_WRITE]))
         response.extend(b"gpio")
         # Version from SSOT
-        major, minor, patch = (int(v) for v in _SPEC["version"].split(".")[:3])
+        major, minor, patch = (int(v) for v in PROTOCOL_VERSION.split(".")[:3])
         response.extend(bytes([TLV_VERSION, 3, major, minor, patch]))
         return build_frame(seq, CMD_DRIVER_INFO, bytes([PKT_DONE]) + bytes(response))
 
@@ -244,7 +179,7 @@ class FerqonEmulator:
         response.extend(
             self._build_tlv(TLV_MCU_TYPE, self._board["mcu"].encode("utf-8"))
         )
-        version_bytes = _SPEC["version"].encode("utf-8")
+        version_bytes = PROTOCOL_VERSION.encode("utf-8")
         response.extend(self._build_tlv(TLV_FIRMWARE_VERSION, version_bytes))
         response.extend(self._build_tlv(TLV_PROTOCOL_VERSION, version_bytes))
         response.extend(self._build_u32_tlv(TLV_BUILD_TIMESTAMP, int(time.time())))
@@ -255,8 +190,7 @@ class FerqonEmulator:
 
         # Ferqon signature TLV (for detection)
         signature = (
-            FERQON_SIGNATURE_MAGIC
-            + FERQON_SIGNATURE_VENDOR
+            (FERQON_SIGNATURE_MAGIC + FERQON_SIGNATURE_VENDOR).encode("utf-8")
             + bytes([FERQON_SIGNATURE_CAP_VERSION])
         )
         response.extend(self._build_tlv(TLV_FERQON_SIGNATURE, signature))
@@ -308,7 +242,7 @@ class FerqonEmulator:
         parsed = parse_frame(frame)
         if parsed is None:
             # Invalid frame, ignore or send error
-            return _DEFAULT_EMPTY_STRING
+            return b""
 
         seq, cmd_id, payload = parsed
 
