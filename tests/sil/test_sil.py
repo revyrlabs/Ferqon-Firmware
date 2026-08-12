@@ -18,6 +18,9 @@ Usage:
 Defaults to 127.0.0.1:3333. The script has no third-party dependencies.
 """
 
+# This module is a standalone integration runner, not a pytest test suite.
+__test__ = False
+
 import os
 import re
 import socket
