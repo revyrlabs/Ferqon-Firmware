@@ -35,6 +35,10 @@ from ferqonfw.protocol import (  # noqa: E402
     PKT_ERROR,
     load_command_ids,
 )
+
+if sys.platform == "win32":
+    pytest.skip("Emulator requires Unix pseudo-terminal support", allow_module_level=True)
+
 from ferqon_emulator import (  # noqa: E402
     FerqonEmulator,
     parse_frame as emu_parse_frame,
