@@ -21,6 +21,19 @@ from ferqonfw.codegen.emit_errors import emit_errors_h
 _TOOLS_DIR = Path(__file__).resolve().parents[1]
 
 
+def _emit_errors_header(ssot_dir: Path, generated_dir: Path) -> None:
+    """Emit errors.h from SSOT if errors.json is present."""
+    errors_path = ssot_dir / "errors.json"
+    try:
+        with open(errors_path, encoding="utf-8") as f:
+            errors_data = json.load(f)
+        errors_h_path = generated_dir / "errors.h"
+        emit_errors_h(errors_data, errors_h_path)
+        print(f"  Generated: {errors_h_path}")
+    except FileNotFoundError:
+        pass
+
+
 def cmd_gen(args) -> int:
     """Generate protocol and board capability artifacts."""
     if not args.gen_target:
@@ -43,16 +56,7 @@ def cmd_gen(args) -> int:
             print(f"Error: gen_protocol.py exited with code {result.returncode}")
             return result.returncode
 
-        # Emit errors.h from the separate errors SSOT if present
-        errors_path = ssot_dir / "errors.json"
-        try:
-            with open(errors_path, encoding="utf-8") as f:
-                errors_data = json.load(f)
-            errors_h_path = generated_dir / "errors.h"
-            emit_errors_h(errors_data, errors_h_path)
-            print(f"  Generated: {errors_h_path}")
-        except FileNotFoundError:
-            pass
+        _emit_errors_header(ssot_dir, generated_dir)
 
         print("Code generation complete")
         return 0
@@ -107,16 +111,7 @@ def cmd_gen(args) -> int:
             print(f"Error: gen_protocol.py exited with code {result.returncode}")
             return result.returncode
 
-        # Emit errors.h from the separate errors SSOT if present
-        errors_path = ssot_dir / "errors.json"
-        try:
-            with open(errors_path, encoding="utf-8") as f:
-                errors_data = json.load(f)
-            errors_h_path = generated_dir / "errors.h"
-            emit_errors_h(errors_data, errors_h_path)
-            print(f"  Generated: {errors_h_path}")
-        except FileNotFoundError:
-            pass
+        _emit_errors_header(ssot_dir, generated_dir)
 
         print("All code generation complete")
         return 0
