@@ -334,7 +334,14 @@ size_t SilSerial::write(const uint8_t *data, size_t len) {
     }
 
     size_t written = 0;
+    auto deadline = std::chrono::steady_clock::now() +
+                    std::chrono::seconds(5);
     while (written < len) {
+        if (std::chrono::steady_clock::now() >= deadline) {
+            /* Overall send timeout exceeded — peer is not draining. */
+            close_client();
+            return written;
+        }
         ssize_t n = ::send(m_client, data + written, len - written, MSG_NOSIGNAL);
         if (n < 0) {
             if (errno == EINTR) {
