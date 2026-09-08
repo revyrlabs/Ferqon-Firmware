@@ -24,6 +24,11 @@ static char uart_rx_buffer[UART_RX_BUFFER_SIZE];
 static size_t uart_rx_len = 0;
 static bool uart1_init_attempted = false;
 static uint32_t uart1_current_baud = 0;
+static bool uart_echo_mode = false;
+
+void ferqon_uart1_set_echo_mode(bool enabled) {
+    uart_echo_mode = enabled;
+}
 
 void ferqon_uart1_init(uint32_t baud) {
     /* baud == 0 means "use the current/default baud"; do not force a
@@ -65,6 +70,14 @@ void ferqon_uart1_send(const uint8_t *data, size_t len) {
     uart1_ensure_init();
     ferqon_hal_uart1_write(data, len);
     ferqon_hal_uart1_flush();
+
+    /* In ECHO mode, also copy sent bytes into the RX buffer so that
+     * ferqon_uart1_expect can find them without physical TX→RX wiring. */
+    if (uart_echo_mode) {
+        for (size_t i = 0; i < len && uart_rx_len < UART_RX_BUFFER_SIZE - 1; i++) {
+            uart_rx_buffer[uart_rx_len++] = (char)data[i];
+        }
+    }
 }
 
 bool ferqon_uart1_expect(const char *pattern, size_t pattern_len, uint16_t timeout_ms) {
@@ -72,9 +85,19 @@ bool ferqon_uart1_expect(const char *pattern, size_t pattern_len, uint16_t timeo
         return false;
     }
 
-    /* Clear stale data from previous calls before starting a new expect. */
     uart1_ensure_init();
-    uart_rx_len = 0;
+
+    /* In echo mode, the buffer was populated by uart_send — check it
+     * immediately before clearing.  In normal mode, clear stale data. */
+    if (uart_echo_mode) {
+        if (uart_rx_len >= pattern_len &&
+            memcmp(uart_rx_buffer + uart_rx_len - pattern_len, pattern, pattern_len) == 0) {
+            return true;
+        }
+        /* Fall through to physical RX wait in case there's additional data. */
+    } else {
+        uart_rx_len = 0;
+    }
 
     /* Wait for pattern in secondary UART RX buffer with timeout.
      * Only the most recent pattern_len bytes need to be checked, because a

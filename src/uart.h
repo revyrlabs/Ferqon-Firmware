@@ -32,4 +32,11 @@ void ferqon_uart1_send(const uint8_t *data, size_t len);
  */
 bool ferqon_uart1_expect(const char *pattern, size_t pattern_len, uint16_t timeout_ms);
 
+/* Enable/disable internal echo mode.  When enabled, bytes written via
+ * ferqon_uart1_send are also copied into the internal RX buffer so that
+ * ferqon_uart1_expect can find them without physical TX→RX wiring.
+ * Pass true for ECHO mode, false for normal (physical) mode.
+ */
+void ferqon_uart1_set_echo_mode(bool enabled);
+
 #endif /* FERQON_UART_H */

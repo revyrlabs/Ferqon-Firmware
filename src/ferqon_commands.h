@@ -98,6 +98,7 @@
 #define FERQON_DRIVER_METHOD_HIL_IO_GET               "io_get"
 #define FERQON_DRIVER_METHOD_HIL_IO_SET               "io_set"
 #define FERQON_DRIVER_METHOD_HIL_PULSE_MEASURE        "pulse_measure"
+#define FERQON_DRIVER_METHOD_HIL_SET_MODE             "set_mode"
 #define FERQON_DRIVER_METHOD_HIL_UART_EXPECT          "uart_expect"
 #define FERQON_DRIVER_METHOD_HIL_UART_SEND            "uart_send"
 
@@ -115,6 +116,7 @@
     X(IO_GET, hil_io_get) \
     X(IO_SET, hil_io_set) \
     X(PULSE_MEASURE, hil_not_implemented) \
+    X(SET_MODE, hil_set_mode) \
     X(UART_EXPECT, hil_uart_expect) \
     X(UART_SEND, hil_uart_send)
 

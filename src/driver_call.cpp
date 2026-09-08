@@ -272,6 +272,28 @@ static bool hil_uart_expect(uint8_t seq, uint8_t cmd_id,
     return true;
 }
 
+static bool hil_set_mode(uint8_t seq, uint8_t cmd_id,
+                         const char **keys, const char **values, int arg_count,
+                         uint8_t *response, uint8_t *response_len,
+                         bool *already_responded) {
+    (void)seq; (void)cmd_id; (void)already_responded;
+    REQUIRE_ARG(mode);
+
+    if (strcmp(mode_str, "ECHO") == 0) {
+        ferqon_uart1_set_echo_mode(true);
+        FERQON_LOG_DEBUG("hil.set_mode: ECHO (internal loopback)");
+    } else if (strcmp(mode_str, "NORMAL") == 0 || strcmp(mode_str, "PASSTHROUGH") == 0) {
+        ferqon_uart1_set_echo_mode(false);
+        FERQON_LOG_DEBUG("hil.set_mode: %s", mode_str);
+    } else {
+        REPLY_INVALID_PARAMS_STR(seq, cmd_id, "unknown mode (use ECHO or NORMAL)");
+    }
+
+    response[0] = 1; /* Success */
+    *response_len = 1;
+    return true;
+}
+
 static bool hil_enter(uint8_t seq, uint8_t cmd_id,
                       const char **keys, const char **values, int arg_count,
                       uint8_t *response, uint8_t *response_len,
