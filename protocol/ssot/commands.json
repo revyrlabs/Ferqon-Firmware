@@ -275,6 +275,12 @@
               "min_us": "u32_le",
               "max_us": "u32_le"
             }
+          },
+          "set_mode": {
+            "description": "Set HIL mode. ECHO mode enables internal UART loopback so uart_send data is also placed in the RX buffer for uart_expect to find without physical wiring.",
+            "arg_map": {
+              "mode": "str"
+            }
           }
         }
       },

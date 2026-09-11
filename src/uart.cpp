@@ -25,6 +25,13 @@ static size_t uart_rx_len = 0;
 static bool uart1_init_attempted = false;
 static uint32_t uart1_current_baud = 0;
 
+/* Internal loopback queue for ECHO mode.  Bytes written via
+ * ferqon_uart1_send() are mirrored here and drained by
+ * ferqon_uart1_expect() as if they had arrived on Serial1. */
+static char uart_echo_buffer[UART_RX_BUFFER_SIZE];
+static size_t uart_echo_len = 0;
+static bool uart1_echo_mode = false;
+
 void ferqon_uart1_init(uint32_t baud) {
     /* baud == 0 means "use the current/default baud"; do not force a
      * re-initialization when already up. A non-zero baud is a request to switch
@@ -58,6 +65,15 @@ static void uart1_ensure_init(void) {
     }
 }
 
+void ferqon_uart1_set_echo(bool enabled) {
+    uart1_echo_mode = enabled;
+    uart_echo_len = 0;
+}
+
+bool ferqon_uart1_get_echo(void) {
+    return uart1_echo_mode;
+}
+
 void ferqon_uart1_send(const uint8_t *data, size_t len) {
     if (len == 0) {
         return;
@@ -65,6 +81,19 @@ void ferqon_uart1_send(const uint8_t *data, size_t len) {
     uart1_ensure_init();
     ferqon_hal_uart1_write(data, len);
     ferqon_hal_uart1_flush();
+    if (uart1_echo_mode) {
+        for (size_t i = 0; i < len; i++) {
+            if (uart_echo_len < UART_RX_BUFFER_SIZE - 1) {
+                uart_echo_buffer[uart_echo_len++] = (char)data[i];
+            } else {
+                /* FIFO full: drop the oldest byte so the tail keeps moving —
+                 * the matcher only needs the most recent pattern_len bytes. */
+                memmove(uart_echo_buffer, uart_echo_buffer + 1,
+                        UART_RX_BUFFER_SIZE - 2);
+                uart_echo_buffer[uart_echo_len - 1] = (char)data[i];
+            }
+        }
+    }
 }
 
 bool ferqon_uart1_expect(const char *pattern, size_t pattern_len, uint16_t timeout_ms) {
@@ -72,7 +101,9 @@ bool ferqon_uart1_expect(const char *pattern, size_t pattern_len, uint16_t timeo
         return false;
     }
 
-    /* Clear stale data from previous calls before starting a new expect. */
+    /* Clear stale wire data from previous calls before starting a new
+     * expect.  The echo queue is NOT cleared — bytes echoed by a preceding
+     * uart_send are the very data this call is meant to find. */
     uart1_ensure_init();
     uart_rx_len = 0;
 
@@ -82,6 +113,17 @@ bool ferqon_uart1_expect(const char *pattern, size_t pattern_len, uint16_t timeo
      * BLOCKING: no other commands or heartbeats are processed during this. */
     unsigned long start = ferqon_hal_millis();
     while ((ferqon_hal_millis() - start) < timeout_ms) {
+        /* Drain the ECHO-mode loopback queue first — it represents bytes
+         * that "arrived" before this call started. */
+        while (uart_echo_len > 0 && uart_rx_len < UART_RX_BUFFER_SIZE - 1) {
+            char c = uart_echo_buffer[0];
+            memmove(uart_echo_buffer, uart_echo_buffer + 1, --uart_echo_len);
+            uart_rx_buffer[uart_rx_len++] = c;
+            if (uart_rx_len >= pattern_len &&
+                memcmp(uart_rx_buffer + uart_rx_len - pattern_len, pattern, pattern_len) == 0) {
+                return true;
+            }
+        }
         while (ferqon_hal_uart1_available() > 0 && uart_rx_len < UART_RX_BUFFER_SIZE - 1) {
             uart_rx_buffer[uart_rx_len++] = (char)ferqon_hal_uart1_read();
             if (uart_rx_len >= pattern_len &&

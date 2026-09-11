@@ -108,6 +108,20 @@ static bool parse_u32(const char *value, uint32_t *out) {
     return true;
 }
 
+/* Case-insensitive ASCII compare — avoids <strings.h> which is not
+ * guaranteed on every MCU toolchain. */
+static bool str_eq_ci(const char *a, const char *b) {
+    while (*a && *b) {
+        char ca = *a, cb = *b;
+        if (ca >= 'A' && ca <= 'Z') ca += 'a' - 'A';
+        if (cb >= 'A' && cb <= 'Z') cb += 'a' - 'A';
+        if (ca != cb) return false;
+        a++;
+        b++;
+    }
+    return *a == *b;
+}
+
 /* ------------------------------------------------------------------ */
 /* HIL method handlers.                                                */
 /* Each returns true if it claimed the command (success or structured  */
@@ -301,6 +315,33 @@ static bool hil_exit(uint8_t seq, uint8_t cmd_id,
                      bool *already_responded) {
     (void)seq; (void)cmd_id; (void)keys; (void)values; (void)arg_count; (void)already_responded;
     FERQON_LOG_DEBUG("hil.exit: session cleared");
+
+    response[0] = 1; /* Success */
+    *response_len = 1;
+    return true;
+}
+
+/* mode: "echo" | "normal"/"real" (case-insensitive).
+ * ECHO enables internal UART1 loopback so uart_send data is also queued
+ * for uart_expect without physical wiring; NORMAL/REAL disable it. */
+static bool hil_set_mode(uint8_t seq, uint8_t cmd_id,
+                         const char **keys, const char **values, int arg_count,
+                         uint8_t *response, uint8_t *response_len,
+                         bool *already_responded) {
+    (void)already_responded;
+    REQUIRE_ARG(mode);
+
+    bool echo;
+    if (str_eq_ci(mode_str, "echo")) {
+        echo = true;
+    } else if (str_eq_ci(mode_str, "normal") || str_eq_ci(mode_str, "real")) {
+        echo = false;
+    } else {
+        REPLY_INVALID_PARAMS_STR(seq, cmd_id, "invalid mode");
+    }
+
+    ferqon_uart1_set_echo(echo);
+    FERQON_LOG_DEBUG("hil.set_mode: %s", echo ? "echo" : "normal");
 
     response[0] = 1; /* Success */
     *response_len = 1;
