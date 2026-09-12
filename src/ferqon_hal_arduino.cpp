@@ -15,6 +15,10 @@
 #include <platform/mbed_stats.h>
 #endif
 
+#if defined(FERQON_BOARD_PICO) || defined(ARDUINO_ARCH_RP2040)
+#include <pico/bootrom.h>
+#endif
+
 /* Map canonical FERQON_GPIO_* modes to Arduino pinMode constants. */
 static uint8_t ferqon_mode_to_arduino(uint8_t mode) {
     switch (mode) {
@@ -109,6 +113,16 @@ static void arduino_system_reset(void) {
 #else
     #error "No reset implementation for this board. Add a platform-specific reset in ferqon_hal_arduino.cpp."
 #endif
+}
+
+/* -------------------------------------------------------- USB bootloader */
+static void arduino_reboot_usb_boot(void) {
+#if defined(FERQON_BOARD_PICO) || defined(ARDUINO_ARCH_RP2040)
+    /* RP2040 ROM: reboot into BOOTSEL (USB mass-storage / picoboot). */
+    reset_usb_boot(0, 0);
+#endif
+    /* Boards without a USB-bootloader path keep running; the host falls
+     * back to its board-specific reset when no bootloader appears. */
 }
 
 /* ---------------------------------------------------------------- Free RAM */

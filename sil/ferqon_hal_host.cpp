@@ -82,6 +82,10 @@ static void host_system_reset(void) {
     /* Host builds have no hardware to reset. */
 }
 
+static void host_reboot_usb_boot(void) {
+    /* Host builds have no USB bootloader. */
+}
+
 /* ------------------------------------------------------------------ Info */
 static uint32_t host_uptime_ms(void) { return (uint32_t)millis(); }
 static uint32_t host_free_ram_bytes(void) { return FERQON_RAM_SIZE_BYTES; }
