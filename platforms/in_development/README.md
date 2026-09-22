@@ -19,6 +19,9 @@ The following boards have been promoted to production and live in `platforms/<bo
   They are kept here for future development and are **not** compiled by any
   production PlatformIO environment.
 - **rp2040/**: Generic RP2040 board definition — incomplete.
+- **esp8266/**: ESP8266 board definition — incomplete.
+- **mega2560/**: Arduino Mega 2560 board definition — incomplete.
+- **stm32bluepill/**: STM32 "Blue Pill" board definition — incomplete.
 - **stm32f4/**: STM32F4 board definition — incomplete.
 - **stm32f7/**: STM32F7 board definition — incomplete.
 
