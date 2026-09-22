@@ -8,7 +8,7 @@ static bool reset_handler(uint8_t seq, uint8_t cmd_id,
                           uint8_t *response, uint8_t *response_len,
                           bool *already_responded) {
     (void)params; (void)param_len; (void)response;
-    if (cmd_id != FERQON_CMD_RESET) return false;
+    if (cmd_id != FERQON_CMD_RESET && cmd_id != FERQON_CMD_REBOOT_BOOTLOADER) return false;
 
     /* Respond BEFORE resetting so the host sees a clean DONE. */
     ferqon_send_done(seq, cmd_id, NULL, 0);
@@ -16,7 +16,11 @@ static bool reset_handler(uint8_t seq, uint8_t cmd_id,
     *response_len = 0;
 
     ferqon_hal_delay_ms(100);
-    ferqon_hal_system_reset();
+    if (cmd_id == FERQON_CMD_REBOOT_BOOTLOADER) {
+        ferqon_hal_reboot_usb_boot();
+    } else {
+        ferqon_hal_system_reset();
+    }
     return true;
 }
 

@@ -25,6 +25,17 @@ bool ferqon_uart1_is_ready(void);
  */
 void ferqon_uart1_send(const uint8_t *data, size_t len);
 
+/* Enable/disable internal UART1 loopback ("echo" HIL mode).  When enabled,
+ * every byte passed to ferqon_uart1_send() is also queued on an internal
+ * buffer that ferqon_uart1_expect() drains as if it had arrived on the wire.
+ * Toggling the mode flushes the queued echo bytes so a later expect never
+ * matches data written under a different mode.
+ */
+void ferqon_uart1_set_echo(bool enabled);
+
+/* Returns true when internal UART1 loopback is enabled. */
+bool ferqon_uart1_get_echo(void);
+
 /* Wait up to timeout_ms for pattern to appear in Serial1 RX data.
  * Returns true if the pattern was found, false on timeout.
  * Safe to call from driver_call sub-handlers as well as the direct

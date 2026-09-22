@@ -44,8 +44,7 @@ def open_serial():
     ser.reset_input_buffer()
     return ser
 
-def send_and_recv(ser, cmd_id, payload, seq=1, expect_pkt=PKT_DONE,
-                  no_pkt_request=False):
+def send_and_recv(ser, cmd_id, payload, seq=1, no_pkt_request=False):
     """Send a framed request and wait for the response.
 
     The payload is the raw command params. PKT_REQUEST is prepended
@@ -77,7 +76,7 @@ def send_and_recv(ser, cmd_id, payload, seq=1, expect_pkt=PKT_DONE,
 
 def test_ping(ser, ids):
     """Ping should return DONE with empty body."""
-    rtype, body = send_and_recv(ser, ids["ping"], b"", expect_pkt=PKT_DONE)
+    rtype, body = send_and_recv(ser, ids["ping"], b"")
     if rtype == PKT_DONE:
         print(f"  ping: PASS (DONE)")
         return True
@@ -87,7 +86,7 @@ def test_ping(ser, ids):
 def test_echo(ser, ids):
     """Echo should return DONE with the same bytes."""
     msg = b"hello_ferqon"
-    rtype, body = send_and_recv(ser, ids["echo"], msg, expect_pkt=PKT_DONE)
+    rtype, body = send_and_recv(ser, ids["echo"], msg)
     if rtype == PKT_DONE and body[1:] == msg:
         print(f"  echo: PASS (echoed={body[1:].decode()})")
         return True
@@ -157,7 +156,7 @@ def test_adc_invalid_channel(ser, ids):
 
 def test_device_info(ser, ids):
     """Device info should return DONE with TLV data including firmware version."""
-    rtype, body = send_and_recv(ser, ids["device_info"], b"", expect_pkt=PKT_DONE,
+    rtype, body = send_and_recv(ser, ids["device_info"], b"",
                                 no_pkt_request=True)
     if rtype != PKT_DONE or not body:
         print(f"  device_info: FAIL (type={rtype}, body={body})")

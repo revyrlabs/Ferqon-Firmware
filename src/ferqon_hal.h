@@ -61,6 +61,7 @@ extern "C" {
     M(V, void,          adc_write,      (uint8_t pin, int value),                   0,    (pin, value),  ##__VA_ARGS__) \
     M(R, unsigned long, pulse_in,      (uint8_t pin, uint8_t state, unsigned long timeout_us), 0UL, (pin, state, timeout_us), ##__VA_ARGS__) \
     M(V, void,          system_reset,   (void),                                     0,    (),            ##__VA_ARGS__) \
+    M(V, void,          reboot_usb_boot,(void),                                     0,    (),            ##__VA_ARGS__) \
     M(R, uint32_t,      uptime_ms,      (void),                                     0U,   (),            ##__VA_ARGS__) \
     M(R, uint32_t,      free_ram_bytes, (void),                                     0U,   (),            ##__VA_ARGS__) \
     M(V, void,          log_raw,        (const char *msg),                          0,    (msg),         ##__VA_ARGS__)

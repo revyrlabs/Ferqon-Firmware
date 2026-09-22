@@ -60,10 +60,11 @@
 #define FERQON_CMD_ADC_EXPECT          21
 #define FERQON_CMD_PULSE_MEASURE       22
 #define FERQON_CMD_SET_DEBUG_LEVEL     23
+#define FERQON_CMD_REBOOT_BOOTLOADER   24
 
 /* ------------------------------------------------ Dispatcher sizing */
-#define FERQON_MAX_COMMAND_ID           23
-#define FERQON_COMMAND_ID_COUNT         24
+#define FERQON_MAX_COMMAND_ID           24
+#define FERQON_COMMAND_ID_COUNT         25
 #define FERQON_MAX_DRIVERS              12
 
 /* --------------------------------------- Driver command masks (from SSOT) */
@@ -81,7 +82,7 @@
 #define FERQON_DRIVER_CMD_MASK_GPIO            (((uint64_t)1 << FERQON_CMD_PIN_MODE) | ((uint64_t)1 << FERQON_CMD_GPIO_READ) | ((uint64_t)1 << FERQON_CMD_GPIO_WRITE))
 #define FERQON_DRIVER_CMD_MASK_PING            ((uint64_t)1 << FERQON_CMD_PING)
 #define FERQON_DRIVER_CMD_MASK_PULSE           ((uint64_t)1 << FERQON_CMD_PULSE_MEASURE)
-#define FERQON_DRIVER_CMD_MASK_RESET           ((uint64_t)1 << FERQON_CMD_RESET)
+#define FERQON_DRIVER_CMD_MASK_RESET           (((uint64_t)1 << FERQON_CMD_RESET) | ((uint64_t)1 << FERQON_CMD_REBOOT_BOOTLOADER))
 #define FERQON_DRIVER_CMD_MASK_UART            (((uint64_t)1 << FERQON_CMD_UART_SEND) | ((uint64_t)1 << FERQON_CMD_UART_EXPECT))
 
 /* ------------------------------------------- Driver / method name strings */
