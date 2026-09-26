@@ -5,6 +5,7 @@
     "crc_poly": 4129,
     "crc_init": 65535
   },
+<<<<<<< HEAD
   "limits": {
     "max_payload_bytes": 255,
     "max_frame_bytes": 261,
@@ -549,5 +550,86 @@
       "params": [],
       "response": []
     }
+=======
+  "codes": {
+   "OK": {
+    "code": 0,
+    "category": "NONE",
+    "retryable": false,
+    "description": "Success"
+   },
+   "INVALID_COMMAND": {
+    "code": 1,
+    "category": "COMMAND",
+    "retryable": false,
+    "description": "Unknown command ID"
+   },
+   "INVALID_PARAMS": {
+    "code": 2,
+    "category": "PROTOCOL",
+    "retryable": false,
+    "description": "Invalid parameters"
+   },
+   "UNSUPPORTED_MODE": {
+    "code": 3,
+    "category": "DEVICE",
+    "retryable": false,
+    "description": "Unsupported mode"
+   },
+   "UNSUPPORTED_PIN": {
+    "code": 4,
+    "category": "DEVICE",
+    "retryable": false,
+    "description": "Unsupported pin"
+   },
+   "BUSY": {
+    "code": 5,
+    "category": "DEVICE",
+    "retryable": true,
+    "description": "Device busy"
+   },
+   "INTERNAL": {
+    "code": 6,
+    "category": "INTERNAL",
+    "retryable": false,
+    "description": "Internal error"
+   },
+   "CHECKSUM_FAIL": {
+    "code": 7,
+    "category": "PROTOCOL",
+    "retryable": false,
+    "description": "Checksum mismatch"
+   },
+   "PAYLOAD_TOO_LARGE": {
+    "code": 9,
+    "category": "PROTOCOL",
+    "retryable": false,
+    "description": "Payload exceeds max size"
+   },
+   "TIMEOUT": {
+    "code": 10,
+    "category": "TIMEOUT",
+    "retryable": true,
+    "description": "Operation timeout"
+   },
+   "INVALID_DRIVER": {
+    "code": 11,
+    "category": "COMMAND",
+    "retryable": false,
+    "description": "No driver registered with that name"
+   },
+   "INVALID_METHOD": {
+    "code": 12,
+    "category": "COMMAND",
+    "retryable": false,
+    "description": "Driver exists but method unknown"
+   },
+   "NOT_IMPLEMENTED": {
+    "code": 13,
+    "category": "COMMAND",
+    "retryable": false,
+    "description": "Driver/method known but hardware not ready"
+   }
+>>>>>>> 747b7417180b8370fa213bfa3448dabc6d014e2f
   }
 }
