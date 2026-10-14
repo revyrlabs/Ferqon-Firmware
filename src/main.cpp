@@ -13,9 +13,17 @@
 ferqon_parser_t parser;
 unsigned long last_heartbeat_ms = 0;
 
-/* setup/loop are the Arduino application entry points and must have C linkage
- * so the framework's weak main() can find them. */
-extern "C" void setup() {
+/* setup/loop linkage must match each core's declaration: arduino-esp32
+ * declares them with C++ linkage, while the pico/avr/teensy/stm32/esp8266
+ * cores wrap them in extern "C". Mismatched linkage fails at link time
+ * (undefined reference to setup()/loop()). */
+#if defined(FERQON_BOARD_ESP32) || defined(FERQON_BOARD_ESP32S3)
+#define FERQON_ARDUINO_ENTRY_LINKAGE
+#else
+#define FERQON_ARDUINO_ENTRY_LINKAGE extern "C"
+#endif
+
+FERQON_ARDUINO_ENTRY_LINKAGE void setup() {
 #if defined(FERQON_BOARD_NATIVE)
     ferqon_hal_init_host();
 #else
@@ -35,7 +43,7 @@ extern "C" void setup() {
     FERQON_LOG_INFO("Ferqon %s ready", FERQON_FW_VERSION);
 }
 
-extern "C" void loop() {
+FERQON_ARDUINO_ENTRY_LINKAGE void loop() {
     // Handle serial input. Drain the RX buffer each loop so frames are not
     // artificially throttled to one byte per main-loop iteration.
     unsigned long now = ferqon_hal_millis();
