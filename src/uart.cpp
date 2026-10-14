@@ -24,11 +24,6 @@ static char uart_rx_buffer[UART_RX_BUFFER_SIZE];
 static size_t uart_rx_len = 0;
 static bool uart1_init_attempted = false;
 static uint32_t uart1_current_baud = 0;
-static bool uart_echo_mode = false;
-
-void ferqon_uart1_set_echo_mode(bool enabled) {
-    uart_echo_mode = enabled;
-}
 
 /* Internal loopback queue for ECHO mode.  Bytes written via
  * ferqon_uart1_send() are mirrored here and drained by
@@ -86,14 +81,7 @@ void ferqon_uart1_send(const uint8_t *data, size_t len) {
     uart1_ensure_init();
     ferqon_hal_uart1_write(data, len);
     ferqon_hal_uart1_flush();
-<<<<<<< HEAD
 
-    /* In ECHO mode, also copy sent bytes into the RX buffer so that
-     * ferqon_uart1_expect can find them without physical TX→RX wiring. */
-    if (uart_echo_mode) {
-        for (size_t i = 0; i < len && uart_rx_len < UART_RX_BUFFER_SIZE - 1; i++) {
-            uart_rx_buffer[uart_rx_len++] = (char)data[i];
-=======
     if (uart1_echo_mode) {
         for (size_t i = 0; i < len; i++) {
             if (uart_echo_len < UART_RX_BUFFER_SIZE - 1) {
@@ -105,7 +93,6 @@ void ferqon_uart1_send(const uint8_t *data, size_t len) {
                         UART_RX_BUFFER_SIZE - 2);
                 uart_echo_buffer[uart_echo_len - 1] = (char)data[i];
             }
->>>>>>> 9659474c000a6ac0f7b1b305e75d0762cda3b3e0
         }
     }
 }
@@ -115,25 +102,12 @@ bool ferqon_uart1_expect(const char *pattern, size_t pattern_len, uint16_t timeo
         return false;
     }
 
-<<<<<<< HEAD
-=======
     /* Clear stale wire data from previous calls before starting a new
      * expect.  The echo queue is NOT cleared — bytes echoed by a preceding
      * uart_send are the very data this call is meant to find. */
->>>>>>> 9659474c000a6ac0f7b1b305e75d0762cda3b3e0
     uart1_ensure_init();
 
-    /* In echo mode, the buffer was populated by uart_send — check it
-     * immediately before clearing.  In normal mode, clear stale data. */
-    if (uart_echo_mode) {
-        if (uart_rx_len >= pattern_len &&
-            memcmp(uart_rx_buffer + uart_rx_len - pattern_len, pattern, pattern_len) == 0) {
-            return true;
-        }
-        /* Fall through to physical RX wait in case there's additional data. */
-    } else {
-        uart_rx_len = 0;
-    }
+    uart_rx_len = 0;
 
     /* Wait for pattern in secondary UART RX buffer with timeout.
      * Only the most recent pattern_len bytes need to be checked, because a
